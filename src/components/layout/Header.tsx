@@ -3,18 +3,21 @@
 import React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Bell, MoreVertical } from 'lucide-react'
+import { ArrowLeft, Bell, MoreVertical, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 
 export interface HeaderProps {
   title?: string
+  subtitle?: string
   showBack?: boolean
   showProfile?: boolean
   showNotifications?: boolean
   showMenu?: boolean
+  showSearch?: boolean
   onMenuClick?: () => void
+  onSearchClick?: () => void
   rightContent?: React.ReactNode
   greeting?: boolean
   transparent?: boolean
@@ -22,11 +25,14 @@ export interface HeaderProps {
 
 export function Header({
   title,
+  subtitle,
   showBack = false,
   showProfile = false,
   showNotifications = false,
   showMenu = false,
+  showSearch = false,
   onMenuClick,
+  onSearchClick,
   rightContent,
   greeting = false,
   transparent = false,
@@ -54,16 +60,18 @@ export function Header({
     <header
       className={cn(
         'sticky top-0 z-30 safe-area-top',
-        transparent ? 'bg-transparent' : 'bg-white border-b border-slate-100'
+        transparent
+          ? 'bg-transparent'
+          : 'bg-white border-b border-slate-100 lg:bg-slate-50/80 lg:backdrop-blur-sm lg:border-none'
       )}
     >
-      <div className="flex items-center justify-between h-14 px-4">
+      <div className="flex items-center justify-between h-14 lg:h-16 px-4 lg:px-8">
         {/* Left */}
         <div className="flex items-center gap-3">
           {showBack && (
             <button
               onClick={() => router.back()}
-              className="p-2 -ml-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+              className="p-2 -ml-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors lg:hover:bg-white"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
@@ -71,24 +79,42 @@ export function Header({
 
           {greeting ? (
             <div>
-              <p className="text-lg font-semibold text-slate-800">
+              <p className="text-lg lg:text-2xl font-semibold text-slate-800">
                 {getGreeting()}, {state.user.name.split(' ')[0]}
               </p>
               <p className="text-sm text-slate-500 capitalize">{formatDate()}</p>
             </div>
           ) : (
-            title && <h1 className="text-lg font-semibold text-slate-800">{title}</h1>
+            <div>
+              {title && (
+                <h1 className="text-lg lg:text-2xl font-semibold text-slate-800">
+                  {title}
+                </h1>
+              )}
+              {subtitle && (
+                <p className="text-sm text-slate-500">{subtitle}</p>
+              )}
+            </div>
           )}
         </div>
 
         {/* Right */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 lg:gap-3">
+          {showSearch && (
+            <button
+              onClick={onSearchClick}
+              className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 lg:hover:bg-white transition-colors lg:hidden"
+            >
+              <Search className="w-5 h-5" />
+            </button>
+          )}
+
           {rightContent}
 
           {showNotifications && (
             <Link
               href="/notifications"
-              className="relative p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+              className="relative p-2 rounded-lg text-slate-600 hover:bg-slate-100 lg:hover:bg-white transition-colors"
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
@@ -100,7 +126,7 @@ export function Header({
           )}
 
           {showProfile && (
-            <Link href="/settings" className="ml-1">
+            <Link href="/settings" className="ml-1 lg:hidden">
               <Avatar name={state.user.name} src={state.user.avatar} size="sm" />
             </Link>
           )}
@@ -108,7 +134,7 @@ export function Header({
           {showMenu && (
             <button
               onClick={onMenuClick}
-              className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+              className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 lg:hover:bg-white transition-colors"
             >
               <MoreVertical className="w-5 h-5" />
             </button>

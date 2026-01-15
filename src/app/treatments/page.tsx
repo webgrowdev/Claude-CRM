@@ -10,7 +10,7 @@ import {
   Trash2,
   Clock,
 } from 'lucide-react'
-import { Header, BottomNav, PageContainer } from '@/components/layout'
+import { Header, PageContainer, AppShell } from '@/components/layout'
 import {
   Input,
   Card,
@@ -169,7 +169,7 @@ export default function TreatmentsPage() {
   }
 
   return (
-    <>
+    <AppShell>
       <Header
         title="Tratamientos"
         showBack
@@ -200,15 +200,41 @@ export default function TreatmentsPage() {
         }
       />
 
-      <PageContainer noPadding withBottomNav={false}>
-        {/* Search */}
-        <div className="px-4 pt-4">
-          <Input
-            placeholder="Buscar tratamientos..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            icon={<Search className="w-5 h-5" />}
-          />
+      <PageContainer noPadding>
+        {/* Desktop Header */}
+        <div className="px-4 pt-4 lg:flex lg:items-center lg:justify-between lg:gap-4">
+          <div className="lg:flex-1 lg:max-w-md">
+            <Input
+              placeholder="Buscar tratamientos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              icon={<Search className="w-5 h-5" />}
+            />
+          </div>
+          <div className="hidden lg:flex lg:items-center lg:gap-2">
+            <Button
+              variant="outline"
+              onClick={handleShare}
+              icon={<Share2 className="w-5 h-5" />}
+            >
+              Compartir
+            </Button>
+            <Button
+              onClick={() => {
+                setFormData({
+                  name: '',
+                  category: 'Facial',
+                  price: '',
+                  duration: '',
+                  description: '',
+                })
+                setShowAddModal(true)
+              }}
+              icon={<Plus className="w-5 h-5" />}
+            >
+              Nuevo Tratamiento
+            </Button>
+          </div>
         </div>
 
         {/* Category Tabs */}
@@ -221,7 +247,7 @@ export default function TreatmentsPage() {
         </div>
 
         {/* Treatment List */}
-        <div className="px-4 mt-4 pb-8">
+        <div className="px-4 mt-4 pb-24 lg:pb-8">
           {filteredTreatments.length === 0 ? (
             <EmptyState
               icon={<Clock className="w-8 h-8" />}
@@ -287,8 +313,8 @@ export default function TreatmentsPage() {
           )}
         </div>
 
-        {/* Share Button Fixed */}
-        <div className="fixed bottom-6 left-4 right-4">
+        {/* Share Button Fixed - Mobile only */}
+        <div className="fixed bottom-6 left-4 right-4 lg:hidden">
           <Button
             fullWidth
             onClick={handleShare}
@@ -477,6 +503,6 @@ export default function TreatmentsPage() {
           </Button>
         </div>
       </Modal>
-    </>
+    </AppShell>
   )
 }

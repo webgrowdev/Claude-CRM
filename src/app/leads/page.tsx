@@ -14,7 +14,7 @@ import {
   Users,
   HelpCircle
 } from 'lucide-react'
-import { Header, BottomNav, PageContainer } from '@/components/layout'
+import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Input, Card, Avatar, Badge, Tabs, EmptyState, Modal, Button, Select, TextArea } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { formatTimeAgo, getStatusLabel, getSourceLabel } from '@/lib/utils'
@@ -114,7 +114,7 @@ export default function LeadsPage() {
   }
 
   return (
-    <>
+    <AppShell>
       <Header
         title="Leads"
         rightContent={
@@ -128,14 +128,23 @@ export default function LeadsPage() {
       />
 
       <PageContainer noPadding>
-        {/* Search */}
-        <div className="px-4 pt-4">
-          <Input
-            placeholder="Buscar leads..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            icon={<Search className="w-5 h-5" />}
-          />
+        {/* Desktop Header with Search */}
+        <div className="px-4 pt-4 lg:flex lg:items-center lg:justify-between lg:gap-4">
+          <div className="lg:flex-1 lg:max-w-md">
+            <Input
+              placeholder="Buscar leads..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              icon={<Search className="w-5 h-5" />}
+            />
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-500 text-white hover:bg-primary-600 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Nuevo Lead</span>
+          </button>
         </div>
 
         {/* Tabs */}
@@ -147,7 +156,7 @@ export default function LeadsPage() {
           />
         </div>
 
-        {/* Lead List */}
+        {/* Lead List - Table view on desktop */}
         <div className="px-4 mt-4 pb-4">
           {filteredLeads.length === 0 ? (
             <EmptyState
@@ -166,18 +175,42 @@ export default function LeadsPage() {
             />
           ) : (
             <Card padding="none">
+              {/* Desktop Table Header */}
+              <div className="hidden lg:grid lg:grid-cols-12 lg:gap-4 lg:px-4 lg:py-3 lg:bg-slate-50 lg:border-b lg:border-slate-100 lg:text-sm lg:font-medium lg:text-slate-600">
+                <div className="col-span-4">Cliente</div>
+                <div className="col-span-2">Fuente</div>
+                <div className="col-span-2">Estado</div>
+                <div className="col-span-2">Tratamientos</div>
+                <div className="col-span-2">Fecha</div>
+              </div>
               <div className="divide-y divide-slate-100">
                 {filteredLeads.map((lead) => (
                   <Link
                     key={lead.id}
                     href={`/leads/${lead.id}`}
-                    className="flex items-center gap-3 p-4 hover:bg-slate-50 transition-colors"
+                    className="flex items-center gap-3 p-4 hover:bg-slate-50 transition-colors lg:grid lg:grid-cols-12 lg:gap-4"
                   >
-                    <Avatar name={lead.name} size="md" />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-slate-800 truncate">{lead.name}</p>
+                    {/* Mobile & Desktop: Avatar + Name */}
+                    <div className="lg:hidden">
+                      <Avatar name={lead.name} size="md" />
+                    </div>
+                    <div className="flex-1 min-w-0 lg:col-span-4 lg:flex lg:items-center lg:gap-3">
+                      <div className="hidden lg:block">
+                        <Avatar name={lead.name} size="md" />
                       </div>
+                      <div className="lg:flex-1 lg:min-w-0">
+                        <p className="font-medium text-slate-800 truncate">{lead.name}</p>
+                        <p className="text-sm text-slate-500 truncate lg:hidden">
+                          {lead.phone}
+                        </p>
+                        <p className="hidden lg:block text-sm text-slate-500 truncate">
+                          {lead.phone} {lead.email && `• ${lead.email}`}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Mobile: Source + Time */}
+                    <div className="lg:hidden flex-1 min-w-0">
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="flex items-center gap-1 text-xs text-slate-500">
                           {getSourceIcon(lead.source)}
@@ -189,7 +222,15 @@ export default function LeadsPage() {
                         </span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+
+                    {/* Desktop: Source */}
+                    <div className="hidden lg:flex lg:col-span-2 lg:items-center lg:gap-2 text-sm text-slate-600">
+                      {getSourceIcon(lead.source)}
+                      <span>{getSourceLabel(lead.source)}</span>
+                    </div>
+
+                    {/* Status */}
+                    <div className="flex items-center gap-2 lg:col-span-2">
                       <Badge
                         variant={
                           lead.status === 'new' ? 'primary' :
@@ -201,6 +242,23 @@ export default function LeadsPage() {
                       >
                         {getStatusLabel(lead.status)}
                       </Badge>
+                      <ChevronRight className="w-5 h-5 text-slate-300 lg:hidden" />
+                    </div>
+
+                    {/* Desktop: Treatments */}
+                    <div className="hidden lg:block lg:col-span-2 text-sm text-slate-600">
+                      {lead.treatments.length > 0 ? (
+                        <span className="truncate">{lead.treatments.slice(0, 2).join(', ')}</span>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
+                    </div>
+
+                    {/* Desktop: Date */}
+                    <div className="hidden lg:flex lg:col-span-2 lg:items-center lg:justify-between">
+                      <span className="text-sm text-slate-500">
+                        {formatTimeAgo(new Date(lead.createdAt))}
+                      </span>
                       <ChevronRight className="w-5 h-5 text-slate-300" />
                     </div>
                   </Link>
@@ -210,8 +268,6 @@ export default function LeadsPage() {
           )}
         </div>
       </PageContainer>
-
-      <BottomNav />
 
       {/* Add Lead Modal */}
       <Modal
@@ -280,6 +336,6 @@ export default function LeadsPage() {
           </div>
         </form>
       </Modal>
-    </>
+    </AppShell>
   )
 }

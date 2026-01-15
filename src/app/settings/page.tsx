@@ -18,9 +18,10 @@ import {
   LogOut,
   Moon,
   Sun,
+  Link2,
 } from 'lucide-react'
-import { Header, BottomNav, PageContainer } from '@/components/layout'
-import { Card, Avatar, Modal, Button, Input, Switch } from '@/components/ui'
+import { Header, PageContainer, AppShell } from '@/components/layout'
+import { Card, Avatar, Modal, Button, Input } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 
 interface SettingsItem {
@@ -125,6 +126,12 @@ export default function SettingsPage() {
           href: '/settings/pipeline',
           chevron: true,
         },
+        {
+          icon: <Link2 className="w-5 h-5 text-slate-500" />,
+          label: 'Integraciones',
+          href: '/settings/integrations',
+          chevron: true,
+        },
       ],
     },
     {
@@ -157,113 +164,120 @@ export default function SettingsPage() {
   ]
 
   return (
-    <>
+    <AppShell>
       <Header title="Ajustes" />
 
       <PageContainer>
-        {/* Profile Card */}
-        <Card className="text-center">
-          <Avatar name={state.user.name} size="xl" className="mx-auto" />
-          <h2 className="text-lg font-semibold text-slate-800 mt-3">
-            {state.user.name}
-          </h2>
-          <p className="text-sm text-slate-500">{state.user.email}</p>
-          <Link
-            href="/settings/profile"
-            className="inline-block mt-3 text-sm text-primary-600 font-medium hover:underline"
-          >
-            Editar Perfil
-          </Link>
-        </Card>
-
-        {/* Settings Groups */}
-        {settingsGroups.map((group) => (
-          <div key={group.title} className="mt-6">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
-              {group.title}
-            </p>
-            <Card padding="none">
-              {group.items.map((item, index) => {
-                const content = (
-                  <div
-                    className={`flex items-center justify-between p-4 ${
-                      index < group.items.length - 1
-                        ? 'border-b border-slate-100'
-                        : ''
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {item.icon}
-                      <span className="text-slate-700">{item.label}</span>
-                    </div>
-                    {item.toggle ? (
-                      <SimpleSwitch
-                        checked={item.value || false}
-                        onChange={item.onToggle || (() => {})}
-                      />
-                    ) : item.chevron ? (
-                      <ChevronRight className="w-5 h-5 text-slate-300" />
-                    ) : null}
-                  </div>
-                )
-
-                if (item.href) {
-                  return (
-                    <Link
-                      key={item.label}
-                      href={item.href}
-                      className="block hover:bg-slate-50 transition-colors"
-                    >
-                      {content}
-                    </Link>
-                  )
-                }
-
-                if (item.onClick) {
-                  return (
-                    <button
-                      key={item.label}
-                      onClick={item.onClick}
-                      className="w-full text-left hover:bg-slate-50 transition-colors"
-                    >
-                      {content}
-                    </button>
-                  )
-                }
-
-                return <div key={item.label}>{content}</div>
-              })}
+        {/* Desktop: Two column layout */}
+        <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+          {/* Profile Card - Sidebar on desktop */}
+          <div className="lg:col-span-4">
+            <Card className="text-center lg:sticky lg:top-20">
+              <Avatar name={state.user.name} size="xl" className="mx-auto" />
+              <h2 className="text-lg font-semibold text-slate-800 mt-3">
+                {state.user.name}
+              </h2>
+              <p className="text-sm text-slate-500">{state.user.email}</p>
+              <Link
+                href="/settings/profile"
+                className="inline-block mt-3 text-sm text-primary-600 font-medium hover:underline"
+              >
+                Editar Perfil
+              </Link>
             </Card>
           </div>
-        ))}
 
-        {/* App Info */}
-        <div className="mt-6 text-center text-sm text-slate-400">
-          <p>Versión 1.0.0</p>
-          <div className="flex items-center justify-center gap-2 mt-2">
-            <Link href="/privacy" className="hover:text-primary-600">
-              Privacidad
-            </Link>
-            <span>•</span>
-            <Link href="/terms" className="hover:text-primary-600">
-              Términos
-            </Link>
+          {/* Settings Content */}
+          <div className="lg:col-span-8">
+
+            {/* Settings Groups */}
+            {settingsGroups.map((group) => (
+              <div key={group.title} className="mt-6 first:mt-0 lg:first:mt-0">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 px-1">
+                  {group.title}
+                </p>
+                <Card padding="none">
+                  {group.items.map((item, index) => {
+                    const content = (
+                      <div
+                        className={`flex items-center justify-between p-4 ${
+                          index < group.items.length - 1
+                            ? 'border-b border-slate-100'
+                            : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          {item.icon}
+                          <span className="text-slate-700">{item.label}</span>
+                        </div>
+                        {item.toggle ? (
+                          <SimpleSwitch
+                            checked={item.value || false}
+                            onChange={item.onToggle || (() => {})}
+                          />
+                        ) : item.chevron ? (
+                          <ChevronRight className="w-5 h-5 text-slate-300" />
+                        ) : null}
+                      </div>
+                    )
+
+                    if (item.href) {
+                      return (
+                        <Link
+                          key={item.label}
+                          href={item.href}
+                          className="block hover:bg-slate-50 transition-colors"
+                        >
+                          {content}
+                        </Link>
+                      )
+                    }
+
+                    if (item.onClick) {
+                      return (
+                        <button
+                          key={item.label}
+                          onClick={item.onClick}
+                          className="w-full text-left hover:bg-slate-50 transition-colors"
+                        >
+                          {content}
+                        </button>
+                      )
+                    }
+
+                    return <div key={item.label}>{content}</div>
+                  })}
+                </Card>
+              </div>
+            ))}
+
+            {/* App Info */}
+            <div className="mt-6 text-center text-sm text-slate-400">
+              <p>Versión 1.0.0</p>
+              <div className="flex items-center justify-center gap-2 mt-2">
+                <Link href="/privacy" className="hover:text-primary-600">
+                  Privacidad
+                </Link>
+                <span>•</span>
+                <Link href="/terms" className="hover:text-primary-600">
+                  Términos
+                </Link>
+              </div>
+            </div>
+
+            {/* Logout Button */}
+            <div className="mt-6 mb-4">
+              <button
+                onClick={() => setShowLogoutConfirm(true)}
+                className="w-full flex items-center justify-center gap-2 p-4 text-error-600 font-medium hover:bg-error-50 rounded-xl transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                Cerrar Sesión
+              </button>
+            </div>
           </div>
         </div>
-
-        {/* Logout Button */}
-        <div className="mt-6 mb-4">
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className="w-full flex items-center justify-center gap-2 p-4 text-error-600 font-medium hover:bg-error-50 rounded-xl transition-colors"
-          >
-            <LogOut className="w-5 h-5" />
-            Cerrar Sesión
-          </button>
-        </div>
       </PageContainer>
-
-      <BottomNav />
 
       {/* Logout Confirmation Modal */}
       <Modal
@@ -288,6 +302,6 @@ export default function SettingsPage() {
           </Button>
         </div>
       </Modal>
-    </>
+    </AppShell>
   )
 }

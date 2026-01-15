@@ -23,7 +23,7 @@ import {
   Phone,
   Globe,
 } from 'lucide-react'
-import { Header, BottomNav, PageContainer } from '@/components/layout'
+import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Card, Select } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { formatCurrency, getSourceLabel } from '@/lib/utils'
@@ -165,12 +165,12 @@ export default function ReportsPage() {
   }
 
   return (
-    <>
+    <AppShell>
       <Header title="Reportes" />
 
       <PageContainer>
         {/* Period Selector */}
-        <div className="mb-4">
+        <div className="mb-4 lg:max-w-xs">
           <Select
             value={period}
             onChange={setPeriod}
@@ -178,8 +178,8 @@ export default function ReportsPage() {
           />
         </div>
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Key Metrics - 4 columns on desktop */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
           <Card>
             <div className="flex items-start justify-between">
               <div>
@@ -257,106 +257,107 @@ export default function ReportsPage() {
           </div>
         </Card>
 
-        {/* Conversion Funnel */}
-        <Card className="mt-4">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">
-            Embudo de Conversión
-          </h3>
-          <div className="space-y-3">
-            {stats.funnelData.map((item, index) => (
-              <div key={item.stage}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm text-slate-600">{item.stage}</span>
-                  <span className="text-sm font-medium text-slate-800">
-                    {item.count} ({item.percentage.toFixed(0)}%)
-                  </span>
-                </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-primary-500 rounded-full transition-all duration-500"
-                    style={{ width: `${item.percentage}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Lead Sources */}
-        <Card className="mt-4 mb-4">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">
-            Fuentes de Leads
-          </h3>
-
-          {stats.sourceData.length === 0 ? (
-            <p className="text-sm text-slate-500 text-center py-4">
-              Sin datos en este periodo
-            </p>
-          ) : (
-            <>
-              {/* Pie Chart */}
-              <div className="h-48 mb-4">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={stats.sourceData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={70}
-                      paddingAngle={2}
-                      dataKey="count"
-                    >
-                      {stats.sourceData.map((entry) => (
-                        <Cell
-                          key={entry.source}
-                          fill={COLORS[entry.source] || COLORS.other}
-                        />
-                      ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Legend */}
-              <div className="space-y-2">
-                {stats.sourceData
-                  .sort((a, b) => b.count - a.count)
-                  .map((item) => (
+        {/* Two column layout on desktop */}
+        <div className="lg:grid lg:grid-cols-2 lg:gap-6">
+          {/* Conversion Funnel */}
+          <Card className="mt-4">
+            <h3 className="text-base lg:text-lg font-semibold text-slate-800 mb-4">
+              Embudo de Conversión
+            </h3>
+            <div className="space-y-3">
+              {stats.funnelData.map((item, index) => (
+                <div key={item.stage}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-slate-600">{item.stage}</span>
+                    <span className="text-sm font-medium text-slate-800">
+                      {item.count} ({item.percentage.toFixed(0)}%)
+                    </span>
+                  </div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                     <div
-                      key={item.source}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{
-                            backgroundColor:
-                              COLORS[item.source] || COLORS.other,
-                          }}
-                        />
-                        <span className="text-sm text-slate-600 flex items-center gap-1">
-                          {getSourceIcon(item.source)}
-                          {getSourceLabel(item.source)}
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-sm font-medium text-slate-800">
-                          {item.count}
-                        </span>
-                        <span className="text-xs text-slate-500 ml-1">
-                          ({item.percentage.toFixed(0)}%)
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </>
-          )}
-        </Card>
-      </PageContainer>
+                      className="h-full bg-primary-500 rounded-full transition-all duration-500"
+                      style={{ width: `${item.percentage}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
 
-      <BottomNav />
-    </>
+          {/* Lead Sources */}
+          <Card className="mt-4 mb-4">
+            <h3 className="text-base lg:text-lg font-semibold text-slate-800 mb-4">
+              Fuentes de Leads
+            </h3>
+
+            {stats.sourceData.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-4">
+                Sin datos en este periodo
+              </p>
+            ) : (
+              <>
+                {/* Pie Chart */}
+                <div className="h-48 lg:h-56 mb-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={stats.sourceData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={70}
+                        paddingAngle={2}
+                        dataKey="count"
+                      >
+                        {stats.sourceData.map((entry) => (
+                          <Cell
+                            key={entry.source}
+                            fill={COLORS[entry.source] || COLORS.other}
+                          />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Legend */}
+                <div className="space-y-2">
+                  {stats.sourceData
+                    .sort((a, b) => b.count - a.count)
+                    .map((item) => (
+                      <div
+                        key={item.source}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="w-3 h-3 rounded-full"
+                            style={{
+                              backgroundColor:
+                                COLORS[item.source] || COLORS.other,
+                            }}
+                          />
+                          <span className="text-sm text-slate-600 flex items-center gap-1">
+                            {getSourceIcon(item.source)}
+                            {getSourceLabel(item.source)}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-medium text-slate-800">
+                            {item.count}
+                          </span>
+                          <span className="text-xs text-slate-500 ml-1">
+                            ({item.percentage.toFixed(0)}%)
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              </>
+            )}
+          </Card>
+        </div>
+      </PageContainer>
+    </AppShell>
   )
 }

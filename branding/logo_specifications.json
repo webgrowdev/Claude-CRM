@@ -1,0 +1,115 @@
+{
+  "logo_variants": {
+    "logo_dark": {
+      "filename": "logo_dark.png",
+      "description": "Primary logo for light backgrounds",
+      "specifications": {
+        "text": "Clinic",
+        "font": "Plus Jakarta Sans",
+        "font_weight": "700 (Bold)",
+        "letter_spacing": "-0.02em",
+        "text_color": "#1E293B",
+        "accent": {
+          "element": "Dot on first letter 'i'",
+          "shape": "Circle",
+          "color": "#F472B6",
+          "size": "120% of default dot diameter",
+          "position": "Centered above stem"
+        },
+        "background": "Transparent",
+        "export_sizes": {
+          "1x": "200x50px",
+          "2x": "400x100px",
+          "3x": "600x150px"
+        }
+      },
+      "visual_description": "Clean typographic wordmark 'Clinic' in dark slate color with a pink circular dot replacing the standard dot on the first lowercase 'i'. The pink dot adds a warm, approachable accent that connects with the aesthetic/beauty industry."
+    },
+    "logo_light": {
+      "filename": "logo_light.png",
+      "description": "Inverted logo for dark backgrounds",
+      "specifications": {
+        "text": "Clinic",
+        "font": "Plus Jakarta Sans",
+        "font_weight": "700 (Bold)",
+        "letter_spacing": "-0.02em",
+        "text_color": "#FFFFFF",
+        "accent": {
+          "element": "Dot on first letter 'i'",
+          "shape": "Circle",
+          "color": "#F472B6",
+          "size": "120% of default dot diameter",
+          "position": "Centered above stem"
+        },
+        "background": "Transparent",
+        "export_sizes": {
+          "1x": "200x50px",
+          "2x": "400x100px",
+          "3x": "600x150px"
+        }
+      },
+      "visual_description": "White typographic wordmark 'Clinic' designed for use on dark backgrounds. The pink accent dot on the 'i' remains consistent, creating contrast and brand recognition against darker surfaces."
+    },
+    "logo_mono": {
+      "filename": "logo_mono.png",
+      "description": "Single-color monochrome logo",
+      "specifications": {
+        "text": "Clinic",
+        "font": "Plus Jakarta Sans",
+        "font_weight": "700 (Bold)",
+        "letter_spacing": "-0.02em",
+        "text_color": "#1E293B (adaptable)",
+        "accent": {
+          "element": "Dot on first letter 'i'",
+          "shape": "Circle",
+          "color": "Same as text color",
+          "size": "120% of default dot diameter",
+          "position": "Centered above stem"
+        },
+        "background": "Transparent",
+        "export_sizes": {
+          "1x": "200x50px",
+          "2x": "400x100px",
+          "3x": "600x150px"
+        },
+        "color_variations": [
+          { "name": "Dark", "color": "#1E293B" },
+          { "name": "Light", "color": "#FFFFFF" },
+          { "name": "Primary", "color": "#6366F1" },
+          { "name": "Gray", "color": "#64748B" }
+        ]
+      },
+      "visual_description": "Single-color version of the logo where all elements including the accent dot share the same color. Used for applications requiring simplified color usage such as watermarks, embossing, single-color printing, or favicon adaptations."
+    },
+    "logo_mark": {
+      "filename": "logo_mark.png",
+      "description": "Simplified icon mark for small applications",
+      "specifications": {
+        "design": "Capital letter 'C' with pink dot positioned at upper right",
+        "font": "Plus Jakarta Sans",
+        "font_weight": "700 (Bold)",
+        "letter_color": "#6366F1",
+        "dot_color": "#F472B6",
+        "shape": "Square with rounded corners (border-radius: 20%)",
+        "background": "#FFFFFF",
+        "export_sizes": {
+          "favicon": "32x32px",
+          "app_icon_small": "64x64px",
+          "app_icon_medium": "128x128px",
+          "app_icon_large": "512x512px"
+        }
+      },
+      "visual_description": "Compact brand mark featuring a bold indigo 'C' with a small pink dot in the upper right corner, contained within a white rounded square. Used for favicons, app icons, and social media profile pictures."
+    }
+  },
+  "production_notes": {
+    "file_formats": [
+      "PNG with transparency for web/digital",
+      "SVG for scalable vector applications",
+      "PDF/EPS for print production"
+    ],
+    "color_mode": "sRGB for digital, CMYK for print",
+    "resolution": "Minimum 72dpi for web, 300dpi for print",
+    "safe_zone": "Maintain clear space equal to height of lowercase 'c'"
+  }
+}

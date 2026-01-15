@@ -1,0 +1,123 @@
+{
+  "instagram_meta_ads": {
+    "short_copies": [
+      {
+        "id": "short_1",
+        "headline": "Stop losing leads from your DMs",
+        "body": "Clinic helps aesthetic clinics turn Instagram inquiries into bookings. Try free for 14 days.",
+        "cta": "Learn More",
+        "character_count": 110
+      },
+      {
+        "id": "short_2",
+        "headline": "Every DM is a potential client",
+        "body": "Don't let them slip away. Clinic organizes your leads and reminds you to follow up. Free trial.",
+        "cta": "Sign Up",
+        "character_count": 115
+      },
+      {
+        "id": "short_3",
+        "headline": "The CRM your clinic needs",
+        "body": "Built for beauty businesses. Works from your phone. Set up in 5 minutes. No credit card required.",
+        "cta": "Get Started",
+        "character_count": 108
+      }
+    ],
+    "medium_copies": [
+      {
+        "id": "medium_1",
+        "headline": "Tired of losing leads in your DMs?",
+        "body": "Your Instagram is full of potential clients. But between treatments, messages pile up. By the time you respond, they've booked somewhere else.\n\nClinic changes that. See all your leads in one place. Get reminders to follow up. Close more sales.\n\nTry free for 14 days. Set up in 5 minutes.",
+        "cta": "Start Free Trial",
+        "character_count": 340
+      },
+      {
+        "id": "medium_2",
+        "headline": "Your WhatsApp isn't a CRM",
+        "body": "Scrolling through chats to find that one client? Forgetting who you promised to call back? Losing track of who's ready to book?\n\nThere's a better way. Clinic is the mobile CRM built for aesthetic clinics like yours. Visual pipeline. Automatic reminders. Real results.\n\nNo complicated software. Just more bookings.",
+        "cta": "Learn More",
+        "character_count": 365
+      },
+      {
+        "id": "medium_3",
+        "headline": "What if you never lost another lead?",
+        "body": "Picture this: Every Instagram inquiry organized. Every follow-up scheduled. Every potential client tracked from first message to booked appointment.\n\nThat's Clinic. The pocket-sized CRM that helps aesthetic clinics convert more inquiries into paying customers.\n\nJoin 500+ clinics already closing more sales.",
+        "cta": "Get Started Free",
+        "character_count": 358
+      }
+    ],
+    "headline_claims": [
+      {
+        "id": "claim_1",
+        "text": "Stop Losing Leads",
+        "use_case": "Primary headline for awareness campaigns",
+        "emotion": "Pain point - loss aversion"
+      },
+      {
+        "id": "claim_2",
+        "text": "From DM to Deal",
+        "use_case": "Catchy, memorable headline",
+        "emotion": "Solution - transformation"
+      },
+      {
+        "id": "claim_3",
+        "text": "Close 35% More Sales",
+        "use_case": "Results-focused headline",
+        "emotion": "Benefit - quantified value"
+      }
+    ],
+    "creative_descriptions": [
+      {
+        "id": "creative_1",
+        "name": "Phone Mockup - Kanban",
+        "composition": "Clean product shot of iPhone showing Clinic app Kanban board. Phone slightly angled. Multiple lead cards visible in pipeline columns. Soft shadow beneath phone.",
+        "color_usage": "White/light gray background. App shows brand colors (indigo, pink accents). Subtle gradient overlay on background.",
+        "typography": "Headline above or below phone in Plus Jakarta Sans Bold. Subtext in Inter Regular. Left-aligned text.",
+        "imagery_suggestions": "Floating UI elements around phone (notifications, lead cards) to show app features. Subtle confetti or sparkle elements for energy."
+      },
+      {
+        "id": "creative_2",
+        "name": "Before/After Split",
+        "composition": "Split screen design. Left side: chaotic (phone with overflowing notifications, sticky notes, stressed emoji). Right side: organized (Clinic app, clean pipeline, checkmarks). Clear dividing line.",
+        "color_usage": "Left side: warm, chaotic colors (oranges, reds). Right side: cool, calm colors (brand indigo, greens). High contrast between sides.",
+        "typography": "'Before' and 'After' labels. Pain point headline on left, benefit headline on right. Clean sans-serif throughout.",
+        "imagery_suggestions": "Icons representing chaos (notification badges, question marks) vs. order (checkmarks, organized lists). Avoid photos of people for simplicity."
+      },
+      {
+        "id": "creative_3",
+        "name": "Stats Highlight",
+        "composition": "Bold statistic as focal point (e.g., '35%'). Supporting text explaining the metric. Product screenshot or icon below. Minimal, data-driven design.",
+        "color_usage": "Primary indigo background with white text, OR white background with indigo accent. Statistic number in contrasting color for emphasis.",
+        "typography": "Large display number (48-72px). Supporting text in regular weight. Hierarchy: stat > explanation > CTA.",
+        "imagery_suggestions": "Upward trending arrow or graph element. Small app screenshot or logo. Keep focus on the number."
+      }
+    ]
+  },
+  "ad_targeting_suggestions": {
+    "audiences": [
+      {
+        "name": "Aesthetic Clinic Owners",
+        "interests": ["Aesthetics", "Medical spa", "Botox", "Cosmetic procedures", "Small business owner"],
+        "behaviors": ["Small business owners", "Engaged shoppers"],
+        "demographics": "25-55, all genders"
+      },
+      {
+        "name": "Beauty Industry Professionals",
+        "interests": ["Esthetician", "Cosmetology", "Beauty industry", "Laser hair removal", "Skincare"],
+        "behaviors": ["Technology early adopters"],
+        "demographics": "22-45, all genders"
+      },
+      {
+        "name": "Lookalike Audiences",
+        "source": "Website visitors, email list, current customers",
+        "similarity": "1-3%"
+      }
+    ],
+    "placements": ["Instagram Feed", "Instagram Stories", "Instagram Reels", "Facebook Feed", "Facebook Stories"],
+    "campaign_objectives": {
+      "awareness": "Brand awareness, Reach",
+      "consideration": "Traffic, Lead generation",
+      "conversion": "Conversions (sign-ups)"
+    }
+  }
+}

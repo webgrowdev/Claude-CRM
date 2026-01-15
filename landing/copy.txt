@@ -1,0 +1,344 @@
+================================================================================
+CLINIC LANDING PAGE - FULL COPY
+================================================================================
+
+================================================================================
+SECTION 1: HERO
+================================================================================
+
+[HEADLINE]
+Stop Losing Leads. Start Closing Sales.
+
+[SUBHEADLINE]
+The mobile CRM that helps aesthetic clinics convert Instagram and WhatsApp inquiries into paying customers.
+
+[CTA BUTTON - PRIMARY]
+Start Free Trial
+
+[CTA BUTTON - SECONDARY]
+Watch Demo
+
+[SUPPORTING TEXT]
+No credit card required. Set up in 5 minutes.
+
+[HERO IMAGE DESCRIPTION]
+Mobile phone mockup showing the Clinic app Kanban board with leads in different stages. Clean, modern interface. Subtle gradient background from white to light indigo.
+
+================================================================================
+SECTION 2: SOCIAL PROOF BAR
+================================================================================
+
+[STATISTICS]
+• 2,500+ leads managed daily
+• 94% user satisfaction
+• 35% avg. increase in conversions
+
+[TRUST BADGES]
+"Trusted by 500+ aesthetic clinics"
+
+================================================================================
+SECTION 3: PROBLEM
+================================================================================
+
+[SECTION HEADLINE]
+Sound Familiar?
+
+[PROBLEM 1]
+📱 Leads Buried in DMs
+Your Instagram and WhatsApp are overflowing. By the time you respond, potential clients have already booked elsewhere.
+
+[PROBLEM 2]
+📝 Chaotic Lead Tracking
+Sticky notes, spreadsheets, chat history scrolling... you've tried it all. Nothing sticks. Leads slip through the cracks.
+
+[PROBLEM 3]
+⏰ Forgotten Follow-Ups
+You meant to call them back. Life happened. Now that hot lead is cold—or worse, at your competitor.
+
+[PROBLEM 4]
+📊 Flying Blind
+No idea what your conversion rate is. No clue which lead sources work. You're guessing instead of growing.
+
+[CLOSING STATEMENT]
+You didn't start your clinic to spend nights tracking leads in spreadsheets.
+
+================================================================================
+SECTION 4: SOLUTION
+================================================================================
+
+[SECTION HEADLINE]
+There's a Better Way
+
+[MAIN STATEMENT]
+Clinic is the mobile CRM built specifically for aesthetic clinics that generate leads through Instagram and WhatsApp.
+
+[KEY POINT 1]
+✅ One place for all your leads—no more scattered DMs
+
+[KEY POINT 2]
+✅ Visual pipeline shows every lead's status at a glance
+
+[KEY POINT 3]
+✅ Automatic reminders so you never miss a follow-up
+
+[KEY POINT 4]
+✅ Real insights into your conversion and sales performance
+
+[VALUE PROP]
+"Clinic organizes your leads, reminds you of follow-ups, and helps you close more sales from Instagram and WhatsApp."
+
+[CTA]
+See How It Works →
+
+================================================================================
+SECTION 5: HOW IT WORKS
+================================================================================
+
+[SECTION HEADLINE]
+From Inquiry to Booked—In Three Simple Steps
+
+[STEP 1]
+📥 Capture Every Lead
+Add leads manually or import from your contacts. Every Instagram DM and WhatsApp inquiry gets logged in one place.
+
+[STEP 2]
+📋 Track Your Pipeline
+See all your leads on a visual Kanban board. Move them from New → Contacted → Scheduled → Closed with a simple swipe.
+
+[STEP 3]
+🔔 Never Miss a Follow-Up
+Set reminders for calls and messages. Get push notifications when it's time to reach out. Close more deals.
+
+[SUPPORTING TEXT]
+Average setup time: 5 minutes. No training required.
+
+================================================================================
+SECTION 6: FEATURES
+================================================================================
+
+[SECTION HEADLINE]
+Everything You Need to Close More Sales
+
+[FEATURE 1]
+📊 Visual Kanban Pipeline
+See every lead's status at a glance. Drag and drop to update stages. Know exactly where your sales stand.
+
+[FEATURE 2]
+🔔 Smart Follow-Up Reminders
+Never let a lead go cold. Schedule follow-ups and get push notifications when it's time to reach out.
+
+[FEATURE 3]
+📱 One-Tap Contact
+Click-to-chat for WhatsApp. Quick access to Instagram DMs. Reach your leads instantly from the app.
+
+[FEATURE 4]
+📈 Conversion Analytics
+Track your conversion rate automatically. See which lead sources perform best. Make data-driven decisions.
+
+[FEATURE 5]
+💬 Lead Notes & History
+Add notes to every lead. See the full conversation history. Never ask "who was this person again?"
+
+[FEATURE 6]
+👥 Team Collaboration
+Multiple users can access leads. See who's handling which prospect. Perfect for clinics with multiple staff.
+
+[FEATURE 7]
+💰 Quick Price List
+Store your treatment prices in-app. Share instantly with leads. No more copy-pasting from notes.
+
+[FEATURE 8]
+📅 Built-In Calendar
+View all scheduled follow-ups and appointments. Integrated with your pipeline for complete visibility.
+
+================================================================================
+SECTION 7: TESTIMONIALS
+================================================================================
+
+[SECTION HEADLINE]
+Loved by Clinics Like Yours
+
+[TESTIMONIAL 1]
+"Before Clinic, I was losing at least 5 leads a week to slow responses. Now I can see everyone who messaged me, follow up on time, and actually close deals. My revenue is up 30% in three months."
+— Maria S., Owner, Glow Beauty Clinic (Miami, FL)
+
+[TESTIMONIAL 2]
+"I used to spend my evenings scrolling through WhatsApp trying to remember who I needed to call back. Now I just open Clinic, see my to-do list, and get it done. It's changed how I work."
+— Jessica T., Receptionist, Austin Aesthetics (Austin, TX)
+
+[TESTIMONIAL 3]
+"We tried HubSpot, Salesforce, even Notion. All too complicated. Clinic is the first CRM my team actually uses. It took us 10 minutes to set up and everyone was on board immediately."
+— Dr. Amanda K., Owner, Pure Skin Med Spa (Los Angeles, CA)
+
+[TESTIMONIAL 4]
+"The Kanban board is genius. I can see our entire pipeline at a glance. No more wondering where leads are stuck. We've improved our conversion rate by 25% since switching to Clinic."
+— Rachel M., Clinic Manager, Bella Aesthetics (New York, NY)
+
+================================================================================
+SECTION 8: PRICING
+================================================================================
+
+[SECTION HEADLINE]
+Simple, Transparent Pricing
+
+[SECTION SUBHEADLINE]
+Start free. Upgrade when you're ready.
+
+---
+
+[PLAN 1: STARTER]
+$19/month
+
+Best for solo practitioners
+
+✓ 1 user
+✓ Up to 100 leads/month
+✓ Kanban pipeline
+✓ Follow-up reminders
+✓ Basic reports
+✓ WhatsApp click-to-chat
+✓ Email support
+
+[CTA] Start Free Trial
+
+---
+
+[PLAN 2: GROWTH] ← MOST POPULAR
+$49/month
+
+Best for growing clinics
+
+✓ Up to 3 users
+✓ Unlimited leads
+✓ Everything in Starter
+✓ Advanced reports
+✓ Lead source tracking
+✓ Treatment price list
+✓ Priority support
+
+[CTA] Start Free Trial
+
+---
+
+[PLAN 3: CLINIC]
+$99/month
+
+Best for established clinics
+
+✓ Up to 10 users
+✓ Unlimited leads
+✓ Everything in Growth
+✓ Custom pipeline stages
+✓ Team performance reports
+✓ Data export
+✓ Dedicated support
+
+[CTA] Contact Sales
+
+---
+
+[PRICING FOOTER]
+All plans include a 14-day free trial. No credit card required.
+Need a custom plan? Contact us.
+
+================================================================================
+SECTION 9: FAQ
+================================================================================
+
+[SECTION HEADLINE]
+Frequently Asked Questions
+
+[FAQ 1]
+Q: Do I need to connect my Instagram or WhatsApp account?
+A: No. Clinic doesn't require account connections. You manually add leads from your DMs and WhatsApp chats, keeping your accounts secure and private.
+
+[FAQ 2]
+Q: How long does setup take?
+A: Most users are up and running in under 5 minutes. There's no complex configuration—just create your account and start adding leads.
+
+[FAQ 3]
+Q: Can multiple staff members use Clinic?
+A: Yes! Our Growth and Clinic plans support multiple users. Everyone can see and manage leads while avoiding duplicate outreach.
+
+[FAQ 4]
+Q: Is there a free trial?
+A: Absolutely. All plans come with a 14-day free trial. No credit card required.
+
+[FAQ 5]
+Q: What if I need help getting started?
+A: We offer in-app guides, video tutorials, and responsive email support. Growth and Clinic plans include priority support with faster response times.
+
+[FAQ 6]
+Q: Can I import existing leads?
+A: Yes. You can import leads via CSV or add them manually. We provide an easy template to get your existing contacts into Clinic quickly.
+
+================================================================================
+SECTION 10: FINAL CTA
+================================================================================
+
+[HEADLINE]
+Ready to Stop Losing Leads?
+
+[SUBHEADLINE]
+Join 500+ aesthetic clinics using Clinic to convert more inquiries into sales.
+
+[CTA BUTTON]
+Start Your Free Trial
+
+[SUPPORTING TEXT]
+14-day free trial. No credit card required. Set up in 5 minutes.
+
+================================================================================
+SECTION 11: FOOTER
+================================================================================
+
+[LOGO]
+Clinic
+
+[TAGLINE]
+Turn inquiries into sales
+
+---
+
+[COLUMN 1: PRODUCT]
+Product
+• Features
+• Pricing
+• Integrations
+• Roadmap
+• Updates
+
+[COLUMN 2: RESOURCES]
+Resources
+• Blog
+• Help Center
+• Video Tutorials
+• API Documentation
+• Status
+
+[COLUMN 3: COMPANY]
+Company
+• About
+• Careers
+• Press
+• Contact
+• Partners
+
+[COLUMN 4: LEGAL]
+Legal
+• Privacy Policy
+• Terms of Service
+• Cookie Policy
+• GDPR
+
+---
+
+[BOTTOM BAR]
+© 2026 Clinic. All rights reserved.
+
+[SOCIAL ICONS]
+Instagram | Twitter | LinkedIn | Facebook
+
+================================================================================
+END OF LANDING PAGE COPY
+================================================================================

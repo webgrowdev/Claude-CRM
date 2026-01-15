@@ -1,0 +1,367 @@
+{
+  "deck_metadata": {
+    "title": "Clinic - Investor & Sales Deck",
+    "version": "1.0",
+    "date": "January 2026",
+    "purpose": "Investor pitch / Sales presentation",
+    "total_slides": 10,
+    "recommended_duration": "10-15 minutes"
+  },
+  "slides": [
+    {
+      "slide_number": 1,
+      "slide_type": "cover",
+      "title": "Clinic",
+      "content": {
+        "headline": "Turn Inquiries Into Sales",
+        "subheadline": "The Mobile CRM for Aesthetic Clinics",
+        "elements": [
+          "Logo (centered, prominent)",
+          "Tagline below logo",
+          "Presenter name / Company info (bottom)"
+        ]
+      },
+      "narrative": "Open with a clean, professional cover that establishes brand identity. The tagline immediately communicates the value proposition. Keep it simple - this slide should make a strong first impression without overwhelming.",
+      "visual_direction": {
+        "background": "White or subtle gradient (white to light indigo)",
+        "logo": "Centered, large",
+        "typography": "Plus Jakarta Sans for headline, Inter for subtext",
+        "accent": "Pink dot on logo visible",
+        "style": "Minimal, confident, modern"
+      }
+    },
+    {
+      "slide_number": 2,
+      "slide_type": "problem",
+      "title": "The Problem",
+      "content": {
+        "headline": "Aesthetic Clinics Are Losing Money Every Day",
+        "bullet_points": [
+          "Leads arrive via Instagram DMs and WhatsApp - chaotic, untracked",
+          "No CRM adoption - tools like Salesforce are too complex and expensive",
+          "Leads get lost in chat history - slow responses mean lost sales",
+          "No follow-up system - potential customers go to competitors",
+          "Zero visibility - owners don't know their conversion rate"
+        ],
+        "statistic": "70% of leads go cold due to slow follow-up",
+        "quote": "\"I know I'm losing money. By the time I respond to DMs, they've already booked somewhere else.\" — Clinic Owner"
+      },
+      "narrative": "Paint a vivid picture of the pain. Every aesthetic clinic owner recognizes these problems - the chaos of managing leads across multiple messaging apps, the frustration of lost opportunities. Use the statistic and quote to add credibility and emotional resonance. The audience should be nodding along.",
+      "visual_direction": {
+        "layout": "Left side: bullet points. Right side: supporting visual",
+        "visual_suggestion": "Illustration of overflowing phone notifications, or split showing chaos vs. missed opportunity",
+        "colors": "Dark text on light background, red accent for pain points",
+        "icons": "Use warning/alert icons next to each bullet"
+      }
+    },
+    {
+      "slide_number": 3,
+      "slide_type": "opportunity",
+      "title": "The Opportunity",
+      "content": {
+        "headline": "A $15B Market Without a Clear Leader",
+        "bullet_points": [
+          "50,000+ aesthetic clinics in the US alone",
+          "200,000+ globally in English-speaking markets",
+          "Growing 8% annually as beauty industry expands",
+          "Most clinics use NO CRM - or inappropriate enterprise tools",
+          "Instagram & WhatsApp are primary lead channels - no existing solution serves them"
+        ],
+        "market_size": {
+          "tam": "$15B practice management software market",
+          "sam": "$500M aesthetic clinic segment",
+          "som": "$50M initial addressable (5,000 clinics @ $1,000/year)"
+        }
+      },
+      "narrative": "Transition from problem to opportunity. Show that this isn't a niche - it's a substantial market with clear growth trends. Emphasize the gap: clinics are using social media for leads but have no tools designed for this workflow. This is blue ocean territory.",
+      "visual_direction": {
+        "layout": "Market size pyramid or concentric circles (TAM > SAM > SOM)",
+        "chart": "Simple bar or area chart showing market growth",
+        "colors": "Brand indigo for primary data points, supporting grays",
+        "style": "Clean, data-forward, credible"
+      }
+    },
+    {
+      "slide_number": 4,
+      "slide_type": "solution",
+      "title": "Introducing Clinic",
+      "content": {
+        "headline": "The Mobile CRM Built for Aesthetic Clinics",
+        "value_proposition": "Clinic organizes your leads, reminds you of follow-ups, and helps you close more sales from Instagram and WhatsApp.",
+        "key_points": [
+          "Mobile-first - works entirely from your phone",
+          "Built for social leads - designed around Instagram & WhatsApp",
+          "Visual pipeline - Kanban board for instant overview",
+          "Automated reminders - never miss a follow-up",
+          "Simple setup - running in 5 minutes, no training needed"
+        ]
+      },
+      "narrative": "Introduce the solution clearly and confidently. Clinic isn't just another CRM - it's purpose-built for this specific use case. Emphasize the differentiation: mobile-first (not mobile-adapted), social-native, radically simple. The value proposition should stick in their minds.",
+      "visual_direction": {
+        "layout": "Headline + value prop on left, phone mockup on right",
+        "mockup": "iPhone showing Clinic dashboard or Kanban board",
+        "colors": "Brand colors prominently featured",
+        "style": "Product-forward, aspirational"
+      }
+    },
+    {
+      "slide_number": 5,
+      "slide_type": "how_it_works",
+      "title": "How It Works",
+      "content": {
+        "headline": "From Inquiry to Booked in 3 Steps",
+        "steps": [
+          {
+            "number": 1,
+            "title": "Capture",
+            "description": "Add leads from Instagram DMs, WhatsApp, or phone calls into one central place.",
+            "icon": "inbox"
+          },
+          {
+            "number": 2,
+            "title": "Track",
+            "description": "Visual Kanban pipeline shows where every lead stands. Move them through stages with a swipe.",
+            "icon": "columns"
+          },
+          {
+            "number": 3,
+            "title": "Close",
+            "description": "Get reminders to follow up. Click-to-chat directly from the app. Convert more leads into customers.",
+            "icon": "check-circle"
+          }
+        ]
+      },
+      "narrative": "Break down the user journey into simple, digestible steps. Investors/buyers want to understand the workflow quickly. Use this slide to demonstrate that Clinic isn't complicated - it's intuitive and fits into existing behaviors.",
+      "visual_direction": {
+        "layout": "Three columns, each with icon, number, title, description",
+        "icons": "Heroicons or similar, consistent style",
+        "flow": "Left to right progression with subtle arrows or connecting lines",
+        "colors": "Numbers in brand primary, icons in gray or primary"
+      }
+    },
+    {
+      "slide_number": 6,
+      "slide_type": "features",
+      "title": "Key Features",
+      "content": {
+        "headline": "Everything Clinics Need to Close More Sales",
+        "features": [
+          {
+            "name": "Visual Kanban Pipeline",
+            "description": "See all leads by stage at a glance",
+            "icon": "view-columns"
+          },
+          {
+            "name": "Smart Follow-Up Reminders",
+            "description": "Push notifications keep you on track",
+            "icon": "bell"
+          },
+          {
+            "name": "One-Tap Contact",
+            "description": "WhatsApp and Instagram click-to-chat",
+            "icon": "chat-bubble"
+          },
+          {
+            "name": "Conversion Analytics",
+            "description": "Track rates and lead sources automatically",
+            "icon": "chart-bar"
+          },
+          {
+            "name": "Treatment Price List",
+            "description": "Quick access to share with leads",
+            "icon": "currency-dollar"
+          },
+          {
+            "name": "Team Collaboration",
+            "description": "Multiple users, no duplicate outreach",
+            "icon": "users"
+          }
+        ]
+      },
+      "narrative": "Showcase the core features that deliver value. Don't overwhelm - focus on the six most impactful capabilities. Each feature should clearly tie back to solving the problems mentioned earlier. Use icons for quick scanning.",
+      "visual_direction": {
+        "layout": "2x3 grid of feature cards OR icon + text list",
+        "cards": "Small icon, feature name (bold), one-line description",
+        "colors": "Icons in brand primary, text in dark gray",
+        "style": "Clean grid, generous spacing"
+      }
+    },
+    {
+      "slide_number": 7,
+      "slide_type": "screenshots",
+      "title": "The App Experience",
+      "content": {
+        "headline": "Built for Your Phone, Designed for Your Workflow",
+        "screens_to_show": [
+          {
+            "screen": "Dashboard",
+            "caption": "Your daily overview at a glance"
+          },
+          {
+            "screen": "Kanban Board",
+            "caption": "Visual pipeline management"
+          },
+          {
+            "screen": "Lead Detail",
+            "caption": "Everything about a lead in one place"
+          },
+          {
+            "screen": "Calendar",
+            "caption": "Never miss a follow-up"
+          }
+        ]
+      },
+      "narrative": "Let the product speak for itself. Show 3-4 key screens that demonstrate the app's quality and usability. This builds confidence that the product is real, polished, and ready. Don't overcrowd - let each screenshot breathe.",
+      "visual_direction": {
+        "layout": "3-4 phone mockups in a row, slight perspective/overlap",
+        "mockups": "iPhone frames with app screenshots",
+        "captions": "Small text below each screen",
+        "background": "Light gradient or subtle pattern",
+        "style": "Product showcase, Apple-inspired presentation"
+      }
+    },
+    {
+      "slide_number": 8,
+      "slide_type": "results",
+      "title": "Expected Results",
+      "content": {
+        "headline": "Real Impact for Real Clinics",
+        "metrics": [
+          {
+            "metric": "35%",
+            "description": "Average increase in conversion rate"
+          },
+          {
+            "metric": "50%",
+            "description": "Faster lead response time"
+          },
+          {
+            "metric": "0",
+            "description": "Leads lost to forgotten follow-ups"
+          },
+          {
+            "metric": "2+ hrs",
+            "description": "Saved per week on lead management"
+          }
+        ],
+        "testimonial": {
+          "quote": "My revenue is up 30% in three months. Clinic changed everything.",
+          "author": "Maria S., Clinic Owner"
+        }
+      },
+      "narrative": "Show the outcomes. These metrics (whether projected or early results) help investors/buyers understand the ROI. The testimonial adds social proof and emotional weight. This slide answers 'so what?' - why should anyone care?",
+      "visual_direction": {
+        "layout": "Large metrics displayed prominently, testimonial below",
+        "metrics": "Big bold numbers with supporting text",
+        "testimonial": "Quote in italics, author with photo if available",
+        "colors": "Success green for positive metrics, brand primary accents",
+        "style": "Results-focused, confident"
+      }
+    },
+    {
+      "slide_number": 9,
+      "slide_type": "pricing",
+      "title": "Pricing Plans",
+      "content": {
+        "headline": "Simple, Transparent Pricing",
+        "plans": [
+          {
+            "name": "Starter",
+            "price": "$19/mo",
+            "users": "1 user",
+            "highlights": ["100 leads/month", "Core features", "Email support"]
+          },
+          {
+            "name": "Growth",
+            "price": "$49/mo",
+            "users": "3 users",
+            "highlights": ["Unlimited leads", "Advanced reports", "Priority support"],
+            "badge": "Most Popular"
+          },
+          {
+            "name": "Clinic",
+            "price": "$99/mo",
+            "users": "10 users",
+            "highlights": ["Everything in Growth", "Custom stages", "Dedicated support"]
+          }
+        ],
+        "note": "14-day free trial. No credit card required."
+      },
+      "narrative": "Present pricing clearly and confidently. The tiered structure shows room for expansion (land with Starter, expand to Growth/Clinic). Emphasize the free trial to reduce friction. For investors, this demonstrates clear monetization.",
+      "visual_direction": {
+        "layout": "Three pricing cards side by side",
+        "featured": "Middle card (Growth) slightly elevated or highlighted",
+        "colors": "White cards, primary accent on featured plan",
+        "style": "Clean comparison, easy to scan"
+      }
+    },
+    {
+      "slide_number": 10,
+      "slide_type": "cta",
+      "title": "Let's Connect",
+      "content": {
+        "headline_investor": "Join Us in Transforming How Clinics Sell",
+        "headline_sales": "Ready to Stop Losing Leads?",
+        "cta_investor": {
+          "primary": "Schedule a Meeting",
+          "secondary": "Request Full Deck"
+        },
+        "cta_sales": {
+          "primary": "Start Free Trial",
+          "secondary": "Book a Demo"
+        },
+        "contact": {
+          "email": "hello@clinic.app",
+          "website": "www.clinic.app",
+          "phone": "(555) 123-4567"
+        }
+      },
+      "narrative": "End with a clear call to action. For investors: schedule a meeting, continue the conversation. For sales prospects: start a trial or see a demo. Make it easy to take the next step. Include contact information prominently.",
+      "visual_direction": {
+        "layout": "Centered content, prominent CTA button",
+        "logo": "Display logo",
+        "colors": "Primary CTA button, clean background",
+        "contact": "Contact info in footer area",
+        "style": "Confident close, inviting next step"
+      }
+    }
+  ],
+  "presentation_tips": {
+    "for_investors": [
+      "Emphasize market size and opportunity",
+      "Focus on traction and early metrics (if available)",
+      "Discuss team background and why you'll win",
+      "Be prepared for questions on CAC, LTV, churn",
+      "Have a clear ask (funding amount, use of funds)"
+    ],
+    "for_sales": [
+      "Lead with pain points they recognize",
+      "Show the product demo live if possible",
+      "Emphasize ease of setup and free trial",
+      "Use testimonials and case studies",
+      "End with special offer if appropriate (extended trial, discount)"
+    ],
+    "general": [
+      "Keep slides clean - don't read from them",
+      "Spend more time on Problem and Solution",
+      "Let screenshots/product speak for themselves",
+      "Practice transitions between slides",
+      "Leave time for questions"
+    ]
+  },
+  "design_specifications": {
+    "dimensions": "16:9 aspect ratio (1920x1080px)",
+    "fonts": {
+      "headlines": "Plus Jakarta Sans Bold/Extra Bold",
+      "body": "Inter Regular/Medium"
+    },
+    "colors": {
+      "background": "#FFFFFF or #F8FAFC",
+      "text": "#1E293B",
+      "accent": "#6366F1",
+      "secondary": "#F472B6"
+    },
+    "logo_placement": "Bottom right corner (small) on all slides except cover and CTA",
+    "slide_numbers": "Bottom left, small, gray"
+  }
+}

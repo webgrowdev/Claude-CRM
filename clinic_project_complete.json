@@ -1,0 +1,536 @@
+{
+  "project_metadata": {
+    "name": "Clinic",
+    "version": "1.0.0",
+    "created": "2026-01-15",
+    "description": "Complete project documentation for Clinic - A mobile CRM for aesthetic clinics"
+  },
+
+  "branding": {
+    "identity": {
+      "product_name": "Clinic",
+      "slogan": "Turn inquiries into sales",
+      "tagline_alternatives": [
+        "From DM to Deal",
+        "Every lead deserves attention",
+        "Your pocket sales assistant",
+        "Stop losing leads. Start closing sales."
+      ]
+    },
+    "color_palette": {
+      "primary": {
+        "hex": "#6366F1",
+        "name": "Indigo",
+        "usage": "Main brand color, CTAs, primary buttons, active states, links"
+      },
+      "primary_light": {
+        "hex": "#818CF8",
+        "usage": "Hover states, secondary highlights"
+      },
+      "primary_dark": {
+        "hex": "#4F46E5",
+        "usage": "Pressed states, text on light backgrounds"
+      },
+      "secondary": {
+        "hex": "#F472B6",
+        "name": "Pink",
+        "usage": "Accent color, feminine touch, logo dot, highlights"
+      },
+      "success": {
+        "hex": "#10B981",
+        "name": "Emerald",
+        "usage": "Closed deals, positive states, confirmations"
+      },
+      "warning": {
+        "hex": "#F59E0B",
+        "name": "Amber",
+        "usage": "Pending actions, follow-up reminders"
+      },
+      "error": {
+        "hex": "#EF4444",
+        "name": "Red",
+        "usage": "Lost leads, errors, destructive actions"
+      },
+      "background": {
+        "hex": "#F8FAFC",
+        "name": "Slate 50",
+        "usage": "Main app background"
+      },
+      "background_card": {
+        "hex": "#FFFFFF",
+        "usage": "Cards, modals, elevated surfaces"
+      },
+      "text": {
+        "hex": "#1E293B",
+        "name": "Slate 800",
+        "usage": "Primary text, headings"
+      },
+      "text_secondary": {
+        "hex": "#64748B",
+        "name": "Slate 500",
+        "usage": "Secondary text, captions"
+      },
+      "border": {
+        "hex": "#E2E8F0",
+        "name": "Slate 200",
+        "usage": "Borders, dividers"
+      }
+    },
+    "typography": {
+      "primary_font": {
+        "name": "Inter",
+        "url": "https://fonts.google.com/specimen/Inter",
+        "weights": ["400", "500", "600", "700"],
+        "usage": "All UI text, body copy, labels, buttons"
+      },
+      "display_font": {
+        "name": "Plus Jakarta Sans",
+        "url": "https://fonts.google.com/specimen/Plus+Jakarta+Sans",
+        "weights": ["600", "700", "800"],
+        "usage": "Headlines, hero text, marketing materials, logo"
+      }
+    },
+    "logo_variants": {
+      "logo_dark": {
+        "filename": "logo_dark.png",
+        "description": "Primary logo for light backgrounds - Dark slate text with pink accent dot on 'i'"
+      },
+      "logo_light": {
+        "filename": "logo_light.png",
+        "description": "Inverted logo for dark backgrounds - White text with pink accent dot"
+      },
+      "logo_mono": {
+        "filename": "logo_mono.png",
+        "description": "Single-color monochrome version for simplified applications"
+      }
+    },
+    "icon_recommendations": {
+      "primary_library": "Heroicons",
+      "url": "https://heroicons.com",
+      "style": "Outline (24px) for navigation, Solid (20px) for inline",
+      "alternatives": ["Lucide Icons", "Phosphor Icons"]
+    },
+    "brand_usage_guide": {
+      "logo_spacing": "Minimum clear space equals height of lowercase 'c'",
+      "minimum_size": "80px width (digital), 20mm (print)",
+      "dos": [
+        "Use on clean, uncluttered backgrounds",
+        "Maintain proper clear space",
+        "Scale proportionally",
+        "Use approved color variants only"
+      ],
+      "donts": [
+        "Don't rotate or skew the logo",
+        "Don't change logo colors outside palette",
+        "Don't add effects (shadows, glows)",
+        "Don't place on busy backgrounds",
+        "Don't stretch or distort"
+      ]
+    }
+  },
+
+  "personas": [
+    {
+      "id": "persona_1",
+      "name": "Maria Santos",
+      "age": 34,
+      "role": "Clinic Owner & Lead Aesthetician",
+      "location": "Miami, FL",
+      "business": "Glow Beauty Clinic - 3 employees",
+      "objectives": [
+        "Increase revenue by 40% this year",
+        "Spend less time on admin work",
+        "Hire a receptionist with proper systems",
+        "Maintain professional client communication"
+      ],
+      "frictions": [
+        "Lost leads in DMs - slow response times",
+        "No organization - scattered across apps",
+        "No visibility into conversion metrics",
+        "Complex CRMs don't fit her workflow",
+        "Personal and professional WhatsApp mixed"
+      ],
+      "direct_quote": "I didn't become an aesthetician to spend my nights tracking leads in a spreadsheet. I need something simple that lets me see everyone who messaged me, reminds me to follow up, and doesn't require a PhD to use.",
+      "decision_maker": true,
+      "primary_user": false
+    },
+    {
+      "id": "persona_2",
+      "name": "Jessica Thompson",
+      "age": 26,
+      "role": "Receptionist / Sales Coordinator",
+      "location": "Austin, TX",
+      "business": "Works at Austin Aesthetics - 8 employees",
+      "objectives": [
+        "Hit booking targets (evaluated on performance)",
+        "Stay organized with 30-50 inquiries/week",
+        "Make her job easier with better tools",
+        "Prove her value to management"
+      ],
+      "frictions": [
+        "Overwhelming message volume",
+        "No central system - multiple apps, notes, sheets",
+        "Repetitive responses - typing same info constantly",
+        "Blamed for lost leads with no proof of follow-up",
+        "Work bleeding into personal time"
+      ],
+      "direct_quote": "I want to do a good job, but I'm fighting against chaos every day. If I had a simple app where I could see all my leads, mark where they are in the process, and get reminded who to call - I'd actually have time to sell instead of just scrambling to keep up.",
+      "decision_maker": false,
+      "primary_user": true
+    }
+  ],
+
+  "mvp": {
+    "required_features": [
+      {
+        "name": "Lead Capture",
+        "description": "Manual lead entry and CSV import capability",
+        "priority": "P0"
+      },
+      {
+        "name": "Kanban Lead Board",
+        "description": "Visual pipeline with drag-and-drop status updates",
+        "columns": ["New", "Contacted", "Scheduled", "Closed", "Lost"],
+        "priority": "P0"
+      },
+      {
+        "name": "Follow-up Scheduling",
+        "description": "Schedule calls/messages with push notification reminders",
+        "priority": "P0"
+      },
+      {
+        "name": "Sales Pipeline Workflow",
+        "description": "Track leads through stages with status history",
+        "priority": "P0"
+      },
+      {
+        "name": "Basic Reports",
+        "description": "Conversion rate, lead source breakdown, closed sales tracking",
+        "priority": "P0"
+      },
+      {
+        "name": "Lead Notes",
+        "description": "Add notes and view activity timeline per lead",
+        "priority": "P0"
+      },
+      {
+        "name": "Multi-user Support",
+        "description": "Multiple team members can access and manage leads",
+        "priority": "P1"
+      },
+      {
+        "name": "WhatsApp Click-to-Chat",
+        "description": "One-tap to open WhatsApp conversation with lead",
+        "priority": "P0"
+      },
+      {
+        "name": "Instagram DM Handling",
+        "description": "Manual tracking of Instagram inquiries (no API integration)",
+        "priority": "P1"
+      },
+      {
+        "name": "Treatment Price List",
+        "description": "Store and quickly share treatment prices with leads",
+        "priority": "P1"
+      }
+    ],
+    "optional_features": [
+      {
+        "name": "Lead Tagging",
+        "description": "Custom tags for lead categorization",
+        "priority": "P2"
+      },
+      {
+        "name": "Simple Automations",
+        "description": "Auto-reminders, status-based notifications",
+        "priority": "P2"
+      },
+      {
+        "name": "WhatsApp Campaign Templates",
+        "description": "Pre-built message templates for common scenarios",
+        "priority": "P2"
+      }
+    ]
+  },
+
+  "ui": {
+    "screens": [
+      {
+        "name": "Splash",
+        "purpose": "Brand impression during app launch",
+        "key_elements": ["Centered logo", "Loading indicator", "Gradient background"],
+        "navigation": "Auto-navigate to Login or Dashboard based on auth state"
+      },
+      {
+        "name": "Login",
+        "purpose": "User authentication",
+        "key_elements": ["Logo", "Email/password inputs", "Sign in button", "Forgot password link", "Sign up link"],
+        "navigation": "Success → Dashboard, Forgot → Reset flow, Signup → Registration"
+      },
+      {
+        "name": "Dashboard",
+        "purpose": "Main overview of leads and activity",
+        "key_elements": ["Greeting header", "Stats cards (horizontal scroll)", "Recent leads list", "Upcoming follow-ups", "Bottom navigation"],
+        "navigation": "Tap card → Filtered view, Tap lead → Lead detail, Bottom tabs for main navigation"
+      },
+      {
+        "name": "Lead List",
+        "purpose": "Full list view with search and filter",
+        "key_elements": ["Search bar", "Status filter chips", "Scrollable lead list", "Add button"],
+        "navigation": "Tap lead → Detail, Swipe → Quick actions, Add → New lead form"
+      },
+      {
+        "name": "Lead Detail",
+        "purpose": "Complete information for single lead",
+        "key_elements": ["Profile section", "Quick action buttons (Call, WhatsApp, Email, Schedule)", "Status selector", "Notes/timeline", "Treatments section"],
+        "navigation": "Quick actions open respective apps, Status changes update pipeline"
+      },
+      {
+        "name": "Kanban",
+        "purpose": "Visual pipeline view",
+        "key_elements": ["Horizontally scrollable columns", "Column headers with counts", "Draggable lead cards"],
+        "navigation": "Drag cards between columns, Tap card → Detail"
+      },
+      {
+        "name": "Calendar",
+        "purpose": "View and manage follow-ups",
+        "key_elements": ["Month/week toggle", "Calendar grid", "Day indicator dots", "Follow-ups list for selected day"],
+        "navigation": "Tap day → Show follow-ups, Tap follow-up → Lead detail"
+      },
+      {
+        "name": "Reports",
+        "purpose": "Analytics and metrics",
+        "key_elements": ["Period selector", "Key metrics cards (2x2)", "Conversion funnel chart", "Lead sources breakdown"],
+        "navigation": "Period dropdown changes data range"
+      },
+      {
+        "name": "Settings",
+        "purpose": "App configuration",
+        "key_elements": ["Profile section", "Account settings group", "Clinic settings group", "Support group", "Logout button"],
+        "navigation": "Tap setting → Respective screen"
+      },
+      {
+        "name": "Treatments List",
+        "purpose": "Manage price list",
+        "key_elements": ["Search bar", "Category tabs", "Treatment items with prices", "Share button"],
+        "navigation": "Tap treatment → Edit, Share → Open share sheet"
+      }
+    ],
+    "styling_guidelines": {
+      "touch_targets": "Minimum 44px",
+      "font_size_inputs": "Minimum 16px (prevents iOS zoom)",
+      "bottom_nav_height": "56px",
+      "card_border_radius": "12px",
+      "button_height": "48px",
+      "spacing": "16-24px padding",
+      "shadows": "card: 0 2px 8px rgba(0,0,0,0.08)"
+    }
+  },
+
+  "copy": {
+    "elevator_pitch": "Clinic is a mobile CRM that helps aesthetic clinics convert Instagram and WhatsApp inquiries into paying customers by organizing leads, automating follow-ups, and providing sales visibility—all from your phone.",
+    "taglines": [
+      "Turn inquiries into sales",
+      "Stop losing leads. Start closing sales.",
+      "The CRM your DMs deserve.",
+      "From DM to deal, in a single tap."
+    ],
+    "benefits": [
+      "See all your Instagram and WhatsApp leads in one place",
+      "Visual pipeline shows every lead's status at a glance",
+      "Get push notifications when it's time to follow up",
+      "Track conversion rates and lead sources automatically",
+      "Works entirely from your phone - no desktop required",
+      "Set up in 5 minutes, no training needed"
+    ],
+    "differentiators_vs_no_crm": {
+      "scattered_leads": "All leads in one unified view",
+      "no_follow_up": "Automatic reminders ensure every follow-up happens",
+      "no_visibility": "Real-time conversion and source tracking",
+      "manual_work": "Quick templates and service list at your fingertips"
+    },
+    "whatsapp_script": {
+      "initial_response": "Hi [Name]! Thanks for reaching out to [Clinic Name]. I'd love to help you with [treatment]. Have you had this treatment before? What's your main goal?",
+      "follow_up_24h": "Hi [Name]! Just checking in on your inquiry about [treatment]. If you have any questions, I'm here to help!",
+      "pricing": "Here's the info on [treatment]:\n\n[Treatment]: $[price] per session\nPackage of 3: $[price] (save $XX!)\n\nWould you like me to check availability?"
+    },
+    "phone_script": {
+      "greeting": "Thank you for calling [Clinic Name], this is [Name], how can I help you today?",
+      "qualifying": "I'd be happy to help! Let me ask a few questions: Have you had [treatment] before? What area are you looking to address?",
+      "closing": "I have availability on [Day] at [Time]. Would you like me to book that for you?"
+    },
+    "objection_replies": {
+      "too_expensive": "Many clients feel the same initially. Our packages offer savings - want me to break down the options?",
+      "need_to_think": "Of course! Can I ask what specifically you'd like to think over? Maybe I can help address any concerns.",
+      "comparing_clinics": "That's fair! What I can share about us is [unique value]. Feel free to look around - I'm here when you're ready.",
+      "bad_experience_elsewhere": "I'm sorry to hear that. At our clinic, we [specific reassurance]. Would a consultation help you feel more comfortable?"
+    }
+  },
+
+  "landing": {
+    "sections": [
+      {
+        "id": "hero",
+        "headline": "Stop Losing Leads. Start Closing Sales.",
+        "subheadline": "The mobile CRM that helps aesthetic clinics convert Instagram and WhatsApp inquiries into paying customers.",
+        "cta_primary": "Start Free Trial",
+        "cta_secondary": "Watch Demo"
+      },
+      {
+        "id": "social_proof",
+        "stats": ["2,500+ leads managed daily", "94% user satisfaction", "35% avg. increase in conversions"],
+        "trust_badge": "Trusted by 500+ aesthetic clinics"
+      },
+      {
+        "id": "problem",
+        "headline": "Sound Familiar?",
+        "problems": [
+          "Leads Buried in DMs - slow responses mean lost sales",
+          "Chaotic Lead Tracking - nothing sticks, leads slip through",
+          "Forgotten Follow-Ups - hot leads go cold",
+          "Flying Blind - no conversion data, just guessing"
+        ]
+      },
+      {
+        "id": "solution",
+        "headline": "There's a Better Way",
+        "points": [
+          "One place for all your leads",
+          "Visual pipeline at a glance",
+          "Automatic follow-up reminders",
+          "Real conversion insights"
+        ]
+      },
+      {
+        "id": "how_it_works",
+        "headline": "From Inquiry to Booked—In Three Simple Steps",
+        "steps": [
+          {"step": 1, "title": "Capture", "description": "Add leads from Instagram, WhatsApp, or phone"},
+          {"step": 2, "title": "Track", "description": "Visual Kanban shows every lead's status"},
+          {"step": 3, "title": "Close", "description": "Get reminders, click-to-chat, convert more"}
+        ]
+      },
+      {
+        "id": "features",
+        "headline": "Everything You Need to Close More Sales",
+        "features": ["Visual Kanban Pipeline", "Smart Follow-Up Reminders", "One-Tap Contact", "Conversion Analytics", "Lead Notes & History", "Team Collaboration", "Quick Price List", "Built-In Calendar"]
+      },
+      {
+        "id": "testimonials",
+        "headline": "Loved by Clinics Like Yours",
+        "testimonials": [
+          {"quote": "My revenue is up 30% in three months.", "author": "Maria S., Glow Beauty Clinic"},
+          {"quote": "Clinic is the first CRM my team actually uses.", "author": "Dr. Amanda K., Pure Skin Med Spa"},
+          {"quote": "We've improved our conversion rate by 25%.", "author": "Rachel M., Bella Aesthetics"}
+        ]
+      },
+      {
+        "id": "pricing",
+        "headline": "Simple, Transparent Pricing",
+        "plans": [
+          {"name": "Starter", "price": "$19/mo", "users": 1, "leads": "100/month"},
+          {"name": "Growth", "price": "$49/mo", "users": 3, "leads": "Unlimited", "featured": true},
+          {"name": "Clinic", "price": "$99/mo", "users": 10, "leads": "Unlimited"}
+        ]
+      },
+      {
+        "id": "final_cta",
+        "headline": "Ready to Stop Losing Leads?",
+        "subheadline": "Join 500+ aesthetic clinics using Clinic to convert more inquiries into sales.",
+        "cta": "Start Your Free Trial"
+      }
+    ],
+    "visual_design_direction": {
+      "style": "Clean, modern, minimal",
+      "background": "White and Slate-50 alternating",
+      "accent": "Indigo for CTAs, Pink sparingly",
+      "typography": "Plus Jakarta Sans headlines, Inter body",
+      "imagery": "Phone mockups, no stock photos",
+      "animations": "Subtle fade-in on scroll"
+    }
+  },
+
+  "deck": {
+    "title": "Clinic - Investor & Sales Deck",
+    "slides": [
+      {"number": 1, "type": "cover", "title": "Clinic - Turn Inquiries Into Sales"},
+      {"number": 2, "type": "problem", "title": "Aesthetic Clinics Are Losing Money Every Day"},
+      {"number": 3, "type": "opportunity", "title": "A $15B Market Without a Clear Leader"},
+      {"number": 4, "type": "solution", "title": "Introducing Clinic"},
+      {"number": 5, "type": "how_it_works", "title": "From Inquiry to Booked in 3 Steps"},
+      {"number": 6, "type": "features", "title": "Key Features"},
+      {"number": 7, "type": "screenshots", "title": "The App Experience"},
+      {"number": 8, "type": "results", "title": "Expected Results"},
+      {"number": 9, "type": "pricing", "title": "Pricing Plans"},
+      {"number": 10, "type": "cta", "title": "Let's Connect"}
+    ],
+    "key_metrics": {
+      "tam": "$15B practice management market",
+      "target_clinics": "50,000+ in US",
+      "conversion_improvement": "35% average",
+      "setup_time": "5 minutes"
+    }
+  },
+
+  "ads": {
+    "meta_ads": {
+      "short_copies": [
+        {"headline": "Stop losing leads from your DMs", "body": "Clinic helps aesthetic clinics turn Instagram inquiries into bookings. Try free."},
+        {"headline": "Every DM is a potential client", "body": "Don't let them slip away. Clinic organizes your leads and reminds you to follow up."},
+        {"headline": "The CRM your clinic needs", "body": "Built for beauty businesses. Works from your phone. Set up in 5 minutes."}
+      ],
+      "medium_copies": [
+        {"headline": "Tired of losing leads in your DMs?", "body": "Your Instagram is full of potential clients. Clinic helps you see all leads in one place, get follow-up reminders, and close more sales."},
+        {"headline": "Your WhatsApp isn't a CRM", "body": "There's a better way. Clinic is the mobile CRM built for aesthetic clinics. Visual pipeline. Automatic reminders. Real results."},
+        {"headline": "What if you never lost another lead?", "body": "Every inquiry organized. Every follow-up scheduled. That's Clinic. Join 500+ clinics already closing more sales."}
+      ],
+      "headline_claims": [
+        "Stop Losing Leads",
+        "From DM to Deal",
+        "Close 35% More Sales"
+      ]
+    },
+    "automated_responses": {
+      "instagram_dm_auto_reply": "Hi! Thanks for reaching out to [Clinic Name]! We received your message and will get back to you shortly. Check out our services: [link]",
+      "instagram_follower_welcome": "Welcome to the [Clinic Name] family! We share tips, transformations, and special offers. Have questions? Just DM us!",
+      "whatsapp_welcome": "Hi! Welcome to [Clinic Name]! Thanks for reaching out. To help you best, what treatment are you interested in? Is this your first visit?"
+    }
+  },
+
+  "zip_structure": {
+    "description": "Recommended file organization for export",
+    "structure": {
+      "/branding": {
+        "files": ["logo_dark.png", "logo_light.png", "logo_mono.png", "palette.json", "brand_guide.md", "logo_specifications.json"],
+        "description": "Brand assets and guidelines"
+      },
+      "/ui": {
+        "files": ["splash.png", "login.png", "dashboard.png", "leads.png", "lead_detail.png", "kanban.png", "calendar.png", "reports.png", "settings.png", "treatments.png", "screens_specifications.json"],
+        "description": "UI mockup files and specifications"
+      },
+      "/css": {
+        "files": ["tokens.json"],
+        "description": "Design tokens for development"
+      },
+      "/docs": {
+        "files": ["buyer_personas.md", "business_model.md", "copywriting.md", "commercial_deck.json"],
+        "description": "Business documentation"
+      },
+      "/landing": {
+        "files": ["index.html", "copy.txt"],
+        "description": "Landing page structure and copy"
+      },
+      "/ads": {
+        "meta_ads/": {
+          "files": ["ad_copies.json"],
+          "description": "Meta/Instagram ad copy and creative descriptions"
+        },
+        "scripts/": {
+          "files": ["automated_responses.json"],
+          "description": "Automated message templates"
+        }
+      }
+    },
+    "root_files": ["clinic_project_complete.json", "README.md"]
+  }
+}

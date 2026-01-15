@@ -1,0 +1,769 @@
+{
+  "screens": {
+    "splash": {
+      "name": "Splash Screen",
+      "purpose": "Brand impression during app launch",
+      "visual_hierarchy": [
+        "1. Logo (centered, prominent)",
+        "2. Loading indicator (subtle, below logo)"
+      ],
+      "content_elements": {
+        "logo": {
+          "type": "image",
+          "source": "logo_dark.png or logo_light.png based on system theme",
+          "size": "120px width",
+          "position": "center"
+        },
+        "loading_indicator": {
+          "type": "spinner or progress bar",
+          "style": "Indigo color, subtle animation",
+          "position": "below logo, 24px gap"
+        },
+        "background": {
+          "type": "gradient",
+          "colors": ["#FFFFFF", "#EEF2FF"],
+          "direction": "vertical"
+        }
+      },
+      "ui_components": [
+        "Logo image",
+        "Activity indicator (spinner)",
+        "Full-screen container"
+      ],
+      "navigation_behavior": {
+        "entry": "App launch",
+        "exit": "Auto-navigate to Login (if not authenticated) or Dashboard (if authenticated)",
+        "duration": "1.5-2 seconds max"
+      },
+      "styling_guidelines": {
+        "background": "Gradient from white to light indigo (#EEF2FF)",
+        "logo_shadow": "None",
+        "animation": "Subtle fade-in for logo, continuous spin for loader",
+        "safe_areas": "Respect device safe areas (notch, home indicator)"
+      },
+      "mockup_description": "Clean white-to-indigo gradient background. Centered 'Clinic' logo with pink dot accent. Small circular loading spinner in indigo below the logo. Minimal, elegant, professional first impression."
+    },
+
+    "login": {
+      "name": "Login Screen",
+      "purpose": "User authentication entry point",
+      "visual_hierarchy": [
+        "1. Logo (top, smaller than splash)",
+        "2. Welcome text",
+        "3. Email input field",
+        "4. Password input field",
+        "5. Login button (primary CTA)",
+        "6. Forgot password link",
+        "7. Sign up link"
+      ],
+      "content_elements": {
+        "logo": {
+          "size": "80px width",
+          "position": "top center, 48px from safe area"
+        },
+        "welcome_text": {
+          "headline": "Welcome back",
+          "subtext": "Sign in to continue",
+          "style": "headline: 24px bold, subtext: 16px regular gray"
+        },
+        "email_input": {
+          "label": "Email",
+          "placeholder": "you@clinic.com",
+          "type": "email",
+          "icon": "envelope (left)"
+        },
+        "password_input": {
+          "label": "Password",
+          "placeholder": "Enter your password",
+          "type": "password",
+          "icon": "lock (left), eye toggle (right)"
+        },
+        "login_button": {
+          "text": "Sign In",
+          "style": "primary, full-width"
+        },
+        "forgot_password": {
+          "text": "Forgot password?",
+          "style": "text link, gray"
+        },
+        "signup_link": {
+          "text": "Don't have an account? Sign up",
+          "style": "text link, primary color on 'Sign up'"
+        }
+      },
+      "ui_components": [
+        "Logo image",
+        "Text labels",
+        "Text input fields with icons",
+        "Primary button",
+        "Text links",
+        "Keyboard-aware scroll view"
+      ],
+      "navigation_behavior": {
+        "entry": "From Splash (if not authenticated) or Logout",
+        "exit_success": "Navigate to Dashboard",
+        "exit_forgot": "Navigate to Forgot Password screen",
+        "exit_signup": "Navigate to Sign Up screen"
+      },
+      "styling_guidelines": {
+        "background": "#FFFFFF",
+        "input_fields": "48px height, 12px border-radius, 1px gray-200 border, 16px horizontal padding",
+        "input_focus": "2px primary border, light indigo background tint",
+        "button": "48px height, 8px border-radius, primary color, white text, shadow",
+        "spacing": "24px between input groups, 16px between inputs",
+        "form_width": "Full width with 24px horizontal padding"
+      },
+      "mockup_description": "Clean white background. Small Clinic logo at top. 'Welcome back' headline with gray subtext. Two input fields with left-aligned icons (envelope for email, lock for password). Password field has eye toggle on right. Full-width indigo 'Sign In' button. Gray 'Forgot password?' link below. 'Don't have an account? Sign up' at bottom with 'Sign up' in indigo."
+    },
+
+    "dashboard": {
+      "name": "Dashboard Screen",
+      "purpose": "Main overview of leads and activity",
+      "visual_hierarchy": [
+        "1. Header with greeting and profile",
+        "2. Quick stats cards row",
+        "3. Recent leads section",
+        "4. Upcoming follow-ups section",
+        "5. Bottom navigation bar"
+      ],
+      "content_elements": {
+        "header": {
+          "greeting": "Good morning, [Name]",
+          "date": "Today's date formatted",
+          "profile_avatar": "Circular, 40px, top right",
+          "notification_bell": "Icon with badge if unread"
+        },
+        "stats_cards": {
+          "layout": "Horizontal scroll row",
+          "cards": [
+            {
+              "title": "New Leads",
+              "value": "12",
+              "trend": "+3 today",
+              "color": "primary (indigo)"
+            },
+            {
+              "title": "Follow-ups Due",
+              "value": "5",
+              "trend": "2 overdue",
+              "color": "warning (amber)"
+            },
+            {
+              "title": "Closed This Week",
+              "value": "8",
+              "trend": "+2 vs last week",
+              "color": "success (green)"
+            },
+            {
+              "title": "Conversion Rate",
+              "value": "34%",
+              "trend": "+5% this month",
+              "color": "secondary (pink)"
+            }
+          ]
+        },
+        "recent_leads": {
+          "section_title": "Recent Leads",
+          "see_all_link": "View All",
+          "items": "3-4 lead cards showing name, source, status, time"
+        },
+        "upcoming_followups": {
+          "section_title": "Upcoming Follow-ups",
+          "see_all_link": "View Calendar",
+          "items": "2-3 follow-up items with name, time, type (call/message)"
+        }
+      },
+      "ui_components": [
+        "Header bar",
+        "Avatar",
+        "Notification badge",
+        "Stat cards (horizontal scroll)",
+        "Section headers with links",
+        "Lead list items",
+        "Follow-up list items",
+        "Bottom tab navigation"
+      ],
+      "navigation_behavior": {
+        "entry": "From Login success, or tab navigation",
+        "tap_profile": "Navigate to Settings",
+        "tap_notification": "Show notifications",
+        "tap_stat_card": "Navigate to relevant filtered view",
+        "tap_lead_item": "Navigate to Lead Detail",
+        "tap_followup_item": "Navigate to Calendar or Lead Detail",
+        "tap_view_all": "Navigate to full list view",
+        "bottom_tabs": "Home (active), Leads, Kanban, Calendar, Settings"
+      },
+      "styling_guidelines": {
+        "background": "#F8FAFC (slate-50)",
+        "header_background": "#FFFFFF",
+        "stat_cards": "White background, 12px radius, card shadow, 120px min-width, 16px padding",
+        "section_background": "White, 12px radius, 16px padding",
+        "list_items": "16px padding, bottom border (gray-100), no outer border",
+        "bottom_nav": "White background, top shadow, 56px height, 5 equal tabs"
+      },
+      "mockup_description": "Light gray background (#F8FAFC). White header with 'Good morning, Maria' greeting, date below, circular avatar on right with notification bell (red badge showing '3'). Horizontal scrollable row of 4 stat cards: New Leads (12), Follow-ups Due (5), Closed This Week (8), Conversion Rate (34%). Each card has colored accent on left edge. White section for 'Recent Leads' showing 3 lead items with name, Instagram icon, 'New' status badge, and '2h ago' timestamp. White section for 'Upcoming Follow-ups' showing 2 items with phone/message icons, name, and scheduled time. Fixed bottom navigation with 5 tabs: Home (filled), Leads, Kanban, Calendar, Settings."
+    },
+
+    "lead_list": {
+      "name": "Lead List Screen",
+      "purpose": "Full list view of all leads with search and filter",
+      "visual_hierarchy": [
+        "1. Header with title and add button",
+        "2. Search bar",
+        "3. Filter chips/tabs",
+        "4. Lead list",
+        "5. Bottom navigation"
+      ],
+      "content_elements": {
+        "header": {
+          "title": "Leads",
+          "add_button": "Plus icon, primary color"
+        },
+        "search_bar": {
+          "placeholder": "Search leads...",
+          "icon": "magnifying glass (left)",
+          "clear_button": "X icon (right, when has text)"
+        },
+        "filter_chips": {
+          "options": ["All", "New", "Contacted", "Scheduled", "Closed", "Lost"],
+          "style": "Horizontal scroll, pill-shaped, selected has primary background"
+        },
+        "lead_list": {
+          "item_structure": {
+            "avatar": "Initials or photo, 44px circle",
+            "name": "Lead name, bold",
+            "source": "Icon (Instagram/WhatsApp) + label",
+            "status": "Badge with status color",
+            "timestamp": "Relative time (2h ago, Yesterday)",
+            "chevron": "Right arrow indicator"
+          },
+          "empty_state": {
+            "icon": "Users icon, large, gray",
+            "title": "No leads yet",
+            "subtitle": "Add your first lead to get started",
+            "cta": "Add Lead button"
+          }
+        }
+      },
+      "ui_components": [
+        "Header bar with icon button",
+        "Search input",
+        "Horizontal chip/tab selector",
+        "Scrollable list",
+        "Lead list item rows",
+        "Status badges",
+        "Empty state view",
+        "Bottom navigation"
+      ],
+      "navigation_behavior": {
+        "entry": "From bottom tab or Dashboard 'View All'",
+        "tap_add": "Navigate to Add Lead screen",
+        "tap_search": "Activate search input",
+        "tap_filter": "Filter list by selected status",
+        "tap_lead_item": "Navigate to Lead Detail",
+        "swipe_lead_left": "Reveal quick actions (Call, Message, Delete)"
+      },
+      "styling_guidelines": {
+        "background": "#FFFFFF",
+        "search_bar": "Gray-100 background, 40px height, 20px radius, 12px horizontal padding",
+        "filter_chips": "32px height, 12px horizontal padding, gray-200 default, primary when selected",
+        "list_item": "72px height, 16px horizontal padding, gray-100 bottom border",
+        "avatar": "44px, 22px radius, gray-200 background if no image",
+        "status_badge": "6px vertical padding, 12px horizontal, 12px radius, light colored background with dark text"
+      },
+      "mockup_description": "White background. Header shows 'Leads' title on left, indigo plus-circle icon on right. Search bar below with gray background and search icon. Horizontal scrollable filter chips: 'All' (selected, indigo background), 'New', 'Contacted', 'Scheduled', 'Closed', 'Lost'. List of lead items, each showing: circular avatar with initials, name in bold, small Instagram or WhatsApp icon with source label, colored status badge ('New' in indigo, 'Contacted' in amber), timestamp on right, chevron. Subtle gray divider between items."
+    },
+
+    "lead_detail": {
+      "name": "Lead Detail Screen",
+      "purpose": "Complete information and actions for a single lead",
+      "visual_hierarchy": [
+        "1. Header with back button and actions",
+        "2. Lead profile section",
+        "3. Quick action buttons",
+        "4. Status selector",
+        "5. Notes/timeline section",
+        "6. Treatment interests section"
+      ],
+      "content_elements": {
+        "header": {
+          "back_button": "Arrow left icon",
+          "title": "Lead name",
+          "more_menu": "Three dots, reveals edit/delete"
+        },
+        "profile_section": {
+          "avatar": "Large, 80px, centered",
+          "name": "24px bold",
+          "source": "Icon + 'Via Instagram' or 'Via WhatsApp'",
+          "added_date": "Added Jan 15, 2026",
+          "status_badge": "Current status with color"
+        },
+        "quick_actions": {
+          "layout": "Horizontal row of 4 buttons",
+          "buttons": [
+            {"icon": "phone", "label": "Call", "action": "dial"},
+            {"icon": "chat", "label": "WhatsApp", "action": "open whatsapp"},
+            {"icon": "envelope", "label": "Email", "action": "compose email"},
+            {"icon": "calendar", "label": "Schedule", "action": "add follow-up"}
+          ]
+        },
+        "status_selector": {
+          "label": "Status",
+          "options": ["New", "Contacted", "Scheduled", "Closed", "Lost"],
+          "style": "Horizontal pills, tap to change"
+        },
+        "notes_section": {
+          "title": "Notes & Activity",
+          "add_note_input": "Placeholder: Add a note...",
+          "timeline": [
+            {"type": "note", "content": "Text note", "timestamp": "time"},
+            {"type": "status_change", "content": "Status changed to Contacted", "timestamp": "time"},
+            {"type": "followup", "content": "Follow-up scheduled", "timestamp": "time"}
+          ]
+        },
+        "treatments_section": {
+          "title": "Interested In",
+          "items": ["Laser Hair Removal", "Botox"],
+          "add_button": "Add treatment link"
+        }
+      },
+      "ui_components": [
+        "Navigation header",
+        "Avatar",
+        "Icon buttons (quick actions)",
+        "Segmented control (status)",
+        "Text input (notes)",
+        "Timeline list",
+        "Tag/chip list (treatments)",
+        "Action sheet (more menu)"
+      ],
+      "navigation_behavior": {
+        "entry": "From Lead List or Dashboard",
+        "back": "Return to previous screen",
+        "tap_call": "Open phone dialer with lead's number",
+        "tap_whatsapp": "Open WhatsApp chat with lead",
+        "tap_email": "Open email composer",
+        "tap_schedule": "Open schedule follow-up modal",
+        "tap_status": "Update lead status",
+        "tap_more": "Show edit/delete action sheet"
+      },
+      "styling_guidelines": {
+        "background": "#F8FAFC",
+        "profile_card": "White background, 16px padding, no border radius (full width)",
+        "quick_action_buttons": "64px square, white background, 12px radius, icon 24px, label 12px",
+        "status_pills": "Same as filter chips style",
+        "notes_card": "White background, 12px radius, 16px padding",
+        "timeline_item": "12px left padding, gray left border, relative timestamp"
+      },
+      "mockup_description": "Light gray background. Top header with back arrow, lead name 'Sarah Johnson' centered, three-dot menu on right. White profile card: large circular avatar with initials 'SJ', name below in bold, 'Via Instagram' with IG icon, 'Added Jan 15, 2026' in gray, 'Contacted' badge in amber. Row of 4 square quick action buttons below: Call (phone icon), WhatsApp (chat icon), Email (envelope icon), Schedule (calendar icon). Status section with 5 horizontal pills - 'Contacted' is selected/highlighted. White notes card with 'Notes & Activity' header, text input at top, timeline below showing notes and status changes with timestamps. 'Interested In' section showing treatment tags as chips."
+    },
+
+    "kanban": {
+      "name": "Kanban Board Screen",
+      "purpose": "Visual pipeline view of all leads by status",
+      "visual_hierarchy": [
+        "1. Header with title",
+        "2. Column headers (sticky)",
+        "3. Horizontally scrollable columns",
+        "4. Lead cards within columns",
+        "5. Bottom navigation"
+      ],
+      "content_elements": {
+        "header": {
+          "title": "Pipeline",
+          "filter_button": "Filter icon (optional)"
+        },
+        "columns": [
+          {
+            "id": "new",
+            "title": "New",
+            "color": "#6366F1",
+            "count": "12"
+          },
+          {
+            "id": "contacted",
+            "title": "Contacted",
+            "color": "#F59E0B",
+            "count": "8"
+          },
+          {
+            "id": "scheduled",
+            "title": "Scheduled",
+            "color": "#8B5CF6",
+            "count": "5"
+          },
+          {
+            "id": "closed",
+            "title": "Closed",
+            "color": "#10B981",
+            "count": "15"
+          },
+          {
+            "id": "lost",
+            "title": "Lost",
+            "color": "#EF4444",
+            "count": "3"
+          }
+        ],
+        "lead_card": {
+          "name": "Lead name",
+          "source_icon": "Instagram/WhatsApp icon",
+          "treatments": "Treatment tags (optional)",
+          "followup_indicator": "Clock icon if follow-up scheduled",
+          "timestamp": "Time in stage"
+        }
+      },
+      "ui_components": [
+        "Header",
+        "Horizontal scroll container",
+        "Column headers (sticky top)",
+        "Vertical scroll lists within columns",
+        "Lead cards (draggable)",
+        "Count badges",
+        "Bottom navigation"
+      ],
+      "navigation_behavior": {
+        "entry": "From bottom tab navigation",
+        "horizontal_scroll": "Scroll between columns",
+        "vertical_scroll": "Scroll within column",
+        "tap_card": "Navigate to Lead Detail",
+        "drag_card": "Move lead to different column (update status)",
+        "long_press_card": "Show quick actions"
+      },
+      "styling_guidelines": {
+        "background": "#F8FAFC",
+        "column_width": "280px (mobile optimized for partial view of next column)",
+        "column_header": "Sticky, white background, colored left accent, 48px height",
+        "column_body": "Gray-100 background, 8px gap between cards",
+        "lead_card": "White background, 12px radius, card shadow, 12px padding",
+        "card_hover_drag": "Elevated shadow, slight scale up"
+      },
+      "mockup_description": "Light gray background. 'Pipeline' header at top. Horizontally scrollable view showing 5 columns. Each column has a header with colored left accent bar (indigo for New, amber for Contacted, purple for Scheduled, green for Closed, red for Lost), column title, and count badge. Below headers, vertical stacks of white lead cards. Each card shows lead name, small source icon, optional treatment tags, and timestamp. Column widths sized so user can see partial next column (encouraging scroll). Cards are visually draggable. Subtle drop shadows on cards."
+    },
+
+    "calendar": {
+      "name": "Calendar / Follow-ups Screen",
+      "purpose": "View and manage scheduled follow-ups",
+      "visual_hierarchy": [
+        "1. Header with month/week toggle",
+        "2. Calendar grid or week view",
+        "3. Selected day's follow-ups list",
+        "4. Bottom navigation"
+      ],
+      "content_elements": {
+        "header": {
+          "title": "Follow-ups",
+          "view_toggle": "Month / Week / Day tabs",
+          "today_button": "Jump to today"
+        },
+        "calendar_grid": {
+          "month_label": "January 2026",
+          "navigation": "Left/right arrows",
+          "day_cells": "Numbered, dots for days with follow-ups",
+          "today_highlight": "Circle around today's date",
+          "selected_highlight": "Primary color background"
+        },
+        "followups_list": {
+          "section_title": "January 15",
+          "items": [
+            {
+              "time": "10:00 AM",
+              "type": "call",
+              "lead_name": "Sarah Johnson",
+              "treatment": "Laser consultation"
+            },
+            {
+              "time": "2:30 PM",
+              "type": "message",
+              "lead_name": "Mike Chen",
+              "treatment": "Botox follow-up"
+            }
+          ],
+          "empty_state": "No follow-ups scheduled for this day"
+        },
+        "add_button": {
+          "type": "FAB or header button",
+          "icon": "plus"
+        }
+      },
+      "ui_components": [
+        "Header with segmented control",
+        "Calendar grid component",
+        "Day cells with indicators",
+        "Follow-up list items",
+        "FAB (floating action button)",
+        "Bottom navigation"
+      ],
+      "navigation_behavior": {
+        "entry": "From bottom tab or Lead Detail 'Schedule'",
+        "tap_day": "Select day, show day's follow-ups below",
+        "tap_followup": "Navigate to Lead Detail",
+        "tap_add": "Open 'Schedule Follow-up' modal",
+        "swipe_month": "Navigate to previous/next month"
+      },
+      "styling_guidelines": {
+        "background": "#FFFFFF",
+        "calendar_grid": "White background, 16px padding, gray-200 grid lines",
+        "day_cell": "44px square, centered number",
+        "today": "Primary color circle outline",
+        "selected": "Primary color filled circle, white text",
+        "dot_indicator": "6px circle, primary color, below date number",
+        "followup_item": "72px height, left time column (60px), content column, type icon"
+      },
+      "mockup_description": "White background. Header shows 'Follow-ups' with Month/Week toggle (Month selected). Calendar navigation shows 'January 2026' with left/right arrows. Calendar grid displays full month with day numbers. Today (15) has a primary color circle outline. Days with scheduled follow-ups have small indigo dots below the number. Tapping a day selects it (filled indigo circle). Below calendar, 'January 15' section header, followed by list of follow-ups: '10:00 AM' in left column, phone icon, 'Sarah Johnson - Laser consultation'. Floating action button (FAB) in bottom right corner with plus icon."
+    },
+
+    "reports": {
+      "name": "Reports Screen",
+      "purpose": "Analytics and performance metrics",
+      "visual_hierarchy": [
+        "1. Header with period selector",
+        "2. Key metrics cards",
+        "3. Conversion funnel chart",
+        "4. Lead source breakdown",
+        "5. Bottom navigation"
+      ],
+      "content_elements": {
+        "header": {
+          "title": "Reports",
+          "period_selector": "This Week / This Month / Custom dropdown"
+        },
+        "key_metrics": {
+          "layout": "2x2 grid of cards",
+          "metrics": [
+            {"label": "Total Leads", "value": "47", "change": "+12%"},
+            {"label": "Conversion Rate", "value": "34%", "change": "+5%"},
+            {"label": "Closed Sales", "value": "16", "change": "+8%"},
+            {"label": "Avg. Close Time", "value": "4.2 days", "change": "-0.5 days"}
+          ]
+        },
+        "conversion_funnel": {
+          "title": "Conversion Funnel",
+          "stages": [
+            {"label": "New", "value": 47, "percentage": "100%"},
+            {"label": "Contacted", "value": 38, "percentage": "81%"},
+            {"label": "Scheduled", "value": 24, "percentage": "51%"},
+            {"label": "Closed", "value": 16, "percentage": "34%"}
+          ]
+        },
+        "lead_sources": {
+          "title": "Lead Sources",
+          "sources": [
+            {"name": "Instagram", "count": 28, "percentage": "60%"},
+            {"name": "WhatsApp", "count": 14, "percentage": "30%"},
+            {"name": "Phone", "count": 5, "percentage": "10%"}
+          ]
+        }
+      },
+      "ui_components": [
+        "Header with dropdown",
+        "Metric cards",
+        "Funnel chart (horizontal bars)",
+        "Pie/donut chart or bar chart for sources",
+        "Bottom navigation"
+      ],
+      "navigation_behavior": {
+        "entry": "From bottom tab or dashboard",
+        "tap_period": "Open period selector dropdown",
+        "tap_metric": "Could drill into detail (future feature)"
+      },
+      "styling_guidelines": {
+        "background": "#F8FAFC",
+        "metric_cards": "White, 12px radius, 16px padding, large bold number, small label",
+        "positive_change": "Green text with up arrow",
+        "negative_change": "Red text with down arrow",
+        "chart_colors": "Use brand palette (primary, secondary, success, warning)",
+        "funnel_bars": "Horizontal, gradient from full to proportional width"
+      },
+      "mockup_description": "Light gray background. Header shows 'Reports' with 'This Month' dropdown selector. 2x2 grid of white metric cards: 'Total Leads: 47 (+12%)' with green text for positive change, 'Conversion Rate: 34%', 'Closed Sales: 16', 'Avg. Close Time: 4.2 days'. Below, white card with 'Conversion Funnel' title showing horizontal funnel visualization - bars decreasing from New (full width) to Closed (34% width), with stage labels and percentages. Another white card showing 'Lead Sources' with horizontal bar chart or donut chart showing Instagram (60%), WhatsApp (30%), Phone (10%) in different brand colors."
+    },
+
+    "settings": {
+      "name": "Settings Screen",
+      "purpose": "App configuration and account management",
+      "visual_hierarchy": [
+        "1. Profile section",
+        "2. Settings groups",
+        "3. App info section",
+        "4. Logout button"
+      ],
+      "content_elements": {
+        "profile_section": {
+          "avatar": "Large, 80px",
+          "name": "User name",
+          "email": "user@email.com",
+          "edit_button": "Edit profile link"
+        },
+        "settings_groups": [
+          {
+            "title": "Account",
+            "items": [
+              {"icon": "person", "label": "Edit Profile", "chevron": true},
+              {"icon": "lock", "label": "Change Password", "chevron": true},
+              {"icon": "bell", "label": "Notifications", "toggle": true},
+              {"icon": "users", "label": "Team Members", "chevron": true}
+            ]
+          },
+          {
+            "title": "Clinic",
+            "items": [
+              {"icon": "building", "label": "Clinic Info", "chevron": true},
+              {"icon": "list", "label": "Treatments & Prices", "chevron": true},
+              {"icon": "columns", "label": "Pipeline Stages", "chevron": true}
+            ]
+          },
+          {
+            "title": "Support",
+            "items": [
+              {"icon": "question-circle", "label": "Help Center", "chevron": true},
+              {"icon": "chat", "label": "Contact Support", "chevron": true},
+              {"icon": "star", "label": "Rate the App", "chevron": true}
+            ]
+          }
+        ],
+        "app_info": {
+          "version": "Version 1.0.0",
+          "links": ["Privacy Policy", "Terms of Service"]
+        },
+        "logout": {
+          "label": "Log Out",
+          "style": "Red text, center aligned"
+        }
+      },
+      "ui_components": [
+        "Profile card",
+        "Avatar",
+        "Settings group headers",
+        "Settings row items",
+        "Chevron indicators",
+        "Toggle switches",
+        "Logout button",
+        "Version label"
+      ],
+      "navigation_behavior": {
+        "entry": "From bottom tab or profile tap",
+        "tap_setting_item": "Navigate to respective screen",
+        "tap_toggle": "Toggle setting on/off",
+        "tap_logout": "Confirm logout, return to Login"
+      },
+      "styling_guidelines": {
+        "background": "#F8FAFC",
+        "profile_card": "White, centered content, 24px vertical padding",
+        "settings_group": "White background, 12px radius, 16px horizontal padding",
+        "group_header": "Gray uppercase label, 12px font, 16px top margin",
+        "settings_row": "56px height, icon 24px, gray-100 divider",
+        "logout_button": "Red-500 text, 56px height, centered"
+      },
+      "mockup_description": "Light gray background. Top white section with large circular avatar (user photo or initials), user name 'Maria Santos' in bold below, email in gray, 'Edit Profile' link in primary color. White grouped section 'ACCOUNT' with rows: Edit Profile, Change Password, Notifications (with toggle switch), Team Members - each with left icon and right chevron. White grouped section 'CLINIC' with: Clinic Info, Treatments & Prices, Pipeline Stages. White grouped section 'SUPPORT' with: Help Center, Contact Support, Rate the App. Centered 'Version 1.0.0' text in gray. Privacy Policy | Terms links. Red 'Log Out' button at bottom."
+    },
+
+    "treatments_list": {
+      "name": "Treatments & Services Screen",
+      "purpose": "Manage treatment price list for quick sharing",
+      "visual_hierarchy": [
+        "1. Header with add button",
+        "2. Search bar",
+        "3. Category tabs (optional)",
+        "4. Treatment list",
+        "5. Share button"
+      ],
+      "content_elements": {
+        "header": {
+          "title": "Treatments",
+          "add_button": "Plus icon"
+        },
+        "search_bar": {
+          "placeholder": "Search treatments..."
+        },
+        "category_tabs": {
+          "options": ["All", "Face", "Body", "Laser", "Injectables"],
+          "style": "Horizontal scroll chips"
+        },
+        "treatment_list": {
+          "item_structure": {
+            "name": "Treatment name",
+            "description": "Brief description (optional)",
+            "price": "$XXX",
+            "duration": "XX mins",
+            "edit_button": "Pencil icon or tap to edit"
+          }
+        },
+        "share_button": {
+          "label": "Share Price List",
+          "style": "Fixed bottom button or FAB"
+        }
+      },
+      "ui_components": [
+        "Header",
+        "Search input",
+        "Category chips",
+        "Treatment list items",
+        "Price labels",
+        "Share/Export button"
+      ],
+      "navigation_behavior": {
+        "entry": "From Settings > Treatments & Prices",
+        "tap_add": "Open Add Treatment modal",
+        "tap_treatment": "Open Edit Treatment modal",
+        "tap_share": "Open share sheet (WhatsApp, copy, etc.)"
+      },
+      "styling_guidelines": {
+        "background": "#FFFFFF",
+        "treatment_item": "16px padding, gray-100 divider, price right-aligned",
+        "price_text": "Bold, primary color or black",
+        "duration_text": "Gray, small font",
+        "share_button": "Full width at bottom, primary color, 48px height"
+      },
+      "mockup_description": "White background. Header shows 'Treatments' with plus icon on right. Search bar below. Horizontal category chips: All (selected), Face, Body, Laser, Injectables. List of treatments: 'Botox (Forehead)' with '$350' price on right and '30 mins' duration below in gray, 'Laser Hair Removal - Full Legs' with '$200/session', 'Chemical Peel' with '$150'. Subtle dividers between items. Fixed bottom bar with 'Share Price List' button in primary indigo color."
+    }
+  },
+
+  "global_styling": {
+    "mobile_first_rules": [
+      "Touch targets minimum 44px",
+      "Font size minimum 16px for inputs (prevents iOS zoom)",
+      "Bottom navigation always visible (except during scroll on lists)",
+      "Generous padding (16-24px) for comfortable touch",
+      "Cards have 12px border-radius for soft appearance",
+      "Use shadows sparingly - card shadow only",
+      "Respect safe areas (notch, home indicator)"
+    ],
+    "color_usage": {
+      "backgrounds": ["#FFFFFF (surfaces)", "#F8FAFC (page background)"],
+      "text": ["#1E293B (primary)", "#64748B (secondary)", "#94A3B8 (muted)"],
+      "borders": "#E2E8F0",
+      "primary_actions": "#6366F1",
+      "status_colors": {
+        "new": "#6366F1",
+        "contacted": "#F59E0B",
+        "scheduled": "#8B5CF6",
+        "closed": "#10B981",
+        "lost": "#EF4444"
+      }
+    },
+    "typography": {
+      "font_family": "Inter (body), Plus Jakarta Sans (headlines if used)",
+      "scale": {
+        "headline_large": "24px/bold",
+        "headline_medium": "20px/semibold",
+        "body_large": "16px/regular",
+        "body_medium": "14px/regular",
+        "caption": "12px/regular"
+      }
+    },
+    "spacing_scale": [4, 8, 12, 16, 20, 24, 32, 48],
+    "border_radius": {
+      "small": "4px",
+      "medium": "8px",
+      "large": "12px",
+      "pill": "9999px"
+    },
+    "shadows": {
+      "card": "0 2px 8px rgba(0, 0, 0, 0.08)",
+      "elevated": "0 4px 12px rgba(0, 0, 0, 0.12)"
+    },
+    "transitions": {
+      "default": "200ms ease-out"
+    }
+  }
+}

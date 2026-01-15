@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<!--
+================================================================================
+CLINIC LANDING PAGE - HTML STRUCTURE
+================================================================================
+This is a structural representation for design and development reference.
+Not intended as functional production code.
+================================================================================
+-->
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clinic - Turn Inquiries Into Sales | Mobile CRM for Aesthetic Clinics</title>
+    <meta name="description" content="The mobile CRM that helps aesthetic clinics convert Instagram and WhatsApp inquiries into paying customers.">
+
+    <!-- Fonts -->
+    <!--
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    -->
+
+    <!-- Styles Reference: See /css/tokens.json for design tokens -->
+</head>
+
+<body>
+
+<!-- ============================================ -->
+<!-- NAVIGATION -->
+<!-- ============================================ -->
+<header class="nav">
+    <div class="nav__container">
+        <!-- Logo -->
+        <a href="/" class="nav__logo">
+            <img src="/branding/logo_dark.png" alt="Clinic" />
+        </a>
+
+        <!-- Navigation Links -->
+        <nav class="nav__links">
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#testimonials">Testimonials</a>
+            <a href="/blog">Blog</a>
+        </nav>
+
+        <!-- CTA Buttons -->
+        <div class="nav__actions">
+            <a href="/login" class="btn btn--ghost">Log In</a>
+            <a href="/signup" class="btn btn--primary">Start Free Trial</a>
+        </div>
+
+        <!-- Mobile Menu Toggle -->
+        <button class="nav__mobile-toggle" aria-label="Menu">
+            <!-- Hamburger Icon -->
+        </button>
+    </div>
+</header>
+
+<!-- ============================================ -->
+<!-- SECTION: HERO -->
+<!-- ============================================ -->
+<section class="hero">
+    <div class="hero__container">
+        <div class="hero__content">
+            <h1 class="hero__headline">
+                Stop Losing Leads.<br>Start Closing Sales.
+            </h1>
+            <p class="hero__subheadline">
+                The mobile CRM that helps aesthetic clinics convert Instagram and WhatsApp inquiries into paying customers.
+            </p>
+            <div class="hero__cta">
+                <a href="/signup" class="btn btn--primary btn--lg">Start Free Trial</a>
+                <a href="#demo" class="btn btn--outline btn--lg">Watch Demo</a>
+            </div>
+            <p class="hero__note">No credit card required. Set up in 5 minutes.</p>
+        </div>
+        <div class="hero__visual">
+            <!--
+            Phone mockup showing Kanban board
+            - iPhone frame
+            - App screen with pipeline columns
+            - Lead cards in various stages
+            - Subtle shadow and gradient background
+            -->
+            <img src="/ui/dashboard.png" alt="Clinic App Dashboard" />
+        </div>
+    </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION: SOCIAL PROOF BAR -->
+<!-- ============================================ -->
+<section class="social-proof">
+    <div class="social-proof__container">
+        <div class="social-proof__stats">
+            <div class="stat">
+                <span class="stat__number">2,500+</span>
+                <span class="stat__label">leads managed daily</span>
+            </div>
+            <div class="stat">
+                <span class="stat__number">94%</span>
+                <span class="stat__label">user satisfaction</span>
+            </div>
+            <div class="stat">
+                <span class="stat__number">35%</span>
+                <span class="stat__label">avg. increase in conversions</span>
+            </div>
+        </div>
+        <p class="social-proof__trust">Trusted by 500+ aesthetic clinics</p>
+    </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION: PROBLEM -->
+<!-- ============================================ -->
+<section class="problem" id="problem">
+    <div class="problem__container">
+        <h2 class="section-headline">Sound Familiar?</h2>
+
+        <div class="problem__grid">
+            <div class="problem__card">
+                <div class="problem__icon">📱</div>
+                <h3 class="problem__title">Leads Buried in DMs</h3>
+                <p class="problem__text">Your Instagram and WhatsApp are overflowing. By the time you respond, potential clients have already booked elsewhere.</p>
+            </div>
+
+            <div class="problem__card">
+                <div class="problem__icon">📝</div>
+                <h3 class="problem__title">Chaotic Lead Tracking</h3>
+                <p class="problem__text">Sticky notes, spreadsheets, chat history scrolling... you've tried it all. Nothing sticks. Leads slip through the cracks.</p>
+            </div>
+
+            <div class="problem__card">
+                <div class="problem__icon">⏰</div>
+                <h3 class="problem__title">Forgotten Follow-Ups</h3>
+                <p class="problem__text">You meant to call them back. Life happened. Now that hot lead is cold—or worse, at your competitor.</p>
+            </div>
+
+            <div class="problem__card">
+                <div class="problem__icon">📊</div>
+                <h3 class="problem__title">Flying Blind</h3>
+                <p class="problem__text">No idea what your conversion rate is. No clue which lead sources work. You're guessing instead of growing.</p>
+            </div>
+        </div>
+
+        <p class="problem__closing">You didn't start your clinic to spend nights tracking leads in spreadsheets.</p>
+    </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION: SOLUTION -->
+<!-- ============================================ -->
+<section class="solution">
+    <div class="solution__container">
+        <h2 class="section-headline">There's a Better Way</h2>
+
+        <p class="solution__intro">
+            Clinic is the mobile CRM built specifically for aesthetic clinics that generate leads through Instagram and WhatsApp.
+        </p>
+
+        <ul class="solution__points">
+            <li>✅ One place for all your leads—no more scattered DMs</li>
+            <li>✅ Visual pipeline shows every lead's status at a glance</li>
+            <li>✅ Automatic reminders so you never miss a follow-up</li>
+            <li>✅ Real insights into your conversion and sales performance</li>
+        </ul>
+
+        <blockquote class="solution__value-prop">
+            "Clinic organizes your leads, reminds you of follow-ups, and helps you close more sales from Instagram and WhatsApp."
+        </blockquote>
+
+        <a href="#how-it-works" class="btn btn--text">See How It Works →</a>
+    </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION: HOW IT WORKS -->
+<!-- ============================================ -->
+<section class="how-it-works" id="how-it-works">
+    <div class="how-it-works__container">
+        <h2 class="section-headline">From Inquiry to Booked—In Three Simple Steps</h2>
+
+        <div class="steps">
+            <div class="step">
+                <div class="step__number">1</div>
+                <div class="step__icon">📥</div>
+                <h3 class="step__title">Capture Every Lead</h3>
+                <p class="step__text">Add leads manually or import from your contacts. Every Instagram DM and WhatsApp inquiry gets logged in one place.</p>
+            </div>
+
+            <div class="step">
+                <div class="step__number">2</div>
+                <div class="step__icon">📋</div>
+                <h3 class="step__title">Track Your Pipeline</h3>
+                <p class="step__text">See all your leads on a visual Kanban board. Move them from New → Contacted → Scheduled → Closed with a simple swipe.</p>
+            </div>
+
+            <div class="step">
+                <div class="step__number">3</div>
+                <div class="step__icon">🔔</div>
+                <h3 class="step__title">Never Miss a Follow-Up</h3>
+                <p class="step__text">Set reminders for calls and messages. Get push notifications when it's time to reach out. Close more deals.</p>
+            </div>
+        </div>
+
+        <p class="how-it-works__note">Average setup time: 5 minutes. No training required.</p>
+    </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION: FEATURES -->
+<!-- ============================================ -->
+<section class="features" id="features">
+    <div class="features__container">
+        <h2 class="section-headline">Everything You Need to Close More Sales</h2>
+
+        <div class="features__grid">
+            <div class="feature-card">
+                <div class="feature-card__icon">
+                    <!-- Heroicon: view-columns -->
+                </div>
+                <h3 class="feature-card__title">Visual Kanban Pipeline</h3>
+                <p class="feature-card__text">See every lead's status at a glance. Drag and drop to update stages. Know exactly where your sales stand.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-card__icon">
+                    <!-- Heroicon: bell-alert -->
+                </div>
+                <h3 class="feature-card__title">Smart Follow-Up Reminders</h3>
+                <p class="feature-card__text">Never let a lead go cold. Schedule follow-ups and get push notifications when it's time to reach out.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-card__icon">
+                    <!-- Heroicon: chat-bubble-left-right -->
+                </div>
+                <h3 class="feature-card__title">One-Tap Contact</h3>
+                <p class="feature-card__text">Click-to-chat for WhatsApp. Quick access to Instagram DMs. Reach your leads instantly from the app.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-card__icon">
+                    <!-- Heroicon: chart-bar -->
+                </div>
+                <h3 class="feature-card__title">Conversion Analytics</h3>
+                <p class="feature-card__text">Track your conversion rate automatically. See which lead sources perform best. Make data-driven decisions.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-card__icon">
+                    <!-- Heroicon: document-text -->
+                </div>
+                <h3 class="feature-card__title">Lead Notes & History</h3>
+                <p class="feature-card__text">Add notes to every lead. See the full conversation history. Never ask "who was this person again?"</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-card__icon">
+                    <!-- Heroicon: user-group -->
+                </div>
+                <h3 class="feature-card__title">Team Collaboration</h3>
+                <p class="feature-card__text">Multiple users can access leads. See who's handling which prospect. Perfect for clinics with multiple staff.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-card__icon">
+                    <!-- Heroicon: currency-dollar -->
+                </div>
+                <h3 class="feature-card__title">Quick Price List</h3>
+                <p class="feature-card__text">Store your treatment prices in-app. Share instantly with leads. No more copy-pasting from notes.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-card__icon">
+                    <!-- Heroicon: calendar-days -->
+                </div>
+                <h3 class="feature-card__title">Built-In Calendar</h3>
+                <p class="feature-card__text">View all scheduled follow-ups and appointments. Integrated with your pipeline for complete visibility.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION: TESTIMONIALS -->
+<!-- ============================================ -->
+<section class="testimonials" id="testimonials">
+    <div class="testimonials__container">
+        <h2 class="section-headline">Loved by Clinics Like Yours</h2>
+
+        <div class="testimonials__grid">
+            <div class="testimonial-card">
+                <p class="testimonial-card__quote">
+                    "Before Clinic, I was losing at least 5 leads a week to slow responses. Now I can see everyone who messaged me, follow up on time, and actually close deals. My revenue is up 30% in three months."
+                </p>
+                <div class="testimonial-card__author">
+                    <div class="testimonial-card__avatar"><!-- Avatar --></div>
+                    <div class="testimonial-card__info">
+                        <span class="testimonial-card__name">Maria S.</span>
+                        <span class="testimonial-card__role">Owner, Glow Beauty Clinic (Miami, FL)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <p class="testimonial-card__quote">
+                    "I used to spend my evenings scrolling through WhatsApp trying to remember who I needed to call back. Now I just open Clinic, see my to-do list, and get it done. It's changed how I work."
+                </p>
+                <div class="testimonial-card__author">
+                    <div class="testimonial-card__avatar"><!-- Avatar --></div>
+                    <div class="testimonial-card__info">
+                        <span class="testimonial-card__name">Jessica T.</span>
+                        <span class="testimonial-card__role">Receptionist, Austin Aesthetics (Austin, TX)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <p class="testimonial-card__quote">
+                    "We tried HubSpot, Salesforce, even Notion. All too complicated. Clinic is the first CRM my team actually uses. It took us 10 minutes to set up and everyone was on board immediately."
+                </p>
+                <div class="testimonial-card__author">
+                    <div class="testimonial-card__avatar"><!-- Avatar --></div>
+                    <div class="testimonial-card__info">
+                        <span class="testimonial-card__name">Dr. Amanda K.</span>
+                        <span class="testimonial-card__role">Owner, Pure Skin Med Spa (Los Angeles, CA)</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="testimonial-card">
+                <p class="testimonial-card__quote">
+                    "The Kanban board is genius. I can see our entire pipeline at a glance. No more wondering where leads are stuck. We've improved our conversion rate by 25% since switching to Clinic."
+                </p>
+                <div class="testimonial-card__author">
+                    <div class="testimonial-card__avatar"><!-- Avatar --></div>
+                    <div class="testimonial-card__info">
+                        <span class="testimonial-card__name">Rachel M.</span>
+                        <span class="testimonial-card__role">Clinic Manager, Bella Aesthetics (New York, NY)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION: PRICING -->
+<!-- ============================================ -->
+<section class="pricing" id="pricing">
+    <div class="pricing__container">
+        <h2 class="section-headline">Simple, Transparent Pricing</h2>
+        <p class="section-subheadline">Start free. Upgrade when you're ready.</p>
+
+        <div class="pricing__grid">
+            <!-- Starter Plan -->
+            <div class="pricing-card">
+                <div class="pricing-card__header">
+                    <h3 class="pricing-card__name">Starter</h3>
+                    <div class="pricing-card__price">
+                        <span class="pricing-card__amount">$19</span>
+                        <span class="pricing-card__period">/month</span>
+                    </div>
+                    <p class="pricing-card__description">Best for solo practitioners</p>
+                </div>
+                <ul class="pricing-card__features">
+                    <li>✓ 1 user</li>
+                    <li>✓ Up to 100 leads/month</li>
+                    <li>✓ Kanban pipeline</li>
+                    <li>✓ Follow-up reminders</li>
+                    <li>✓ Basic reports</li>
+                    <li>✓ WhatsApp click-to-chat</li>
+                    <li>✓ Email support</li>
+                </ul>
+                <a href="/signup?plan=starter" class="btn btn--outline btn--block">Start Free Trial</a>
+            </div>
+
+            <!-- Growth Plan (Popular) -->
+            <div class="pricing-card pricing-card--featured">
+                <div class="pricing-card__badge">Most Popular</div>
+                <div class="pricing-card__header">
+                    <h3 class="pricing-card__name">Growth</h3>
+                    <div class="pricing-card__price">
+                        <span class="pricing-card__amount">$49</span>
+                        <span class="pricing-card__period">/month</span>
+                    </div>
+                    <p class="pricing-card__description">Best for growing clinics</p>
+                </div>
+                <ul class="pricing-card__features">
+                    <li>✓ Up to 3 users</li>
+                    <li>✓ Unlimited leads</li>
+                    <li>✓ Everything in Starter</li>
+                    <li>✓ Advanced reports</li>
+                    <li>✓ Lead source tracking</li>
+                    <li>✓ Treatment price list</li>
+                    <li>✓ Priority support</li>
+                </ul>
+                <a href="/signup?plan=growth" class="btn btn--primary btn--block">Start Free Trial</a>
+            </div>
+
+            <!-- Clinic Plan -->
+            <div class="pricing-card">
+                <div class="pricing-card__header">
+                    <h3 class="pricing-card__name">Clinic</h3>
+                    <div class="pricing-card__price">
+                        <span class="pricing-card__amount">$99</span>
+                        <span class="pricing-card__period">/month</span>
+                    </div>
+                    <p class="pricing-card__description">Best for established clinics</p>
+                </div>
+                <ul class="pricing-card__features">
+                    <li>✓ Up to 10 users</li>
+                    <li>✓ Unlimited leads</li>
+                    <li>✓ Everything in Growth</li>
+                    <li>✓ Custom pipeline stages</li>
+                    <li>✓ Team performance reports</li>
+                    <li>✓ Data export</li>
+                    <li>✓ Dedicated support</li>
+                </ul>
+                <a href="/contact-sales" class="btn btn--outline btn--block">Contact Sales</a>
+            </div>
+        </div>
+
+        <p class="pricing__note">All plans include a 14-day free trial. No credit card required.</p>
+        <p class="pricing__custom">Need a custom plan? <a href="/contact">Contact us</a>.</p>
+    </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION: FAQ -->
+<!-- ============================================ -->
+<section class="faq">
+    <div class="faq__container">
+        <h2 class="section-headline">Frequently Asked Questions</h2>
+
+        <div class="faq__list">
+            <details class="faq__item">
+                <summary class="faq__question">Do I need to connect my Instagram or WhatsApp account?</summary>
+                <p class="faq__answer">No. Clinic doesn't require account connections. You manually add leads from your DMs and WhatsApp chats, keeping your accounts secure and private.</p>
+            </details>
+
+            <details class="faq__item">
+                <summary class="faq__question">How long does setup take?</summary>
+                <p class="faq__answer">Most users are up and running in under 5 minutes. There's no complex configuration—just create your account and start adding leads.</p>
+            </details>
+
+            <details class="faq__item">
+                <summary class="faq__question">Can multiple staff members use Clinic?</summary>
+                <p class="faq__answer">Yes! Our Growth and Clinic plans support multiple users. Everyone can see and manage leads while avoiding duplicate outreach.</p>
+            </details>
+
+            <details class="faq__item">
+                <summary class="faq__question">Is there a free trial?</summary>
+                <p class="faq__answer">Absolutely. All plans come with a 14-day free trial. No credit card required.</p>
+            </details>
+
+            <details class="faq__item">
+                <summary class="faq__question">What if I need help getting started?</summary>
+                <p class="faq__answer">We offer in-app guides, video tutorials, and responsive email support. Growth and Clinic plans include priority support with faster response times.</p>
+            </details>
+
+            <details class="faq__item">
+                <summary class="faq__question">Can I import existing leads?</summary>
+                <p class="faq__answer">Yes. You can import leads via CSV or add them manually. We provide an easy template to get your existing contacts into Clinic quickly.</p>
+            </details>
+        </div>
+    </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION: FINAL CTA -->
+<!-- ============================================ -->
+<section class="final-cta">
+    <div class="final-cta__container">
+        <h2 class="final-cta__headline">Ready to Stop Losing Leads?</h2>
+        <p class="final-cta__subheadline">Join 500+ aesthetic clinics using Clinic to convert more inquiries into sales.</p>
+        <a href="/signup" class="btn btn--primary btn--lg">Start Your Free Trial</a>
+        <p class="final-cta__note">14-day free trial. No credit card required. Set up in 5 minutes.</p>
+    </div>
+</section>
+
+<!-- ============================================ -->
+<!-- FOOTER -->
+<!-- ============================================ -->
+<footer class="footer">
+    <div class="footer__container">
+        <div class="footer__top">
+            <div class="footer__brand">
+                <img src="/branding/logo_light.png" alt="Clinic" class="footer__logo" />
+                <p class="footer__tagline">Turn inquiries into sales</p>
+            </div>
+
+            <div class="footer__links">
+                <div class="footer__column">
+                    <h4 class="footer__column-title">Product</h4>
+                    <ul>
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#pricing">Pricing</a></li>
+                        <li><a href="/integrations">Integrations</a></li>
+                        <li><a href="/roadmap">Roadmap</a></li>
+                        <li><a href="/updates">Updates</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer__column">
+                    <h4 class="footer__column-title">Resources</h4>
+                    <ul>
+                        <li><a href="/blog">Blog</a></li>
+                        <li><a href="/help">Help Center</a></li>
+                        <li><a href="/tutorials">Video Tutorials</a></li>
+                        <li><a href="/api">API Documentation</a></li>
+                        <li><a href="/status">Status</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer__column">
+                    <h4 class="footer__column-title">Company</h4>
+                    <ul>
+                        <li><a href="/about">About</a></li>
+                        <li><a href="/careers">Careers</a></li>
+                        <li><a href="/press">Press</a></li>
+                        <li><a href="/contact">Contact</a></li>
+                        <li><a href="/partners">Partners</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer__column">
+                    <h4 class="footer__column-title">Legal</h4>
+                    <ul>
+                        <li><a href="/privacy">Privacy Policy</a></li>
+                        <li><a href="/terms">Terms of Service</a></li>
+                        <li><a href="/cookies">Cookie Policy</a></li>
+                        <li><a href="/gdpr">GDPR</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer__bottom">
+            <p class="footer__copyright">© 2026 Clinic. All rights reserved.</p>
+            <div class="footer__social">
+                <a href="#" aria-label="Instagram"><!-- Instagram Icon --></a>
+                <a href="#" aria-label="Twitter"><!-- Twitter Icon --></a>
+                <a href="#" aria-label="LinkedIn"><!-- LinkedIn Icon --></a>
+                <a href="#" aria-label="Facebook"><!-- Facebook Icon --></a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
+
+<!--
+================================================================================
+VISUAL DESIGN DIRECTION
+================================================================================
+
+OVERALL STYLE:
+- Clean, modern, minimal
+- Generous white space
+- Mobile-first responsive design
+- Smooth scroll between sections
+- Subtle animations on scroll
+
+COLOR USAGE:
+- Background: White (#FFFFFF) and Slate 50 (#F8FAFC) alternating sections
+- Primary accent: Indigo (#6366F1) for CTAs, links, highlights
+- Secondary accent: Pink (#F472B6) sparingly for feminine touch
+- Text: Slate 800 (#1E293B) for headings, Slate 500 (#64748B) for body
+
+TYPOGRAPHY:
+- Headlines: Plus Jakarta Sans, Bold/Extra Bold
+- Body: Inter, Regular/Medium
+- All text left-aligned (except centered headlines)
+- Mobile base font: 16px
+
+SPACING:
+- Section padding: 80px vertical (desktop), 48px (mobile)
+- Content max-width: 1200px
+- Grid gaps: 24px (mobile), 32px (desktop)
+
+COMPONENTS:
+- Cards: White background, subtle shadow, 12px border-radius
+- Buttons: 48px height, 8px border-radius, bold text
+- Feature icons: 48px, Indigo tint background
+
+IMAGERY:
+- Phone mockups showing app screens
+- Clean, aspirational aesthetic clinic imagery
+- Avoid stock photos of people if possible
+- Use illustrations or abstract shapes as accents
+
+ANIMATIONS:
+- Fade-in on scroll for sections
+- Subtle hover effects on cards (lift + shadow)
+- Button hover: darken + increased shadow
+- Smooth 300ms transitions
+
+RESPONSIVE BREAKPOINTS:
+- Mobile: < 640px (single column)
+- Tablet: 640px - 1024px (2 columns)
+- Desktop: > 1024px (full layout)
+
+================================================================================
+-->

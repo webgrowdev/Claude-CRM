@@ -1,0 +1,153 @@
+{
+  "automated_responses": {
+    "instagram_dm_auto_reply": {
+      "trigger": "New DM received (when unable to respond immediately)",
+      "purpose": "Acknowledge inquiry, set expectations, maintain engagement",
+      "templates": [
+        {
+          "id": "dm_auto_1",
+          "name": "Standard Auto-Reply",
+          "message": "Hi there! Thanks for reaching out to [Clinic Name]! We received your message and will get back to you shortly.\n\nIn the meantime, check out our services: [website link]\n\nTalk soon!"
+        },
+        {
+          "id": "dm_auto_2",
+          "name": "After Hours Auto-Reply",
+          "message": "Thanks for your message! We're currently closed but will respond first thing tomorrow morning.\n\nCan't wait? Check out our FAQ: [link]\n\nHave a great evening!"
+        },
+        {
+          "id": "dm_auto_3",
+          "name": "High Volume Auto-Reply",
+          "message": "Hey! Thanks for messaging us. We're experiencing high volume right now but promise to respond within 2 hours.\n\nBrowse our treatments while you wait: [link]\n\nThank you for your patience!"
+        }
+      ],
+      "best_practices": [
+        "Keep it short and friendly",
+        "Set realistic response time expectations",
+        "Include a useful link (website, services, FAQ)",
+        "Use emojis sparingly to match brand voice",
+        "Don't over-promise response times"
+      ]
+    },
+    "instagram_follower_welcome": {
+      "trigger": "New follower (if using automation tool)",
+      "purpose": "Welcome new followers, introduce clinic, encourage engagement",
+      "templates": [
+        {
+          "id": "welcome_1",
+          "name": "Warm Welcome",
+          "message": "Welcome to the [Clinic Name] family! We're so happy to have you here.\n\nWe share tips, transformations, and special offers here. Have questions about any of our treatments? Just send us a DM!"
+        },
+        {
+          "id": "welcome_2",
+          "name": "Welcome with Offer",
+          "message": "Thanks for the follow! As a welcome gift, enjoy 10% off your first treatment with us.\n\nJust mention 'INSTA10' when you book. DM us to schedule!"
+        },
+        {
+          "id": "welcome_3",
+          "name": "Simple Welcome",
+          "message": "Hey, thanks for following! Excited to share our world of beauty with you. Feel free to reach out anytime with questions!"
+        }
+      ],
+      "best_practices": [
+        "Don't be too salesy immediately",
+        "Offer value (tip, discount, exclusive content)",
+        "Encourage two-way communication",
+        "Keep it authentic and on-brand",
+        "Use sparingly - not every follower needs a DM"
+      ]
+    },
+    "whatsapp_welcome_message": {
+      "trigger": "First message from new contact (WhatsApp Business)",
+      "purpose": "Greet new contact, gather basic info, set next steps",
+      "templates": [
+        {
+          "id": "wa_welcome_1",
+          "name": "Standard Welcome",
+          "message": "Hi! Welcome to [Clinic Name]!\n\nThanks for reaching out. To help you best, could you let us know:\n\n1. What treatment are you interested in?\n2. Is this your first visit to us?\n\nWe'll get back to you with all the details!"
+        },
+        {
+          "id": "wa_welcome_2",
+          "name": "Quick Menu Welcome",
+          "message": "Hey there! Thanks for contacting [Clinic Name].\n\nHow can we help you today?\n\n1 - Learn about our treatments\n2 - Get pricing info\n3 - Book an appointment\n4 - Ask a question\n\nJust reply with a number!"
+        },
+        {
+          "id": "wa_welcome_3",
+          "name": "Friendly Welcome",
+          "message": "Hi! So glad you messaged us!\n\nI'm [Name], and I'll be happy to help you with anything you need. What treatment caught your eye?"
+        }
+      ],
+      "best_practices": [
+        "Respond quickly (WhatsApp users expect fast replies)",
+        "Ask qualifying questions early",
+        "Provide clear next steps",
+        "Use WhatsApp Business quick replies for common questions",
+        "Personalize when possible"
+      ]
+    },
+    "follow_up_sequences": {
+      "description": "Suggested follow-up message templates for different stages",
+      "sequences": [
+        {
+          "stage": "No response after inquiry (24 hours)",
+          "template": "Hi [Name]! Just checking in on your inquiry about [treatment]. Happy to answer any questions you might have. Let me know!"
+        },
+        {
+          "stage": "After consultation, no booking (48 hours)",
+          "template": "Hey [Name]! It was great chatting about [treatment]. I have some availability opening up this week if you'd like to get started. Want me to send you some times?"
+        },
+        {
+          "stage": "Quote sent, no response (3 days)",
+          "template": "Hi [Name]! Following up on the pricing I sent over. Do you have any questions I can help with? I'm here if you need anything!"
+        },
+        {
+          "stage": "Post-treatment check-in (7 days)",
+          "template": "Hi [Name]! Just wanted to check in and see how you're feeling after your [treatment]. Hope everything is going great! Let us know if you have any questions."
+        },
+        {
+          "stage": "Re-engagement (30 days no activity)",
+          "template": "Hi [Name]! It's been a while since we chatted. Just wanted to let you know we're here whenever you're ready. We also have some new [treatments/offers] you might like!"
+        }
+      ]
+    }
+  },
+  "message_templates_for_app": {
+    "description": "Pre-built templates users can access within the Clinic app",
+    "categories": [
+      {
+        "category": "Initial Response",
+        "templates": [
+          "Hi! Thanks for reaching out about [TREATMENT]. I'd love to help you! Are you available for a quick chat this week?",
+          "Hey [NAME]! Thanks for your interest in [TREATMENT]. Let me get you all the info you need. What questions do you have?"
+        ]
+      },
+      {
+        "category": "Pricing",
+        "templates": [
+          "Great question! Here's our pricing for [TREATMENT]:\n\n[INSERT PRICES]\n\nWant me to check availability for a consultation?",
+          "Here's what [TREATMENT] costs:\n\nSingle session: $[X]\nPackage of 3: $[X] (save $[Y]!)\n\nReady to book?"
+        ]
+      },
+      {
+        "category": "Scheduling",
+        "templates": [
+          "I have availability on:\n\n[DAY] at [TIME]\n[DAY] at [TIME]\n[DAY] at [TIME]\n\nWhich works best for you?",
+          "Let's get you booked! When works best - mornings, afternoons, or evenings? And any specific days that are better?"
+        ]
+      },
+      {
+        "category": "Follow-Up",
+        "templates": [
+          "Hi [NAME]! Just following up on our conversation about [TREATMENT]. Any questions I can help with?",
+          "Hey! Wanted to check in and see if you're still interested in [TREATMENT]. I have some great times available this week!"
+        ]
+      },
+      {
+        "category": "Confirmation",
+        "templates": [
+          "You're all set! See you on [DATE] at [TIME].\n\nAddress: [ADDRESS]\n\nAny questions before your appointment, just message me!",
+          "Confirmed! [DATE] at [TIME] for [TREATMENT].\n\nReminder: [PREP INSTRUCTIONS]\n\nSee you soon!"
+        ]
+      }
+    ]
+  }
+}

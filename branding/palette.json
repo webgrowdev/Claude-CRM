@@ -1,0 +1,157 @@
+{
+  "brand": {
+    "name": "Clinic",
+    "slogan": "Turn inquiries into sales",
+    "tagline_alternatives": [
+      "From DM to Deal",
+      "Every lead deserves attention",
+      "Your pocket sales assistant"
+    ]
+  },
+  "colors": {
+    "primary": {
+      "hex": "#6366F1",
+      "name": "Indigo",
+      "usage": "Main brand color, CTAs, primary buttons, active states, links"
+    },
+    "primary_light": {
+      "hex": "#818CF8",
+      "name": "Indigo Light",
+      "usage": "Hover states, secondary highlights, gradients"
+    },
+    "primary_dark": {
+      "hex": "#4F46E5",
+      "name": "Indigo Dark",
+      "usage": "Pressed states, text on light backgrounds"
+    },
+    "secondary": {
+      "hex": "#F472B6",
+      "name": "Pink",
+      "usage": "Accent color, feminine touch for aesthetic clinic audience, highlights"
+    },
+    "secondary_light": {
+      "hex": "#F9A8D4",
+      "name": "Pink Light",
+      "usage": "Subtle accents, background tints"
+    },
+    "success": {
+      "hex": "#10B981",
+      "name": "Emerald",
+      "usage": "Closed deals, positive states, confirmations, won leads"
+    },
+    "warning": {
+      "hex": "#F59E0B",
+      "name": "Amber",
+      "usage": "Pending actions, follow-up reminders, attention needed"
+    },
+    "error": {
+      "hex": "#EF4444",
+      "name": "Red",
+      "usage": "Lost leads, errors, destructive actions, overdue tasks"
+    },
+    "background": {
+      "hex": "#F8FAFC",
+      "name": "Slate 50",
+      "usage": "Main app background, light mode base"
+    },
+    "background_card": {
+      "hex": "#FFFFFF",
+      "name": "White",
+      "usage": "Cards, modals, elevated surfaces"
+    },
+    "background_dark": {
+      "hex": "#0F172A",
+      "name": "Slate 900",
+      "usage": "Dark mode background, footer, dark sections"
+    },
+    "text": {
+      "hex": "#1E293B",
+      "name": "Slate 800",
+      "usage": "Primary text, headings"
+    },
+    "text_secondary": {
+      "hex": "#64748B",
+      "name": "Slate 500",
+      "usage": "Secondary text, captions, labels"
+    },
+    "text_muted": {
+      "hex": "#94A3B8",
+      "name": "Slate 400",
+      "usage": "Placeholder text, disabled states"
+    },
+    "border": {
+      "hex": "#E2E8F0",
+      "name": "Slate 200",
+      "usage": "Borders, dividers, separators"
+    }
+  },
+  "gradients": {
+    "primary": "linear-gradient(135deg, #6366F1 0%, #818CF8 100%)",
+    "secondary": "linear-gradient(135deg, #F472B6 0%, #F9A8D4 100%)",
+    "hero": "linear-gradient(180deg, #F8FAFC 0%, #EEF2FF 100%)",
+    "dark": "linear-gradient(180deg, #0F172A 0%, #1E293B 100%)"
+  },
+  "typography": {
+    "primary_font": {
+      "name": "Inter",
+      "url": "https://fonts.google.com/specimen/Inter",
+      "weights": ["400", "500", "600", "700"],
+      "usage": "All UI text, body copy, labels, buttons"
+    },
+    "display_font": {
+      "name": "Plus Jakarta Sans",
+      "url": "https://fonts.google.com/specimen/Plus+Jakarta+Sans",
+      "weights": ["600", "700", "800"],
+      "usage": "Headlines, hero text, marketing materials, logo"
+    },
+    "scale": {
+      "xs": "12px",
+      "sm": "14px",
+      "base": "16px",
+      "lg": "18px",
+      "xl": "20px",
+      "2xl": "24px",
+      "3xl": "30px",
+      "4xl": "36px",
+      "5xl": "48px"
+    },
+    "line_heights": {
+      "tight": "1.25",
+      "normal": "1.5",
+      "relaxed": "1.75"
+    }
+  },
+  "spacing": {
+    "unit": "4px",
+    "scale": {
+      "0": "0px",
+      "1": "4px",
+      "2": "8px",
+      "3": "12px",
+      "4": "16px",
+      "5": "20px",
+      "6": "24px",
+      "8": "32px",
+      "10": "40px",
+      "12": "48px",
+      "16": "64px"
+    }
+  },
+  "border_radius": {
+    "none": "0px",
+    "sm": "4px",
+    "md": "8px",
+    "lg": "12px",
+    "xl": "16px",
+    "2xl": "24px",
+    "full": "9999px"
+  },
+  "shadows": {
+    "sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+    "md": "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+    "lg": "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+    "xl": "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+    "card": "0 2px 8px rgba(0, 0, 0, 0.08)",
+    "button": "0 4px 14px rgba(99, 102, 241, 0.4)"
+  }
+}

@@ -16,6 +16,9 @@ export type { CardProps } from './Card'
 export { Modal } from './Modal'
 export type { ModalProps } from './Modal'
 
+export type { SwitchProps } from './Switch'
+export { Switch } from './Switch'
+
 export { Select } from './Select'
 export type { SelectProps, SelectOption } from './Select'
 

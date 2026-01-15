@@ -1,0 +1,484 @@
+'use client'
+
+import { useState, useMemo } from 'react'
+import { useRouter, useParams } from 'next/navigation'
+import {
+  Phone,
+  MessageCircle,
+  Mail,
+  Calendar,
+  MoreVertical,
+  Send,
+  Clock,
+  FileText,
+  CheckCircle,
+  Instagram,
+  Globe,
+  Users,
+  Trash2,
+  Edit
+} from 'lucide-react'
+import { Header, PageContainer } from '@/components/layout'
+import { Card, Avatar, Badge, Button, Modal, Input, TextArea, Select } from '@/components/ui'
+import { useApp } from '@/contexts/AppContext'
+import {
+  formatTimeAgo,
+  formatRelativeDate,
+  getStatusLabel,
+  getSourceLabel,
+  getWhatsAppUrl,
+  getPhoneUrl,
+  getEmailUrl
+} from '@/lib/utils'
+import { LeadStatus, FollowUpType } from '@/types'
+
+const statusOptions: { value: LeadStatus; label: string; color: string }[] = [
+  { value: 'new', label: 'Nuevo', color: 'bg-primary-500' },
+  { value: 'contacted', label: 'Contactado', color: 'bg-warning-500' },
+  { value: 'scheduled', label: 'Agendado', color: 'bg-purple-500' },
+  { value: 'closed', label: 'Cerrado', color: 'bg-success-500' },
+  { value: 'lost', label: 'Perdido', color: 'bg-error-500' },
+]
+
+export default function LeadDetailPage() {
+  const router = useRouter()
+  const params = useParams()
+  const { getLeadById, updateLeadStatus, addNote, addFollowUp, deleteLead, state } = useApp()
+
+  const lead = useMemo(() => getLeadById(params.id as string), [params.id, getLeadById, state.leads])
+
+  const [showMenu, setShowMenu] = useState(false)
+  const [showNoteModal, setShowNoteModal] = useState(false)
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [noteContent, setNoteContent] = useState('')
+  const [followUp, setFollowUp] = useState<{
+    type: FollowUpType
+    scheduledAt: string
+    notes: string
+  }>({
+    type: 'call',
+    scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+    notes: '',
+  })
+
+  if (!lead) {
+    return (
+      <>
+        <Header title="Lead no encontrado" showBack />
+        <PageContainer>
+          <div className="text-center py-12">
+            <p className="text-slate-500">Este lead no existe o fue eliminado</p>
+            <Button onClick={() => router.push('/leads')} className="mt-4">
+              Volver a Leads
+            </Button>
+          </div>
+        </PageContainer>
+      </>
+    )
+  }
+
+  const handleAddNote = () => {
+    if (!noteContent.trim()) return
+    addNote(lead.id, noteContent)
+    setNoteContent('')
+    setShowNoteModal(false)
+  }
+
+  const handleAddFollowUp = () => {
+    addFollowUp(lead.id, {
+      type: followUp.type,
+      scheduledAt: new Date(followUp.scheduledAt),
+      notes: followUp.notes,
+    })
+    setFollowUp({
+      type: 'call',
+      scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+      notes: '',
+    })
+    setShowFollowUpModal(false)
+  }
+
+  const handleDelete = () => {
+    deleteLead(lead.id)
+    router.push('/leads')
+  }
+
+  const getSourceIcon = (source: string) => {
+    switch (source) {
+      case 'instagram':
+        return <Instagram className="w-4 h-4" />
+      case 'whatsapp':
+        return <MessageCircle className="w-4 h-4" />
+      case 'website':
+        return <Globe className="w-4 h-4" />
+      case 'referral':
+        return <Users className="w-4 h-4" />
+      default:
+        return <Phone className="w-4 h-4" />
+    }
+  }
+
+  // Combine notes and follow-ups into timeline
+  const timeline = useMemo(() => {
+    const items: Array<{
+      id: string
+      type: 'note' | 'followup' | 'status'
+      content: string
+      date: Date
+      completed?: boolean
+    }> = []
+
+    lead.notes.forEach(note => {
+      items.push({
+        id: note.id,
+        type: 'note',
+        content: note.content,
+        date: new Date(note.createdAt),
+      })
+    })
+
+    lead.followUps.forEach(fu => {
+      items.push({
+        id: fu.id,
+        type: 'followup',
+        content: `${fu.type === 'call' ? 'Llamada' : fu.type === 'message' ? 'Mensaje' : 'Reunión'}${fu.notes ? `: ${fu.notes}` : ''}`,
+        date: new Date(fu.scheduledAt),
+        completed: fu.completed,
+      })
+    })
+
+    return items.sort((a, b) => b.date.getTime() - a.date.getTime())
+  }, [lead])
+
+  return (
+    <>
+      <Header
+        title={lead.name}
+        showBack
+        showMenu
+        onMenuClick={() => setShowMenu(true)}
+      />
+
+      <PageContainer withBottomNav={false} className="pb-8">
+        {/* Profile Section */}
+        <Card className="text-center">
+          <Avatar name={lead.name} size="xl" className="mx-auto" />
+          <h2 className="text-xl font-bold text-slate-800 mt-3">{lead.name}</h2>
+          <div className="flex items-center justify-center gap-1 mt-1 text-slate-500">
+            {getSourceIcon(lead.source)}
+            <span className="text-sm">Vía {getSourceLabel(lead.source)}</span>
+          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            Agregado {formatTimeAgo(new Date(lead.createdAt))}
+          </p>
+        </Card>
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-4 gap-3 mt-4">
+          <a
+            href={getPhoneUrl(lead.phone)}
+            className="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-card hover:shadow-card-hover transition-shadow"
+          >
+            <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center mb-1">
+              <Phone className="w-5 h-5 text-primary-600" />
+            </div>
+            <span className="text-xs text-slate-600">Llamar</span>
+          </a>
+
+          <a
+            href={getWhatsAppUrl(lead.phone)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-card hover:shadow-card-hover transition-shadow"
+          >
+            <div className="w-10 h-10 rounded-lg bg-success-100 flex items-center justify-center mb-1">
+              <MessageCircle className="w-5 h-5 text-success-600" />
+            </div>
+            <span className="text-xs text-slate-600">WhatsApp</span>
+          </a>
+
+          {lead.email && (
+            <a
+              href={getEmailUrl(lead.email)}
+              className="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-card hover:shadow-card-hover transition-shadow"
+            >
+              <div className="w-10 h-10 rounded-lg bg-warning-100 flex items-center justify-center mb-1">
+                <Mail className="w-5 h-5 text-warning-600" />
+              </div>
+              <span className="text-xs text-slate-600">Email</span>
+            </a>
+          )}
+
+          <button
+            onClick={() => setShowFollowUpModal(true)}
+            className="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-card hover:shadow-card-hover transition-shadow"
+          >
+            <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center mb-1">
+              <Calendar className="w-5 h-5 text-purple-600" />
+            </div>
+            <span className="text-xs text-slate-600">Agendar</span>
+          </button>
+        </div>
+
+        {/* Status Selector */}
+        <Card className="mt-4">
+          <p className="text-sm font-medium text-slate-700 mb-3">Estado</p>
+          <div className="flex flex-wrap gap-2">
+            {statusOptions.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => updateLeadStatus(lead.id, option.value)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all ${
+                  lead.status === option.value
+                    ? `${option.color} text-white`
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    lead.status === option.value ? 'bg-white' : option.color
+                  }`}
+                />
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        {/* Contact Info */}
+        <Card className="mt-4">
+          <p className="text-sm font-medium text-slate-700 mb-3">Información de Contacto</p>
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                <Phone className="w-4 h-4 text-slate-500" />
+              </div>
+              <div>
+                <p className="text-xs text-slate-500">Teléfono</p>
+                <p className="text-sm text-slate-800">{lead.phone}</p>
+              </div>
+            </div>
+            {lead.email && (
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                  <Mail className="w-4 h-4 text-slate-500" />
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Email</p>
+                  <p className="text-sm text-slate-800">{lead.email}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Treatments */}
+        {lead.treatments.length > 0 && (
+          <Card className="mt-4">
+            <p className="text-sm font-medium text-slate-700 mb-3">Tratamientos de Interés</p>
+            <div className="flex flex-wrap gap-2">
+              {lead.treatments.map((treatment, i) => (
+                <Badge key={i} variant="outline">
+                  {treatment}
+                </Badge>
+              ))}
+            </div>
+          </Card>
+        )}
+
+        {/* Notes & Activity */}
+        <Card className="mt-4">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium text-slate-700">Notas y Actividad</p>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowNoteModal(true)}
+              icon={<FileText className="w-4 h-4" />}
+            >
+              Agregar nota
+            </Button>
+          </div>
+
+          {timeline.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-4">
+              No hay actividad todavía
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {timeline.map((item) => (
+                <div key={item.id} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        item.type === 'note'
+                          ? 'bg-slate-100'
+                          : item.completed
+                          ? 'bg-success-100'
+                          : 'bg-primary-100'
+                      }`}
+                    >
+                      {item.type === 'note' ? (
+                        <FileText className="w-4 h-4 text-slate-500" />
+                      ) : item.completed ? (
+                        <CheckCircle className="w-4 h-4 text-success-600" />
+                      ) : (
+                        <Clock className="w-4 h-4 text-primary-600" />
+                      )}
+                    </div>
+                    <div className="flex-1 w-px bg-slate-200 mt-2" />
+                  </div>
+                  <div className="flex-1 pb-4">
+                    <p className="text-sm text-slate-800">{item.content}</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      {item.type === 'followup'
+                        ? (item.completed ? 'Completado ' : 'Programado para ') +
+                          formatRelativeDate(item.date)
+                        : formatTimeAgo(item.date)}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </PageContainer>
+
+      {/* Menu Modal */}
+      <Modal
+        isOpen={showMenu}
+        onClose={() => setShowMenu(false)}
+        title="Opciones"
+        size="sm"
+      >
+        <div className="space-y-2">
+          <button
+            onClick={() => {
+              setShowMenu(false)
+              // Edit functionality would go here
+            }}
+            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 transition-colors"
+          >
+            <Edit className="w-5 h-5 text-slate-500" />
+            <span className="text-slate-700">Editar lead</span>
+          </button>
+          <button
+            onClick={() => {
+              setShowMenu(false)
+              setShowDeleteConfirm(true)
+            }}
+            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-error-50 transition-colors text-error-600"
+          >
+            <Trash2 className="w-5 h-5" />
+            <span>Eliminar lead</span>
+          </button>
+        </div>
+      </Modal>
+
+      {/* Add Note Modal */}
+      <Modal
+        isOpen={showNoteModal}
+        onClose={() => setShowNoteModal(false)}
+        title="Agregar Nota"
+      >
+        <div className="space-y-4">
+          <TextArea
+            placeholder="Escribe una nota sobre este lead..."
+            value={noteContent}
+            onChange={(e) => setNoteContent(e.target.value)}
+            className="min-h-[120px]"
+          />
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              fullWidth
+              onClick={() => setShowNoteModal(false)}
+            >
+              Cancelar
+            </Button>
+            <Button fullWidth onClick={handleAddNote}>
+              Guardar
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Add Follow-up Modal */}
+      <Modal
+        isOpen={showFollowUpModal}
+        onClose={() => setShowFollowUpModal(false)}
+        title="Programar Seguimiento"
+      >
+        <div className="space-y-4">
+          <Select
+            label="Tipo"
+            value={followUp.type}
+            onChange={(value) => setFollowUp({ ...followUp, type: value as FollowUpType })}
+            options={[
+              { value: 'call', label: 'Llamada' },
+              { value: 'message', label: 'Mensaje' },
+              { value: 'meeting', label: 'Reunión' },
+            ]}
+          />
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">
+              Fecha y Hora
+            </label>
+            <input
+              type="datetime-local"
+              value={followUp.scheduledAt}
+              onChange={(e) => setFollowUp({ ...followUp, scheduledAt: e.target.value })}
+              className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white"
+            />
+          </div>
+
+          <Input
+            label="Notas (opcional)"
+            placeholder="Ej: Confirmar disponibilidad para consulta"
+            value={followUp.notes}
+            onChange={(e) => setFollowUp({ ...followUp, notes: e.target.value })}
+          />
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              fullWidth
+              onClick={() => setShowFollowUpModal(false)}
+            >
+              Cancelar
+            </Button>
+            <Button fullWidth onClick={handleAddFollowUp}>
+              Programar
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        title="Eliminar Lead"
+        size="sm"
+      >
+        <p className="text-slate-600 mb-6">
+          ¿Estás seguro de que deseas eliminar a <strong>{lead.name}</strong>? Esta acción no se puede deshacer.
+        </p>
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            fullWidth
+            onClick={() => setShowDeleteConfirm(false)}
+          >
+            Cancelar
+          </Button>
+          <Button variant="danger" fullWidth onClick={handleDelete}>
+            Eliminar
+          </Button>
+        </div>
+      </Modal>
+    </>
+  )
+}

@@ -20,7 +20,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Instagram, MessageCircle, Phone, Clock } from 'lucide-react'
-import { Header, BottomNav, PageContainer } from '@/components/layout'
+import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Avatar, Badge } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { formatTimeAgo, getSourceLabel } from '@/lib/utils'
@@ -145,7 +145,7 @@ function Column({
   leads: Lead[]
 }) {
   return (
-    <div className="flex-shrink-0 w-[280px] flex flex-col h-full">
+    <div className="flex-shrink-0 w-[280px] lg:w-[300px] lg:min-w-[280px] flex flex-col h-full">
       {/* Column Header */}
       <div
         className="flex items-center gap-2 px-3 py-2 bg-white rounded-t-lg border-l-4"
@@ -253,17 +253,17 @@ export default function KanbanPage() {
   }
 
   return (
-    <>
+    <AppShell>
       <Header title="Pipeline" />
 
-      <PageContainer noPadding className="h-[calc(100vh-56px-64px)] overflow-hidden">
+      <PageContainer noPadding className="h-[calc(100vh-56px-64px)] lg:h-[calc(100vh-64px)] overflow-hidden">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-3 h-full overflow-x-auto scrollbar-hide px-4 py-4">
+          <div className="flex gap-3 lg:gap-4 h-full overflow-x-auto scrollbar-hide px-4 py-4 lg:px-6">
             {columns.map((column) => (
               <Column
                 key={column.id}
@@ -278,8 +278,6 @@ export default function KanbanPage() {
           </DragOverlay>
         </DndContext>
       </PageContainer>
-
-      <BottomNav />
-    </>
+    </AppShell>
   )
 }

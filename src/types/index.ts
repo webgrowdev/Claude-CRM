@@ -154,3 +154,68 @@ export interface Settings {
   notificationsEnabled: boolean
   reminderTime: number // minutes before follow-up
 }
+
+// Google Calendar Event Interface
+export interface CalendarEvent {
+  id: string
+  title: string
+  description?: string
+  start: Date
+  end: Date
+  location?: string
+  meetLink?: string
+  attendees?: string[]
+  leadId?: string
+  followUpId?: string
+  syncedWithGoogle?: boolean
+  googleEventId?: string
+}
+
+// Google Calendar Integration Settings
+export interface GoogleCalendarSettings {
+  connected: boolean
+  email?: string
+  accessToken?: string
+  refreshToken?: string
+  calendarId?: string
+  autoCreateMeetLinks: boolean
+  syncFollowUps: boolean
+}
+
+// ManyChat Webhook Types
+export type ManyChatEventType =
+  | 'new_subscriber'
+  | 'message_received'
+  | 'button_clicked'
+  | 'appointment_requested'
+  | 'contact_info_shared'
+
+// ManyChat Webhook Payload
+export interface ManyChatWebhook {
+  id: string
+  type: ManyChatEventType
+  timestamp: Date
+  subscriber: {
+    id: string
+    name: string
+    phone?: string
+    email?: string
+    instagram?: string
+  }
+  data?: {
+    message?: string
+    treatment?: string
+    appointmentDate?: string
+    appointmentTime?: string
+  }
+}
+
+// ManyChat Integration Settings
+export interface ManyChatSettings {
+  connected: boolean
+  apiKey?: string
+  botId?: string
+  webhookUrl?: string
+  autoCreateLeads: boolean
+  defaultAssignee?: string
+}

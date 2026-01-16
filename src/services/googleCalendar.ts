@@ -3,7 +3,11 @@
 
 import { CalendarEvent, FollowUp, Lead, GoogleCalendarSettings } from '@/types'
 
-const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
+// Get client ID at runtime (not at module load time)
+function getGoogleClientId(): string {
+  return process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
+}
+
 const GOOGLE_CALENDAR_SCOPES = [
   'https://www.googleapis.com/auth/calendar',
   'https://www.googleapis.com/auth/calendar.events',
@@ -53,10 +57,16 @@ export function isTokenExpired(): boolean {
 
 // Generate OAuth URL for Google Calendar
 export function getGoogleAuthUrl(): string {
+  const clientId = getGoogleClientId()
   const redirectUri = `${window.location.origin}/api/auth/callback/google`
 
+  console.log('Generating OAuth URL with:', {
+    clientId: clientId ? clientId.substring(0, 20) + '...' : 'NOT SET',
+    redirectUri,
+  })
+
   const params = new URLSearchParams({
-    client_id: GOOGLE_CLIENT_ID,
+    client_id: clientId,
     redirect_uri: redirectUri,
     response_type: 'code',
     scope: GOOGLE_CALENDAR_SCOPES.join(' '),
@@ -69,11 +79,18 @@ export function getGoogleAuthUrl(): string {
 
 // Connect to Google Calendar (redirects to Google OAuth)
 export function connectGoogleCalendar(): void {
-  if (!GOOGLE_CLIENT_ID) {
+  const clientId = getGoogleClientId()
+
+  console.log('connectGoogleCalendar called')
+  console.log('NEXT_PUBLIC_GOOGLE_CLIENT_ID:', clientId ? 'SET' : 'NOT SET')
+
+  if (!clientId) {
+    console.error('Google Client ID not configured!')
     throw new Error('Google Calendar integration not configured. Please add NEXT_PUBLIC_GOOGLE_CLIENT_ID to your environment variables.')
   }
 
   const authUrl = getGoogleAuthUrl()
+  console.log('Redirecting to:', authUrl)
   window.location.href = authUrl
 }
 
@@ -129,8 +146,9 @@ export async function createCalendarEvent(
     return null
   }
 
+  const duration = followUp.duration || 30 // Use follow-up duration or default 30 min
   const endTime = new Date(followUp.scheduledAt)
-  endTime.setMinutes(endTime.getMinutes() + 30) // Default 30 min duration
+  endTime.setMinutes(endTime.getMinutes() + duration)
 
   const eventData: any = {
     summary: `${getFollowUpTitle(followUp.type)} - ${lead.name}`,
@@ -154,6 +172,14 @@ Creado automáticamente por Clinic CRM
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
     attendees: lead.email ? [{ email: lead.email }] : [],
+    reminders: {
+      useDefault: false,
+      overrides: [
+        { method: 'email', minutes: 24 * 60 }, // 1 day before
+        { method: 'popup', minutes: 30 }, // 30 minutes before
+        { method: 'popup', minutes: 10 }, // 10 minutes before
+      ],
+    },
   }
 
   // Add Google Meet for meetings

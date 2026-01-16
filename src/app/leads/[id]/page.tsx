@@ -16,7 +16,10 @@ import {
   Globe,
   Users,
   Trash2,
-  Edit
+  Edit,
+  Video,
+  Loader2,
+  ExternalLink
 } from 'lucide-react'
 import { Header, PageContainer } from '@/components/layout'
 import { Card, Avatar, Badge, Button, Modal, Input, TextArea, Select } from '@/components/ui'
@@ -43,7 +46,7 @@ const statusOptions: { value: LeadStatus; label: string; color: string }[] = [
 export default function LeadDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const { getLeadById, updateLeadStatus, addNote, addFollowUp, deleteLead, state } = useApp()
+  const { getLeadById, updateLeadStatus, addNote, addFollowUp, deleteLead, state, isCalendarConnected } = useApp()
 
   const lead = useMemo(() => getLeadById(params.id as string), [params.id, getLeadById, state.leads])
 
@@ -52,15 +55,20 @@ export default function LeadDetailPage() {
   const [showFollowUpModal, setShowFollowUpModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [noteContent, setNoteContent] = useState('')
+  const [isCreatingFollowUp, setIsCreatingFollowUp] = useState(false)
   const [followUp, setFollowUp] = useState<{
     type: FollowUpType
     scheduledAt: string
     notes: string
+    duration: number
   }>({
     type: 'call',
     scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
     notes: '',
+    duration: 30,
   })
+
+  const calendarConnected = isCalendarConnected()
 
   if (!lead) {
     return (
@@ -85,18 +93,27 @@ export default function LeadDetailPage() {
     setShowNoteModal(false)
   }
 
-  const handleAddFollowUp = () => {
-    addFollowUp(lead.id, {
-      type: followUp.type,
-      scheduledAt: new Date(followUp.scheduledAt),
-      notes: followUp.notes,
-    })
-    setFollowUp({
-      type: 'call',
-      scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
-      notes: '',
-    })
-    setShowFollowUpModal(false)
+  const handleAddFollowUp = async () => {
+    setIsCreatingFollowUp(true)
+    try {
+      await addFollowUp(lead.id, {
+        type: followUp.type,
+        scheduledAt: new Date(followUp.scheduledAt),
+        notes: followUp.notes,
+        duration: followUp.duration,
+      })
+      setFollowUp({
+        type: 'call',
+        scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
+        notes: '',
+        duration: 30,
+      })
+      setShowFollowUpModal(false)
+    } catch (error) {
+      console.error('Error creating follow-up:', error)
+    } finally {
+      setIsCreatingFollowUp(false)
+    }
   }
 
   const handleDelete = () => {
@@ -127,6 +144,8 @@ export default function LeadDetailPage() {
       content: string
       date: Date
       completed?: boolean
+      meetLink?: string
+      followUpType?: string
     }> = []
 
     lead.notes.forEach(note => {
@@ -142,9 +161,11 @@ export default function LeadDetailPage() {
       items.push({
         id: fu.id,
         type: 'followup',
-        content: `${fu.type === 'call' ? 'Llamada' : fu.type === 'message' ? 'Mensaje' : 'Reunión'}${fu.notes ? `: ${fu.notes}` : ''}`,
+        content: `${fu.type === 'call' ? 'Llamada' : fu.type === 'message' ? 'Mensaje' : fu.type === 'email' ? 'Email' : 'Reunión'}${fu.notes ? `: ${fu.notes}` : ''}`,
         date: new Date(fu.scheduledAt),
         completed: fu.completed,
+        meetLink: fu.meetLink,
+        followUpType: fu.type,
       })
     })
 
@@ -314,6 +335,10 @@ export default function LeadDetailPage() {
                       className={`w-8 h-8 rounded-full flex items-center justify-center ${
                         item.type === 'note'
                           ? 'bg-slate-100'
+                          : item.followUpType === 'meeting'
+                          ? item.completed
+                            ? 'bg-success-100'
+                            : 'bg-purple-100'
                           : item.completed
                           ? 'bg-success-100'
                           : 'bg-primary-100'
@@ -323,6 +348,8 @@ export default function LeadDetailPage() {
                         <FileText className="w-4 h-4 text-slate-500" />
                       ) : item.completed ? (
                         <CheckCircle className="w-4 h-4 text-success-600" />
+                      ) : item.followUpType === 'meeting' ? (
+                        <Video className="w-4 h-4 text-purple-600" />
                       ) : (
                         <Clock className="w-4 h-4 text-primary-600" />
                       )}
@@ -337,6 +364,18 @@ export default function LeadDetailPage() {
                           formatRelativeDate(item.date)
                         : formatTimeAgo(item.date)}
                     </p>
+                    {item.meetLink && (
+                      <a
+                        href={item.meetLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-medium rounded-lg transition-colors"
+                      >
+                        <Video className="w-3.5 h-3.5" />
+                        Unirse a Google Meet
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
                   </div>
                 </div>
               ))}
@@ -418,9 +457,31 @@ export default function LeadDetailPage() {
             options={[
               { value: 'call', label: 'Llamada' },
               { value: 'message', label: 'Mensaje' },
-              { value: 'meeting', label: 'Reunión' },
+              { value: 'email', label: 'Email' },
+              { value: 'meeting', label: 'Reunión con videollamada' },
             ]}
           />
+
+          {/* Show calendar sync indicator for meetings */}
+          {followUp.type === 'meeting' && (
+            <div className={`flex items-center gap-2 p-3 rounded-lg ${calendarConnected ? 'bg-purple-50 border border-purple-200' : 'bg-slate-50 border border-slate-200'}`}>
+              <Video className={`w-5 h-5 ${calendarConnected ? 'text-purple-600' : 'text-slate-400'}`} />
+              <div className="flex-1">
+                <p className={`text-sm font-medium ${calendarConnected ? 'text-purple-700' : 'text-slate-600'}`}>
+                  {calendarConnected ? 'Se creará evento en Google Calendar' : 'Google Calendar no conectado'}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {calendarConnected
+                    ? 'Se generará automáticamente un enlace de Google Meet'
+                    : 'Conecta tu calendario en Configuración → Integraciones'
+                  }
+                </p>
+              </div>
+              {calendarConnected && (
+                <CheckCircle className="w-5 h-5 text-purple-600" />
+              )}
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
@@ -434,6 +495,31 @@ export default function LeadDetailPage() {
             />
           </div>
 
+          {/* Duration selector for meetings */}
+          {followUp.type === 'meeting' && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                Duración
+              </label>
+              <div className="flex gap-2">
+                {[15, 30, 45, 60, 90].map((mins) => (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => setFollowUp({ ...followUp, duration: mins })}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
+                      followUp.duration === mins
+                        ? 'bg-primary-500 text-white'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {mins < 60 ? `${mins}m` : `${mins / 60}h`}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <Input
             label="Notas (opcional)"
             placeholder="Ej: Confirmar disponibilidad para consulta"
@@ -446,11 +532,23 @@ export default function LeadDetailPage() {
               variant="outline"
               fullWidth
               onClick={() => setShowFollowUpModal(false)}
+              disabled={isCreatingFollowUp}
             >
               Cancelar
             </Button>
-            <Button fullWidth onClick={handleAddFollowUp}>
-              Programar
+            <Button
+              fullWidth
+              onClick={handleAddFollowUp}
+              disabled={isCreatingFollowUp}
+            >
+              {isCreatingFollowUp ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {followUp.type === 'meeting' && calendarConnected ? 'Creando evento...' : 'Guardando...'}
+                </span>
+              ) : (
+                followUp.type === 'meeting' && calendarConnected ? 'Crear con Google Meet' : 'Programar'
+              )}
             </Button>
           </div>
         </div>

@@ -7,12 +7,15 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const code = searchParams.get('code')
   const error = searchParams.get('error')
+  const errorDescription = searchParams.get('error_description')
+
+  console.log('OAuth callback received:', { code: code?.substring(0, 20) + '...', error, errorDescription })
 
   // Handle errors from Google
   if (error) {
-    console.error('Google OAuth error:', error)
+    console.error('Google OAuth error:', error, errorDescription)
     return NextResponse.redirect(
-      new URL('/settings/integrations?error=google_auth_failed', request.url)
+      new URL(`/settings/integrations?error=google_auth_failed&details=${encodeURIComponent(errorDescription || error)}`, request.url)
     )
   }
 
@@ -23,6 +26,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/google`
+
+    console.log('Exchanging code for tokens...')
+    console.log('Client ID:', process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.substring(0, 20) + '...')
+    console.log('Redirect URI:', redirectUri)
+
     // Exchange code for tokens
     const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
       method: 'POST',
@@ -33,20 +42,23 @@ export async function GET(request: NextRequest) {
         code,
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
         client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-        redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/callback/google`,
+        redirect_uri: redirectUri,
         grant_type: 'authorization_code',
       }),
     })
 
+    const tokenData = await tokenResponse.text()
+    console.log('Token response status:', tokenResponse.status)
+
     if (!tokenResponse.ok) {
-      const errorData = await tokenResponse.text()
-      console.error('Token exchange failed:', errorData)
+      console.error('Token exchange failed:', tokenData)
       return NextResponse.redirect(
-        new URL('/settings/integrations?error=token_exchange_failed', request.url)
+        new URL(`/settings/integrations?error=token_exchange_failed&details=${encodeURIComponent(tokenData)}`, request.url)
       )
     }
 
-    const tokens = await tokenResponse.json()
+    const tokens = JSON.parse(tokenData)
+    console.log('Tokens received, fetching user info...')
 
     // Get user info
     const userInfoResponse = await fetch(GOOGLE_USERINFO_URL, {
@@ -55,7 +67,15 @@ export async function GET(request: NextRequest) {
       },
     })
 
+    if (!userInfoResponse.ok) {
+      console.error('Failed to get user info:', await userInfoResponse.text())
+      return NextResponse.redirect(
+        new URL('/settings/integrations?error=userinfo_failed', request.url)
+      )
+    }
+
     const userInfo = await userInfoResponse.json()
+    console.log('User info received:', userInfo.email)
 
     // Create a response that will store tokens in localStorage via client-side script
     const html = `
@@ -91,13 +111,14 @@ export async function GET(request: NextRequest) {
     }
     h1 { color: #1e293b; font-size: 1.25rem; }
     p { color: #64748b; }
+    .success { color: #10b981; }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="spinner"></div>
     <h1>Conectando con Google Calendar</h1>
-    <p>Espera un momento...</p>
+    <p>Conectado como: <strong>${userInfo.email}</strong></p>
   </div>
   <script>
     const settings = {
@@ -113,8 +134,10 @@ export async function GET(request: NextRequest) {
 
     localStorage.setItem('clinic_google_calendar_settings', JSON.stringify(settings));
 
-    // Redirect to integrations page with success
-    window.location.href = '/settings/integrations?success=google_connected';
+    // Small delay to show success message
+    setTimeout(() => {
+      window.location.href = '/settings/integrations?success=google_connected';
+    }, 1000);
   </script>
 </body>
 </html>
@@ -128,7 +151,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('OAuth callback error:', error)
     return NextResponse.redirect(
-      new URL('/settings/integrations?error=callback_failed', request.url)
+      new URL(`/settings/integrations?error=callback_failed&details=${encodeURIComponent(String(error))}`, request.url)
     )
   }
 }

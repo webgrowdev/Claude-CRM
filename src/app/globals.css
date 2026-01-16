@@ -7,8 +7,8 @@
 
 @layer base {
   :root {
-    --color-primary: 99 102 241;
-    --color-secondary: 244 114 182;
+    --color-primary: 20 184 166;
+    --color-secondary: 59 130 246;
   }
 
   html {
@@ -17,7 +17,7 @@
   }
 
   body {
-    @apply font-sans text-slate-800 bg-slate-50 antialiased;
+    @apply font-sans text-slate-800 bg-gray-50 antialiased;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -41,15 +41,15 @@
     display: none;
   }
 
-  /* Custom scrollbar */
+  /* Custom scrollbar - thin and subtle */
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: #CBD5E1 transparent;
+    scrollbar-color: #E2E8F0 transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
   }
 
   .scrollbar-thin::-webkit-scrollbar-track {
@@ -57,8 +57,12 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #E2E8F0;
+    border-radius: 2px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
     background-color: #CBD5E1;
-    border-radius: 3px;
   }
 
   /* Prevent pull-to-refresh */
@@ -79,7 +83,7 @@
   }
 
   *:focus-visible {
-    @apply ring-2 ring-primary-500 ring-offset-2;
+    @apply ring-2 ring-primary-500/50 ring-offset-2;
   }
 
   /* Selection color */
@@ -89,64 +93,161 @@
 }
 
 @layer components {
-  /* Status badge colors */
+  /* =============================================
+     FUNNEL STATUS BADGES
+     ============================================= */
   .status-new {
-    @apply bg-primary-100 text-primary-700;
+    @apply bg-blue-50 text-blue-700 border border-blue-200;
   }
 
   .status-contacted {
-    @apply bg-warning-100 text-warning-700;
+    @apply bg-amber-50 text-amber-700 border border-amber-200;
   }
 
+  .status-appointment,
   .status-scheduled {
-    @apply bg-purple-100 text-purple-700;
+    @apply bg-purple-50 text-purple-700 border border-purple-200;
+  }
+
+  .status-attended {
+    @apply bg-primary-50 text-primary-700 border border-primary-200;
   }
 
   .status-closed {
-    @apply bg-success-100 text-success-700;
+    @apply bg-success-50 text-success-700 border border-success-200;
+  }
+
+  .status-followup {
+    @apply bg-pink-50 text-pink-700 border border-pink-200;
   }
 
   .status-lost {
-    @apply bg-error-100 text-error-700;
+    @apply bg-gray-50 text-gray-600 border border-gray-200;
   }
 
-  /* Kanban column colors */
+  .status-noshow {
+    @apply bg-error-50 text-error-700 border border-error-200;
+  }
+
+  /* =============================================
+     CHANNEL BADGES
+     ============================================= */
+  .channel-instagram {
+    @apply bg-pink-50 text-pink-600;
+  }
+
+  .channel-whatsapp {
+    @apply bg-green-50 text-green-600;
+  }
+
+  .channel-phone {
+    @apply bg-blue-50 text-blue-600;
+  }
+
+  .channel-website {
+    @apply bg-indigo-50 text-indigo-600;
+  }
+
+  .channel-referral {
+    @apply bg-purple-50 text-purple-600;
+  }
+
+  /* =============================================
+     KANBAN COLUMN STYLES
+     ============================================= */
   .kanban-new {
-    @apply border-l-4 border-l-primary-500;
+    @apply border-t-4 border-t-blue-500;
   }
 
   .kanban-contacted {
-    @apply border-l-4 border-l-warning-500;
+    @apply border-t-4 border-t-amber-500;
   }
 
-  .kanban-scheduled {
-    @apply border-l-4 border-l-purple-500;
+  .kanban-appointment {
+    @apply border-t-4 border-t-purple-500;
+  }
+
+  .kanban-attended {
+    @apply border-t-4 border-t-primary-500;
   }
 
   .kanban-closed {
-    @apply border-l-4 border-l-success-500;
+    @apply border-t-4 border-t-success-500;
+  }
+
+  .kanban-followup {
+    @apply border-t-4 border-t-pink-500;
   }
 
   .kanban-lost {
-    @apply border-l-4 border-l-error-500;
+    @apply border-t-4 border-t-gray-400;
   }
 
-  /* Glassmorphism effect */
-  .glass {
-    @apply bg-white/80 backdrop-blur-lg;
+  .kanban-noshow {
+    @apply border-t-4 border-t-error-500;
   }
 
-  /* Card hover effect */
+  /* =============================================
+     CARD STYLES
+     ============================================= */
+  .card {
+    @apply bg-white rounded-xl border border-gray-100 shadow-card;
+  }
+
   .card-interactive {
-    @apply transition-all duration-200 hover:shadow-card-hover active:scale-[0.98];
+    @apply transition-all duration-200 hover:shadow-card-hover hover:border-gray-200 active:scale-[0.99];
   }
 
-  /* Button shadow */
-  .btn-shadow {
-    @apply shadow-button hover:shadow-button-hover transition-shadow;
+  .card-selected {
+    @apply ring-2 ring-primary-500 border-primary-200;
   }
 
-  /* Gradient backgrounds */
+  /* =============================================
+     BUTTON STYLES
+     ============================================= */
+  .btn {
+    @apply inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200;
+  }
+
+  .btn-primary {
+    @apply bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700 shadow-button hover:shadow-button-hover;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-slate-700 border border-gray-200 hover:bg-gray-50 hover:border-gray-300 active:bg-gray-100;
+  }
+
+  .btn-ghost {
+    @apply text-slate-600 hover:bg-gray-100 active:bg-gray-200;
+  }
+
+  .btn-danger {
+    @apply bg-error-500 text-white hover:bg-error-600 active:bg-error-700;
+  }
+
+  /* Quick action buttons */
+  .btn-action {
+    @apply p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 active:scale-95 transition-all;
+  }
+
+  .btn-action-primary {
+    @apply p-2 rounded-full bg-primary-100 text-primary-600 hover:bg-primary-200 active:scale-95 transition-all;
+  }
+
+  /* =============================================
+     GLASSMORPHISM
+     ============================================= */
+  .glass {
+    @apply bg-white/90 backdrop-blur-lg;
+  }
+
+  .glass-dark {
+    @apply bg-slate-900/90 backdrop-blur-lg;
+  }
+
+  /* =============================================
+     GRADIENTS
+     ============================================= */
   .gradient-primary {
     @apply bg-gradient-to-br from-primary-500 to-primary-600;
   }
@@ -156,26 +257,128 @@
   }
 
   .gradient-hero {
-    @apply bg-gradient-to-b from-white to-primary-50;
+    @apply bg-gradient-to-b from-white to-gray-50;
   }
 
-  /* Text gradients */
+  .gradient-card {
+    @apply bg-gradient-to-br from-white to-gray-50/50;
+  }
+
+  /* =============================================
+     TEXT STYLES
+     ============================================= */
   .text-gradient-primary {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-500 to-primary-700;
   }
 
-  /* Loading skeleton */
-  .skeleton {
-    @apply bg-slate-200 animate-pulse rounded;
+  .text-muted {
+    @apply text-slate-500;
   }
 
-  /* Drag and drop styles */
+  .text-label {
+    @apply text-xs font-medium uppercase tracking-wider text-slate-400;
+  }
+
+  /* =============================================
+     LOADING STATES
+     ============================================= */
+  .skeleton {
+    @apply bg-gray-200 animate-pulse rounded;
+  }
+
+  .skeleton-text {
+    @apply h-4 bg-gray-200 animate-pulse rounded;
+  }
+
+  .skeleton-avatar {
+    @apply w-10 h-10 bg-gray-200 animate-pulse rounded-full;
+  }
+
+  /* =============================================
+     DRAG AND DROP
+     ============================================= */
   .dragging {
-    @apply opacity-50 cursor-grabbing;
+    @apply opacity-60 cursor-grabbing scale-105 shadow-lg;
   }
 
   .drop-target {
-    @apply bg-primary-50 border-2 border-dashed border-primary-300;
+    @apply bg-primary-50/50 border-2 border-dashed border-primary-300 rounded-xl;
+  }
+
+  /* =============================================
+     CALENDAR SLOT STYLES
+     ============================================= */
+  .slot-available {
+    @apply bg-white border border-gray-200 hover:border-primary-300 hover:bg-primary-50 cursor-pointer;
+  }
+
+  .slot-pending {
+    @apply bg-amber-50 border border-amber-200;
+  }
+
+  .slot-confirmed {
+    @apply bg-primary-50 border border-primary-200;
+  }
+
+  .slot-in-progress {
+    @apply bg-blue-50 border border-blue-200;
+  }
+
+  .slot-completed {
+    @apply bg-success-50 border border-success-200;
+  }
+
+  .slot-noshow {
+    @apply bg-error-50 border border-error-200;
+  }
+
+  .slot-blocked {
+    @apply bg-gray-100 border border-gray-200 text-gray-400 cursor-not-allowed;
+  }
+
+  /* =============================================
+     NOTIFICATION DOT
+     ============================================= */
+  .notification-dot {
+    @apply absolute -top-1 -right-1 w-2.5 h-2.5 bg-error-500 rounded-full border-2 border-white;
+  }
+
+  .notification-dot-animated {
+    @apply notification-dot animate-pulse-soft;
+  }
+
+  /* =============================================
+     EMPTY STATES
+     ============================================= */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-12 text-center;
+  }
+
+  .empty-state-icon {
+    @apply w-16 h-16 text-gray-300 mb-4;
+  }
+
+  .empty-state-title {
+    @apply text-lg font-medium text-slate-700 mb-2;
+  }
+
+  .empty-state-description {
+    @apply text-sm text-slate-500 max-w-sm;
+  }
+
+  /* =============================================
+     INBOX ITEM
+     ============================================= */
+  .inbox-item {
+    @apply flex items-center gap-3 p-4 bg-white border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors;
+  }
+
+  .inbox-item-unread {
+    @apply bg-blue-50/50 border-l-4 border-l-blue-500;
+  }
+
+  .inbox-item-urgent {
+    @apply bg-amber-50/50 border-l-4 border-l-amber-500;
   }
 }
 
@@ -231,6 +434,24 @@
   .aspect-card {
     aspect-ratio: 3 / 2;
   }
+
+  /* Safe padding for bottom nav */
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .mb-safe {
+    margin-bottom: max(4.5rem, calc(4.5rem + env(safe-area-inset-bottom)));
+  }
+
+  /* Hide on mobile/desktop */
+  .mobile-only {
+    @apply lg:hidden;
+  }
+
+  .desktop-only {
+    @apply hidden lg:block;
+  }
 }
 
 /* PWA Install prompt hide */
@@ -245,4 +466,10 @@
   .no-print {
     display: none !important;
   }
+}
+
+/* Prevent text selection on UI elements */
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
 }

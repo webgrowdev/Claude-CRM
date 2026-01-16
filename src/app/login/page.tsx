@@ -24,7 +24,7 @@ export default function LoginPage() {
     // Demo login - accept any email/password
     if (email && password.length >= 4) {
       localStorage.setItem('clinic_logged_in', 'true')
-      router.push('/dashboard')
+      router.push('/inbox')
     } else {
       setError('Por favor ingresa un email y contraseña válidos')
       setLoading(false)

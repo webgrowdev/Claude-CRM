@@ -27,14 +27,48 @@ export const translations = {
     // Navigation
     nav: {
       dashboard: 'Dashboard',
+      inbox: 'Inbox',
       patients: 'Pacientes',
-      pipeline: 'Pipeline',
+      pipeline: 'Embudo',
       calendar: 'Agenda',
       reports: 'Reportes',
       treatments: 'Tratamientos',
       settings: 'Configuración',
       home: 'Inicio',
+      more: 'Más',
       newPatient: 'Nuevo Paciente',
+      newLead: 'Nuevo Lead',
+      scheduleAppointment: 'Agendar Turno',
+    },
+
+    // Funnel Statuses
+    funnel: {
+      new: 'Nuevo',
+      contacted: 'Contactado',
+      appointment: 'Turno Agendado',
+      attended: 'Asistió',
+      closed: 'Cerró Tratamiento',
+      followup: 'Seguimiento',
+      lost: 'Perdido',
+      noshow: 'No Asistió',
+    },
+
+    // Inbox
+    inbox: {
+      title: 'Inbox',
+      subtitle: 'Leads entrantes',
+      newLeads: 'Nuevos',
+      inProcess: 'En proceso',
+      toCallToday: 'Para llamar hoy',
+      allLeads: 'Todos los leads',
+      noNewLeads: 'No hay leads nuevos',
+      checkFollowUp: 'Ver leads en seguimiento',
+      filterByChannel: 'Filtrar por canal',
+      filterByStatus: 'Filtrar por estado',
+      markAsContacted: 'Marcar como contactado',
+      scheduleCall: 'Agendar llamada',
+      urgent: 'Urgente',
+      waitingOver48h: 'Esperando +48h',
     },
 
     // Auth
@@ -337,14 +371,48 @@ export const translations = {
     // Navigation
     nav: {
       dashboard: 'Dashboard',
+      inbox: 'Inbox',
       patients: 'Patients',
-      pipeline: 'Pipeline',
+      pipeline: 'Funnel',
       calendar: 'Calendar',
       reports: 'Reports',
       treatments: 'Treatments',
       settings: 'Settings',
       home: 'Home',
+      more: 'More',
       newPatient: 'New Patient',
+      newLead: 'New Lead',
+      scheduleAppointment: 'Schedule Appointment',
+    },
+
+    // Funnel Statuses
+    funnel: {
+      new: 'New',
+      contacted: 'Contacted',
+      appointment: 'Appointment Scheduled',
+      attended: 'Attended',
+      closed: 'Treatment Closed',
+      followup: 'Follow-up',
+      lost: 'Lost',
+      noshow: 'No Show',
+    },
+
+    // Inbox
+    inbox: {
+      title: 'Inbox',
+      subtitle: 'Incoming leads',
+      newLeads: 'New',
+      inProcess: 'In process',
+      toCallToday: 'To call today',
+      allLeads: 'All leads',
+      noNewLeads: 'No new leads',
+      checkFollowUp: 'Check follow-up leads',
+      filterByChannel: 'Filter by channel',
+      filterByStatus: 'Filter by status',
+      markAsContacted: 'Mark as contacted',
+      scheduleCall: 'Schedule call',
+      urgent: 'Urgent',
+      waitingOver48h: 'Waiting 48h+',
     },
 
     // Auth

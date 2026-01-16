@@ -19,6 +19,7 @@ import {
   Moon,
   Sun,
   Link2,
+  BookOpen,
 } from 'lucide-react'
 import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Card, Avatar, Modal, Button, Input } from '@/components/ui'
@@ -137,6 +138,15 @@ export default function SettingsPage() {
     {
       title: 'Soporte',
       items: [
+        {
+          icon: <BookOpen className="w-5 h-5 text-slate-500" />,
+          label: 'Ver Tutorial',
+          onClick: () => {
+            localStorage.removeItem('clinic_onboarding_completed')
+            window.location.reload()
+          },
+          chevron: true,
+        },
         {
           icon: <HelpCircle className="w-5 h-5 text-slate-500" />,
           label: 'Centro de Ayuda',

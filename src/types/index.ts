@@ -1,4 +1,19 @@
-// Lead Status Types
+// =============================================
+// FUNNEL & STATUS TYPES
+// =============================================
+
+// Funnel Status Types (expanded for clinic workflow)
+export type FunnelStatus =
+  | 'new'           // Nuevo - Lead recién llegado
+  | 'contacted'     // Contactado - Se le habló
+  | 'appointment'   // Turno agendado - Tiene cita
+  | 'attended'      // Asistió - Vino a la cita
+  | 'closed'        // Cerró tratamiento - Pagó/Compró
+  | 'followup'      // Seguimiento - Post-tratamiento
+  | 'lost'          // Perdido - No interesado
+  | 'noshow'        // No asistió - Faltó a la cita
+
+// Legacy support - maps to new statuses
 export type LeadStatus = 'new' | 'contacted' | 'scheduled' | 'closed' | 'lost'
 
 // Lead Source Types
@@ -7,7 +22,26 @@ export type LeadSource = 'instagram' | 'whatsapp' | 'phone' | 'website' | 'refer
 // Follow-up Types
 export type FollowUpType = 'call' | 'message' | 'email' | 'meeting'
 
-// Lead Interface
+// =============================================
+// USER & ROLE TYPES
+// =============================================
+
+export type UserRole = 'owner' | 'manager' | 'doctor' | 'receptionist'
+
+export interface User {
+  id: string
+  name: string
+  email: string
+  role: UserRole
+  avatar?: string
+  specialty?: string // For doctors
+  color?: string // For calendar display
+}
+
+// =============================================
+// PATIENT / LEAD TYPES
+// =============================================
+
 export interface Lead {
   id: string
   name: string
@@ -15,6 +49,7 @@ export interface Lead {
   phone: string
   source: LeadSource
   status: LeadStatus
+  funnelStatus?: FunnelStatus // New expanded status
   treatments: string[]
   notes: Note[]
   followUps: FollowUp[]
@@ -23,9 +58,23 @@ export interface Lead {
   updatedAt: Date
   closedAt?: Date
   value?: number
+  // Enhanced fields
+  instagram?: string
+  preferredTime?: string // "morning" | "afternoon" | "evening"
+  campaign?: string // Marketing campaign source
+  tags?: string[]
+  lastContactAt?: Date
+  nextActionAt?: Date
+  nextAction?: string
 }
 
-// Note Interface
+// Alias for clarity
+export type Patient = Lead
+
+// =============================================
+// NOTE TYPES
+// =============================================
+
 export interface Note {
   id: string
   content: string
@@ -33,7 +82,10 @@ export interface Note {
   createdBy: string
 }
 
-// Follow-up Interface
+// =============================================
+// FOLLOW-UP TYPES
+// =============================================
+
 export interface FollowUp {
   id: string
   leadId: string
@@ -46,9 +98,42 @@ export interface FollowUp {
   googleEventId?: string
   meetLink?: string
   duration?: number // in minutes
+  // Enhanced fields
+  assignedTo?: string
+  reminderSent?: boolean
+  confirmedByPatient?: boolean
 }
 
-// Treatment Interface
+// =============================================
+// APPOINTMENT TYPES
+// =============================================
+
+export type AppointmentStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'noshow' | 'cancelled' | 'rescheduled'
+
+export interface Appointment {
+  id: string
+  patientId: string
+  patientName: string
+  doctorId: string
+  doctorName: string
+  treatmentId?: string
+  treatmentName?: string
+  scheduledAt: Date
+  duration: number // minutes
+  status: AppointmentStatus
+  notes?: string
+  googleEventId?: string
+  meetLink?: string
+  confirmedAt?: Date
+  completedAt?: Date
+  // For display
+  color?: string
+}
+
+// =============================================
+// TREATMENT TYPES
+// =============================================
+
 export interface Treatment {
   id: string
   name: string
@@ -56,21 +141,27 @@ export interface Treatment {
   price: number
   duration: number // in minutes
   description?: string
+  active?: boolean
 }
 
-// User Interface
-export interface User {
-  id: string
-  name: string
-  email: string
-  role: 'owner' | 'manager' | 'receptionist'
-  avatar?: string
-}
+// =============================================
+// ACTIVITY TYPES
+// =============================================
 
-// Activity Types
-export type ActivityType = 'note_added' | 'status_changed' | 'followup_scheduled' | 'followup_completed' | 'lead_created'
+export type ActivityType =
+  | 'note_added'
+  | 'status_changed'
+  | 'followup_scheduled'
+  | 'followup_completed'
+  | 'lead_created'
+  | 'appointment_scheduled'
+  | 'appointment_confirmed'
+  | 'appointment_completed'
+  | 'appointment_noshow'
+  | 'message_sent'
+  | 'call_made'
+  | 'payment_received'
 
-// Activity Interface
 export interface Activity {
   id: string
   leadId: string
@@ -81,7 +172,10 @@ export interface Activity {
   metadata?: Record<string, unknown>
 }
 
-// Stats Interface
+// =============================================
+// DASHBOARD & STATS TYPES
+// =============================================
+
 export interface DashboardStats {
   newLeads: number
   newLeadsChange: number
@@ -91,17 +185,29 @@ export interface DashboardStats {
   closedChange: number
   conversionRate: number
   conversionChange: number
+  // Enhanced stats
+  todayAppointments?: number
+  pendingConfirmations?: number
+  noShowRate?: number
+  revenueThisMonth?: number
 }
 
-// Kanban Column Interface
+// =============================================
+// KANBAN TYPES
+// =============================================
+
 export interface KanbanColumn {
-  id: LeadStatus
+  id: FunnelStatus
   title: string
   color: string
   leads: Lead[]
+  count?: number
 }
 
-// Report Data Interfaces
+// =============================================
+// REPORT TYPES
+// =============================================
+
 export interface ConversionFunnel {
   stage: string
   count: number
@@ -112,6 +218,7 @@ export interface LeadSourceData {
   source: LeadSource
   count: number
   percentage: number
+  conversion?: number
 }
 
 export interface ReportData {
@@ -125,41 +232,70 @@ export interface ReportData {
   avgCloseTimeChange: number
   funnel: ConversionFunnel[]
   sources: LeadSourceData[]
+  // Enhanced
+  noShowRate?: number
+  revenueByTreatment?: { treatment: string; revenue: number }[]
+  conversionByChannel?: { channel: string; rate: number }[]
 }
 
-// Filter Options
+// =============================================
+// FILTER TYPES
+// =============================================
+
 export interface LeadFilters {
-  status?: LeadStatus | 'all'
+  status?: LeadStatus | FunnelStatus | 'all'
   source?: LeadSource | 'all'
   search?: string
+  assignedTo?: string
   dateRange?: {
     start: Date
     end: Date
   }
+  tags?: string[]
 }
 
-// Notification Interface
+// =============================================
+// NOTIFICATION TYPES
+// =============================================
+
+export type NotificationType = 'info' | 'success' | 'warning' | 'error' | 'new_lead' | 'appointment_reminder' | 'noshow_alert'
+
 export interface Notification {
   id: string
   title: string
   message: string
-  type: 'info' | 'success' | 'warning' | 'error'
+  type: NotificationType
   read: boolean
   createdAt: Date
   leadId?: string
+  appointmentId?: string
+  actionUrl?: string
 }
 
-// Settings Interface
+// =============================================
+// SETTINGS TYPES
+// =============================================
+
 export interface Settings {
   clinicName: string
   clinicAddress?: string
   clinicPhone?: string
   clinicEmail?: string
+  clinicLogo?: string
   notificationsEnabled: boolean
   reminderTime: number // minutes before follow-up
+  workingHours?: {
+    start: string // "09:00"
+    end: string   // "18:00"
+    days: number[] // [1,2,3,4,5] = Mon-Fri
+  }
+  slotDuration?: number // default appointment duration in minutes
 }
 
-// Google Calendar Event Interface
+// =============================================
+// CALENDAR & GOOGLE TYPES
+// =============================================
+
 export interface CalendarEvent {
   id: string
   title: string
@@ -170,12 +306,15 @@ export interface CalendarEvent {
   meetLink?: string
   attendees?: string[]
   leadId?: string
+  patientId?: string
   followUpId?: string
+  appointmentId?: string
   syncedWithGoogle?: boolean
   googleEventId?: string
+  color?: string
+  status?: AppointmentStatus
 }
 
-// Google Calendar Integration Settings
 export interface GoogleCalendarSettings {
   connected: boolean
   email?: string
@@ -186,7 +325,10 @@ export interface GoogleCalendarSettings {
   syncFollowUps: boolean
 }
 
-// ManyChat Webhook Types
+// =============================================
+// MANYCHAT TYPES
+// =============================================
+
 export type ManyChatEventType =
   | 'new_subscriber'
   | 'message_received'
@@ -194,7 +336,6 @@ export type ManyChatEventType =
   | 'appointment_requested'
   | 'contact_info_shared'
 
-// ManyChat Webhook Payload
 export interface ManyChatWebhook {
   id: string
   type: ManyChatEventType
@@ -211,10 +352,11 @@ export interface ManyChatWebhook {
     treatment?: string
     appointmentDate?: string
     appointmentTime?: string
+    campaign?: string
+    keyword?: string
   }
 }
 
-// ManyChat Integration Settings
 export interface ManyChatSettings {
   connected: boolean
   apiKey?: string
@@ -222,4 +364,22 @@ export interface ManyChatSettings {
   webhookUrl?: string
   autoCreateLeads: boolean
   defaultAssignee?: string
+  sendAppointmentReminders?: boolean
+  sendNoShowFollowUp?: boolean
+}
+
+// =============================================
+// TIME SLOT TYPES
+// =============================================
+
+export interface TimeSlot {
+  time: string // "09:00"
+  available: boolean
+  appointmentId?: string
+}
+
+export interface DaySchedule {
+  date: Date
+  doctorId: string
+  slots: TimeSlot[]
 }

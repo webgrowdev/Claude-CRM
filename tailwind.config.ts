@@ -9,44 +9,44 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Primary - Indigo
+        // Primary - Teal/Cyan (clinical, modern)
         primary: {
-          50: '#EEF2FF',
-          100: '#E0E7FF',
-          200: '#C7D2FE',
-          300: '#A5B4FC',
-          400: '#818CF8',
-          500: '#6366F1',
-          600: '#4F46E5',
-          700: '#4338CA',
-          800: '#3730A3',
-          900: '#312E81',
+          50: '#F0FDFA',
+          100: '#CCFBF1',
+          200: '#99F6E4',
+          300: '#5EEAD4',
+          400: '#2DD4BF',
+          500: '#14B8A6',
+          600: '#0D9488',
+          700: '#0F766E',
+          800: '#115E59',
+          900: '#134E4A',
         },
-        // Secondary - Pink
+        // Secondary - Blue (professional)
         secondary: {
-          50: '#FDF2F8',
-          100: '#FCE7F3',
-          200: '#FBCFE8',
-          300: '#F9A8D4',
-          400: '#F472B6',
-          500: '#EC4899',
-          600: '#DB2777',
-          700: '#BE185D',
-          800: '#9D174D',
-          900: '#831843',
+          50: '#EFF6FF',
+          100: '#DBEAFE',
+          200: '#BFDBFE',
+          300: '#93C5FD',
+          400: '#60A5FA',
+          500: '#3B82F6',
+          600: '#2563EB',
+          700: '#1D4ED8',
+          800: '#1E40AF',
+          900: '#1E3A8A',
         },
-        // Success - Emerald
+        // Success - Green
         success: {
-          50: '#ECFDF5',
-          100: '#D1FAE5',
-          200: '#A7F3D0',
-          300: '#6EE7B7',
-          400: '#34D399',
-          500: '#10B981',
-          600: '#059669',
-          700: '#047857',
-          800: '#065F46',
-          900: '#064E3B',
+          50: '#F0FDF4',
+          100: '#DCFCE7',
+          200: '#BBF7D0',
+          300: '#86EFAC',
+          400: '#4ADE80',
+          500: '#22C55E',
+          600: '#16A34A',
+          700: '#15803D',
+          800: '#166534',
+          900: '#14532D',
         },
         // Warning - Amber
         warning: {
@@ -74,13 +74,24 @@ const config: Config = {
           800: '#991B1B',
           900: '#7F1D1D',
         },
-        // Kanban colors
-        kanban: {
-          new: '#6366F1',
-          contacted: '#F59E0B',
-          scheduled: '#8B5CF6',
-          closed: '#10B981',
-          lost: '#EF4444',
+        // Funnel/Pipeline colors
+        funnel: {
+          new: '#3B82F6',           // Blue - Nuevo
+          contacted: '#F59E0B',     // Amber - Contactado
+          appointment: '#8B5CF6',   // Purple - Turno agendado
+          attended: '#14B8A6',      // Teal - Asistió
+          closed: '#22C55E',        // Green - Cerró tratamiento
+          followup: '#EC4899',      // Pink - Seguimiento
+          lost: '#6B7280',          // Gray - Perdido
+          noshow: '#EF4444',        // Red - No asistió
+        },
+        // Channel colors
+        channel: {
+          instagram: '#E4405F',
+          whatsapp: '#25D366',
+          phone: '#3B82F6',
+          website: '#6366F1',
+          referral: '#8B5CF6',
         },
       },
       fontFamily: {
@@ -88,17 +99,23 @@ const config: Config = {
         display: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
       },
       boxShadow: {
-        'card': '0 2px 8px rgba(0, 0, 0, 0.08)',
-        'card-hover': '0 8px 24px rgba(0, 0, 0, 0.12)',
-        'button': '0 4px 14px rgba(99, 102, 241, 0.4)',
-        'button-hover': '0 6px 20px rgba(99, 102, 241, 0.5)',
+        'card': '0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.1)',
+        'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
+        'button': '0 1px 2px rgba(0, 0, 0, 0.05)',
+        'button-hover': '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+        'modal': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+        'nav': '0 -1px 3px rgba(0, 0, 0, 0.05)',
+        'dropdown': '0 10px 40px rgba(0, 0, 0, 0.15)',
       },
       animation: {
-        'fade-in': 'fadeIn 0.3s ease-out',
+        'fade-in': 'fadeIn 0.2s ease-out',
         'slide-up': 'slideUp 0.3s ease-out',
         'slide-down': 'slideDown 0.3s ease-out',
+        'slide-in-right': 'slideInRight 0.3s ease-out',
         'scale-in': 'scaleIn 0.2s ease-out',
         'spin-slow': 'spin 2s linear infinite',
+        'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
+        'bounce-soft': 'bounceSoft 1s ease-in-out',
       },
       keyframes: {
         fadeIn: {
@@ -113,10 +130,25 @@ const config: Config = {
           '0%': { opacity: '0', transform: 'translateY(-10px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        slideInRight: {
+          '0%': { opacity: '0', transform: 'translateX(20px)' },
+          '100%': { opacity: '1', transform: 'translateX(0)' },
+        },
         scaleIn: {
           '0%': { opacity: '0', transform: 'scale(0.95)' },
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
+        pulseSoft: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.7' },
+        },
+        bounceSoft: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-5px)' },
+        },
+      },
+      borderRadius: {
+        '4xl': '2rem',
       },
     },
   },

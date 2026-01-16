@@ -13,7 +13,7 @@ export default function SplashPage() {
     const timer = setTimeout(() => {
       const isLoggedIn = localStorage.getItem('clinic_logged_in')
       if (isLoggedIn === 'true') {
-        router.push('/dashboard')
+        router.push('/inbox')
       } else {
         router.push('/login')
       }

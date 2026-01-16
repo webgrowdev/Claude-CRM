@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   DndContext,
   DragOverlay,
@@ -19,23 +19,54 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Instagram, MessageCircle, Phone, Clock } from 'lucide-react'
-import { Header, PageContainer, AppShell } from '@/components/layout'
-import { Avatar, Badge } from '@/components/ui'
+import {
+  Instagram,
+  MessageCircle,
+  Phone,
+  Clock,
+  Calendar,
+  DollarSign,
+  ChevronRight,
+  MoreHorizontal,
+  Globe,
+  Users,
+} from 'lucide-react'
+import { AppShell } from '@/components/layout'
+import { Avatar } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
-import { formatTimeAgo, getSourceLabel } from '@/lib/utils'
-import { Lead, LeadStatus } from '@/types'
+import { useLanguage } from '@/i18n'
+import { formatTimeAgo, formatCurrency, getSourceLabel, cn } from '@/lib/utils'
+import { Lead, LeadStatus, LeadSource } from '@/types'
 
-const columns: { id: LeadStatus; title: string; color: string; bgColor: string }[] = [
-  { id: 'new', title: 'Nuevos', color: '#6366F1', bgColor: 'bg-primary-50' },
-  { id: 'contacted', title: 'Contactados', color: '#F59E0B', bgColor: 'bg-warning-50' },
-  { id: 'scheduled', title: 'Agendados', color: '#8B5CF6', bgColor: 'bg-purple-50' },
-  { id: 'closed', title: 'Cerrados', color: '#10B981', bgColor: 'bg-success-50' },
-  { id: 'lost', title: 'Perdidos', color: '#EF4444', bgColor: 'bg-error-50' },
+// Column definitions with new design
+const columns: { id: LeadStatus; title: string; color: string; borderColor: string; bgColor: string }[] = [
+  { id: 'new', title: 'Nuevo', color: '#3B82F6', borderColor: 'border-t-blue-500', bgColor: 'bg-blue-50/50' },
+  { id: 'contacted', title: 'Contactado', color: '#F59E0B', borderColor: 'border-t-amber-500', bgColor: 'bg-amber-50/50' },
+  { id: 'scheduled', title: 'Turno Agendado', color: '#8B5CF6', borderColor: 'border-t-purple-500', bgColor: 'bg-purple-50/50' },
+  { id: 'closed', title: 'Cerrado', color: '#22C55E', borderColor: 'border-t-success-500', bgColor: 'bg-success-50/50' },
+  { id: 'lost', title: 'Perdido', color: '#6B7280', borderColor: 'border-t-gray-400', bgColor: 'bg-gray-50' },
 ]
 
+// Get channel icon
+function getSourceIcon(source: LeadSource) {
+  switch (source) {
+    case 'instagram':
+      return <Instagram className="w-3.5 h-3.5 text-pink-500" />
+    case 'whatsapp':
+      return <MessageCircle className="w-3.5 h-3.5 text-green-500" />
+    case 'phone':
+      return <Phone className="w-3.5 h-3.5 text-blue-500" />
+    case 'website':
+      return <Globe className="w-3.5 h-3.5 text-indigo-500" />
+    case 'referral':
+      return <Users className="w-3.5 h-3.5 text-purple-500" />
+    default:
+      return <Phone className="w-3.5 h-3.5 text-gray-500" />
+  }
+}
+
 // Sortable Lead Card Component
-function SortableLeadCard({ lead }: { lead: Lead }) {
+function SortableLeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
   const {
     attributes,
     listeners,
@@ -59,80 +90,115 @@ function SortableLeadCard({ lead }: { lead: Lead }) {
       {...listeners}
       className="touch-manipulation"
     >
-      <LeadCard lead={lead} />
+      <LeadCard lead={lead} onClick={onClick} />
     </div>
   )
 }
 
 // Lead Card Component
-function LeadCard({ lead, overlay = false }: { lead: Lead; overlay?: boolean }) {
-  const hasFollowUp = lead.followUps.some(f => !f.completed)
+function LeadCard({
+  lead,
+  overlay = false,
+  onClick,
+}: {
+  lead: Lead
+  overlay?: boolean
+  onClick?: () => void
+}) {
+  const { t } = useLanguage()
+  const hasFollowUp = lead.followUps.some((f) => !f.completed)
+  const nextFollowUp = lead.followUps.find((f) => !f.completed)
 
-  const getSourceIcon = (source: string) => {
-    switch (source) {
-      case 'instagram':
-        return <Instagram className="w-3 h-3" />
-      case 'whatsapp':
-        return <MessageCircle className="w-3 h-3" />
-      default:
-        return <Phone className="w-3 h-3" />
+  const handleClick = (e: React.MouseEvent) => {
+    if (onClick && !overlay) {
+      e.preventDefault()
+      onClick()
     }
   }
 
-  const CardContent = (
+  return (
     <div
-      className={`bg-white rounded-lg p-3 shadow-card ${
-        overlay ? 'shadow-lg scale-105' : 'hover:shadow-card-hover'
-      } transition-shadow cursor-grab active:cursor-grabbing`}
+      onClick={handleClick}
+      className={cn(
+        'bg-white rounded-xl p-3 shadow-card border border-gray-100',
+        overlay
+          ? 'shadow-lg scale-105 ring-2 ring-primary-500/20'
+          : 'hover:shadow-card-hover hover:border-gray-200 cursor-grab active:cursor-grabbing',
+        'transition-all'
+      )}
     >
-      <div className="flex items-start gap-2">
-        <Avatar name={lead.name} size="sm" />
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <Avatar name={lead.name} size="md" />
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-slate-800 text-sm truncate">{lead.name}</p>
-          <div className="flex items-center gap-1 mt-0.5 text-slate-500">
+          <p className="font-semibold text-slate-800 text-sm truncate">{lead.name}</p>
+          <div className="flex items-center gap-1.5 mt-0.5">
             {getSourceIcon(lead.source)}
-            <span className="text-xs">{getSourceLabel(lead.source)}</span>
+            <span className="text-xs text-slate-500">{getSourceLabel(lead.source)}</span>
           </div>
         </div>
-        {hasFollowUp && (
-          <div className="flex-shrink-0">
-            <Clock className="w-4 h-4 text-primary-500" />
-          </div>
-        )}
+        <button
+          className="p-1 text-slate-400 hover:text-slate-600 hover:bg-gray-100 rounded-lg transition-colors"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
       </div>
 
+      {/* Treatments */}
       {lead.treatments.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1">
-          {lead.treatments.slice(0, 2).map((t, i) => (
+        <div className="mt-3 flex flex-wrap gap-1">
+          {lead.treatments.slice(0, 2).map((treatment, i) => (
             <span
               key={i}
-              className="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded"
+              className="text-xs px-2 py-0.5 bg-primary-50 text-primary-700 rounded-full font-medium"
             >
-              {t}
+              {treatment}
             </span>
           ))}
           {lead.treatments.length > 2 && (
-            <span className="text-xs text-slate-400">
+            <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">
               +{lead.treatments.length - 2}
             </span>
           )}
         </div>
       )}
 
-      <p className="text-xs text-slate-400 mt-2">
-        {formatTimeAgo(new Date(lead.createdAt))}
-      </p>
+      {/* Value & Follow-up */}
+      <div className="mt-3 flex items-center justify-between text-xs">
+        {lead.value ? (
+          <div className="flex items-center gap-1 text-success-600 font-medium">
+            <DollarSign className="w-3.5 h-3.5" />
+            {formatCurrency(lead.value)}
+          </div>
+        ) : (
+          <span className="text-slate-400">{formatTimeAgo(new Date(lead.createdAt))}</span>
+        )}
+
+        {hasFollowUp && nextFollowUp && (
+          <div className="flex items-center gap-1 text-primary-600">
+            <Calendar className="w-3.5 h-3.5" />
+            <span className="font-medium">
+              {new Date(nextFollowUp.scheduledAt).toLocaleDateString('es-ES', {
+                day: 'numeric',
+                month: 'short',
+              })}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Quick indicator for urgent items */}
+      {lead.status === 'new' &&
+        new Date().getTime() - new Date(lead.createdAt).getTime() > 48 * 60 * 60 * 1000 && (
+          <div className="mt-2 px-2 py-1 bg-error-50 rounded-lg">
+            <span className="text-xs text-error-700 font-medium flex items-center gap-1">
+              <Clock className="w-3 h-3" />
+              +48h sin contactar
+            </span>
+          </div>
+        )}
     </div>
-  )
-
-  if (overlay) {
-    return CardContent
-  }
-
-  return (
-    <Link href={`/leads/${lead.id}`}>
-      {CardContent}
-    </Link>
   )
 }
 
@@ -140,42 +206,64 @@ function LeadCard({ lead, overlay = false }: { lead: Lead; overlay?: boolean }) 
 function Column({
   column,
   leads,
+  onLeadClick,
 }: {
-  column: { id: LeadStatus; title: string; color: string; bgColor: string }
+  column: (typeof columns)[0]
   leads: Lead[]
+  onLeadClick: (id: string) => void
 }) {
+  const { t } = useLanguage()
+
   return (
     <div className="flex-shrink-0 w-[280px] lg:w-[300px] lg:min-w-[280px] flex flex-col h-full">
       {/* Column Header */}
       <div
-        className="flex items-center gap-2 px-3 py-2 bg-white rounded-t-lg border-l-4"
-        style={{ borderLeftColor: column.color }}
+        className={cn(
+          'flex items-center justify-between px-4 py-3 bg-white rounded-t-xl border-t-4',
+          column.borderColor
+        )}
       >
-        <span className="font-semibold text-slate-800">{column.title}</span>
-        <span
-          className="px-2 py-0.5 text-xs font-medium rounded-full text-white"
-          style={{ backgroundColor: column.color }}
-        >
-          {leads.length}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-semibold text-slate-800">{column.title}</span>
+          <span
+            className="flex items-center justify-center min-w-[24px] h-6 px-2 text-xs font-bold rounded-full text-white"
+            style={{ backgroundColor: column.color }}
+          >
+            {leads.length}
+          </span>
+        </div>
       </div>
 
       {/* Column Body */}
-      <div className={`flex-1 ${column.bgColor} rounded-b-lg p-2 overflow-y-auto`}>
+      <div
+        className={cn(
+          'flex-1 rounded-b-xl p-3 overflow-y-auto scrollbar-thin',
+          column.bgColor
+        )}
+      >
         <SortableContext
-          items={leads.map(l => l.id)}
+          items={leads.map((l) => l.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-2">
+          <div className="space-y-3">
             {leads.map((lead) => (
-              <SortableLeadCard key={lead.id} lead={lead} />
+              <SortableLeadCard
+                key={lead.id}
+                lead={lead}
+                onClick={() => onLeadClick(lead.id)}
+              />
             ))}
           </div>
         </SortableContext>
 
         {leads.length === 0 && (
-          <div className="text-center py-8 text-slate-400 text-sm">
-            Sin leads
+          <div className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="w-12 h-12 bg-gray-200/50 rounded-full flex items-center justify-center mb-3">
+              <Users className="w-6 h-6 text-gray-400" />
+            </div>
+            <p className="text-sm text-slate-400">
+              {t.patients.noPatients}
+            </p>
           </div>
         )}
       </div>
@@ -184,7 +272,9 @@ function Column({
 }
 
 export default function KanbanPage() {
+  const router = useRouter()
   const { state, updateLeadStatus } = useApp()
+  const { t } = useLanguage()
   const [activeId, setActiveId] = useState<string | null>(null)
 
   const sensors = useSensors(
@@ -209,11 +299,14 @@ export default function KanbanPage() {
       grouped[lead.status].push(lead)
     })
 
-    // Sort each group by date
+    // Sort each group by date (newest first for new, otherwise by update)
     Object.keys(grouped).forEach((status) => {
-      grouped[status as LeadStatus].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )
+      grouped[status as LeadStatus].sort((a, b) => {
+        if (status === 'new') {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        }
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+      })
     })
 
     return grouped
@@ -252,23 +345,64 @@ export default function KanbanPage() {
     }
   }
 
+  const handleLeadClick = (id: string) => {
+    router.push(`/pacientes?id=${id}`)
+  }
+
+  // Calculate totals for header
+  const totals = useMemo(() => {
+    const activeLeads = state.leads.filter(
+      (l) => l.status !== 'closed' && l.status !== 'lost'
+    ).length
+    const totalValue = state.leads
+      .filter((l) => l.status === 'closed')
+      .reduce((sum, l) => sum + (l.value || 0), 0)
+    return { activeLeads, totalValue }
+  }, [state.leads])
+
   return (
     <AppShell>
-      <Header title="Pipeline" />
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="px-4 py-4 lg:px-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-display font-bold text-slate-800">
+                {t.nav.pipeline}
+              </h1>
+              <p className="text-sm text-slate-500">
+                {totals.activeLeads} {t.patients.totalPatients.replace('en total', 'activos')}
+              </p>
+            </div>
+            {totals.totalValue > 0 && (
+              <div className="text-right">
+                <p className="text-xs text-slate-500 uppercase tracking-wide">
+                  {t.dashboard.closedSales}
+                </p>
+                <p className="text-lg font-bold text-success-600">
+                  {formatCurrency(totals.totalValue)}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-      <PageContainer noPadding className="h-[calc(100vh-56px-64px)] lg:h-[calc(100vh-64px)] overflow-hidden">
+      {/* Kanban Board */}
+      <div className="h-[calc(100vh-120px-64px)] lg:h-[calc(100vh-120px)] overflow-hidden">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="flex gap-3 lg:gap-4 h-full overflow-x-auto scrollbar-hide px-4 py-4 lg:px-6">
+          <div className="flex gap-4 h-full overflow-x-auto scrollbar-hide px-4 py-4 lg:px-6">
             {columns.map((column) => (
               <Column
                 key={column.id}
                 column={column}
                 leads={leadsByStatus[column.id]}
+                onLeadClick={handleLeadClick}
               />
             ))}
           </div>
@@ -277,7 +411,7 @@ export default function KanbanPage() {
             {activeLead ? <LeadCard lead={activeLead} overlay /> : null}
           </DragOverlay>
         </DndContext>
-      </PageContainer>
+      </div>
     </AppShell>
   )
 }

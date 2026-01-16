@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import Link from 'next/link'
 import {
-  Users,
+  UserRound,
   Bell,
   CheckCircle,
   TrendingUp,
@@ -11,7 +11,8 @@ import {
   Phone,
   MessageCircle,
   Calendar,
-  Instagram
+  Instagram,
+  Video,
 } from 'lucide-react'
 import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Card, Avatar, Badge } from '@/components/ui'
@@ -46,11 +47,11 @@ export default function DashboardPage() {
 
   const statsCards = [
     {
-      label: 'Leads Nuevos',
+      label: 'Pacientes Nuevos',
       value: stats.newLeads,
       change: '+3 hoy',
       color: 'primary',
-      icon: Users,
+      icon: UserRound,
     },
     {
       label: 'Seguimientos',
@@ -92,6 +93,8 @@ export default function DashboardPage() {
         return <Phone className="w-4 h-4 text-primary-500" />
       case 'message':
         return <MessageCircle className="w-4 h-4 text-success-500" />
+      case 'meeting':
+        return <Video className="w-4 h-4 text-purple-500" />
       default:
         return <Calendar className="w-4 h-4 text-purple-500" />
     }
@@ -124,11 +127,11 @@ export default function DashboardPage() {
 
         {/* Two Column Layout on Desktop */}
         <div className="lg:grid lg:grid-cols-2 lg:gap-6">
-          {/* Recent Leads */}
+          {/* Recent Patients */}
           <div className="mt-6">
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-base lg:text-lg font-semibold text-slate-800">Leads Recientes</h2>
-              <Link href="/leads" className="text-sm text-primary-600 font-medium flex items-center gap-1">
+              <h2 className="text-base lg:text-lg font-semibold text-slate-800">Pacientes Recientes</h2>
+              <Link href="/pacientes" className="text-sm text-primary-600 font-medium flex items-center gap-1">
                 Ver todos
                 <ChevronRight className="w-4 h-4" />
               </Link>
@@ -137,14 +140,14 @@ export default function DashboardPage() {
             <Card padding="none">
               {recentLeads.length === 0 ? (
                 <div className="py-8 text-center">
-                  <p className="text-slate-500">No hay leads todavía</p>
+                  <p className="text-slate-500">No hay pacientes todavía</p>
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">
                   {recentLeads.map((lead) => (
                     <Link
                       key={lead.id}
-                      href={`/leads/${lead.id}`}
+                      href={`/pacientes?selected=${lead.id}`}
                       className="flex items-center gap-3 p-4 hover:bg-slate-50 transition-colors"
                     >
                       <Avatar name={lead.name} size="md" />
@@ -201,7 +204,7 @@ export default function DashboardPage() {
                   {upcomingFollowUps.map(({ lead, followUp }) => (
                     <Link
                       key={followUp.id}
-                      href={`/leads/${lead.id}`}
+                      href={`/pacientes?selected=${lead.id}`}
                       className="flex items-center gap-3 p-4 hover:bg-slate-50 transition-colors"
                     >
                       <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
@@ -211,7 +214,8 @@ export default function DashboardPage() {
                         <p className="font-medium text-slate-800 truncate">{lead.name}</p>
                         <p className="text-sm text-slate-500">
                           {followUp.type === 'call' ? 'Llamada' :
-                           followUp.type === 'message' ? 'Mensaje' : 'Reunión'}
+                           followUp.type === 'message' ? 'Mensaje' :
+                           followUp.type === 'meeting' ? 'Reunión' : 'Email'}
                           {followUp.notes && ` - ${followUp.notes}`}
                         </p>
                       </div>

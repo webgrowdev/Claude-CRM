@@ -146,8 +146,9 @@ export async function createCalendarEvent(
     return null
   }
 
+  const duration = followUp.duration || 30 // Use follow-up duration or default 30 min
   const endTime = new Date(followUp.scheduledAt)
-  endTime.setMinutes(endTime.getMinutes() + 30) // Default 30 min duration
+  endTime.setMinutes(endTime.getMinutes() + duration)
 
   const eventData: any = {
     summary: `${getFollowUpTitle(followUp.type)} - ${lead.name}`,
@@ -171,6 +172,14 @@ Creado automáticamente por Clinic CRM
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
     attendees: lead.email ? [{ email: lead.email }] : [],
+    reminders: {
+      useDefault: false,
+      overrides: [
+        { method: 'email', minutes: 24 * 60 }, // 1 day before
+        { method: 'popup', minutes: 30 }, // 30 minutes before
+        { method: 'popup', minutes: 10 }, // 10 minutes before
+      ],
+    },
   }
 
   // Add Google Meet for meetings

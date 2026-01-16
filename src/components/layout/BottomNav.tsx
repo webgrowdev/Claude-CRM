@@ -5,37 +5,19 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, UserRound, Kanban, CalendarDays, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
-
-const navItems = [
-  {
-    href: '/dashboard',
-    label: 'Inicio',
-    icon: LayoutDashboard,
-  },
-  {
-    href: '/pacientes',
-    label: 'Pacientes',
-    icon: UserRound,
-  },
-  {
-    href: '/kanban',
-    label: 'Pipeline',
-    icon: Kanban,
-  },
-  {
-    href: '/calendar',
-    label: 'Agenda',
-    icon: CalendarDays,
-  },
-  {
-    href: '/settings',
-    label: 'Ajustes',
-    icon: Settings,
-  },
-]
+import { useLanguage } from '@/i18n'
 
 export function BottomNav() {
   const pathname = usePathname()
+  const { t } = useLanguage()
+
+  const navItems = [
+    { href: '/dashboard', label: t.nav.home, icon: LayoutDashboard },
+    { href: '/pacientes', label: t.nav.patients, icon: UserRound },
+    { href: '/kanban', label: t.nav.pipeline, icon: Kanban },
+    { href: '/calendar', label: t.nav.calendar, icon: CalendarDays },
+    { href: '/settings', label: t.nav.settings, icon: Settings },
+  ]
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-lg border-t border-slate-200/50 safe-area-bottom lg:hidden">

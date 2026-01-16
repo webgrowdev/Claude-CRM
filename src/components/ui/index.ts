@@ -30,3 +30,7 @@ export type { TabsProps, Tab } from './Tabs'
 
 export { EmptyState } from './EmptyState'
 export type { EmptyStateProps } from './EmptyState'
+
+export { Onboarding, useOnboarding } from './Onboarding'
+
+export { Tooltip } from './Tooltip'

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { AppProvider } from '@/contexts/AppContext'
+import { LanguageProvider } from '@/i18n'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -48,9 +49,11 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="min-h-screen">
-        <AppProvider>
-          {children}
-        </AppProvider>
+        <LanguageProvider>
+          <AppProvider>
+            {children}
+          </AppProvider>
+        </LanguageProvider>
       </body>
     </html>
   )

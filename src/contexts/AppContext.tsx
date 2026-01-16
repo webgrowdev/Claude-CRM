@@ -343,6 +343,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     dispatch({ type: 'ADD_FOLLOWUP', payload: { leadId, followUp } })
+
+    // Automatically change status to 'scheduled' if it's a meeting or call and status is new/contacted
+    if ((followUpData.type === 'meeting' || followUpData.type === 'call') &&
+        (lead.status === 'new' || lead.status === 'contacted')) {
+      dispatch({ type: 'UPDATE_LEAD_STATUS', payload: { id: leadId, status: 'scheduled' } })
+    }
+
     return followUp
   }
 

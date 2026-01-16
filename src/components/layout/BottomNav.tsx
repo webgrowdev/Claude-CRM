@@ -3,29 +3,29 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Users, Columns3, Calendar, Settings } from 'lucide-react'
+import { LayoutDashboard, UserRound, Kanban, CalendarDays, Settings } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   {
     href: '/dashboard',
     label: 'Inicio',
-    icon: Home,
+    icon: LayoutDashboard,
   },
   {
-    href: '/leads',
-    label: 'Leads',
-    icon: Users,
+    href: '/pacientes',
+    label: 'Pacientes',
+    icon: UserRound,
   },
   {
     href: '/kanban',
     label: 'Pipeline',
-    icon: Columns3,
+    icon: Kanban,
   },
   {
     href: '/calendar',
     label: 'Agenda',
-    icon: Calendar,
+    icon: CalendarDays,
   },
   {
     href: '/settings',
@@ -38,7 +38,7 @@ export function BottomNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-slate-200 safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-lg border-t border-slate-200/50 safe-area-bottom lg:hidden">
       <div className="flex items-center justify-around h-16">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href)
@@ -49,15 +49,20 @@ export function BottomNav() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex flex-col items-center justify-center flex-1 h-full py-2 transition-colors',
+                'flex flex-col items-center justify-center flex-1 h-full py-2 transition-all',
                 isActive ? 'text-primary-600' : 'text-slate-400'
               )}
             >
-              <Icon
-                className={cn('w-6 h-6', isActive && 'fill-primary-100')}
-                strokeWidth={isActive ? 2.5 : 2}
-              />
-              <span className="text-xs mt-1 font-medium">{item.label}</span>
+              <div className={cn(
+                'p-1.5 rounded-xl transition-all',
+                isActive && 'bg-primary-100'
+              )}>
+                <Icon
+                  className="w-5 h-5"
+                  strokeWidth={isActive ? 2.5 : 2}
+                />
+              </div>
+              <span className="text-[10px] mt-0.5 font-medium">{item.label}</span>
             </Link>
           )
         })}

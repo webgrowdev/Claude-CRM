@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import {
   X,
   ChevronRight,
@@ -14,6 +14,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useLanguage } from '@/i18n'
 
 interface OnboardingStep {
   id: string
@@ -23,58 +24,6 @@ interface OnboardingStep {
   tip?: string
 }
 
-const onboardingSteps: OnboardingStep[] = [
-  {
-    id: 'welcome',
-    title: '¡Bienvenido a Clinic CRM!',
-    description: 'Te ayudaremos a gestionar tus pacientes de forma sencilla y eficiente. Este tutorial te mostrará cómo usar las funciones principales.',
-    icon: <Sparkles className="w-8 h-8" />,
-    tip: 'Puedes saltar este tutorial y volver a verlo desde Configuración.',
-  },
-  {
-    id: 'add-patient',
-    title: 'Agregar Pacientes',
-    description: 'Haz clic en "Nuevo Paciente" para agregar un nuevo contacto. Puedes ingresar su nombre, teléfono, email y la fuente de donde llegó (Instagram, WhatsApp, etc).',
-    icon: <UserPlus className="w-8 h-8" />,
-    tip: 'Los pacientes nuevos aparecen con estado "Nuevo" automáticamente.',
-  },
-  {
-    id: 'contact',
-    title: 'Contactar Pacientes',
-    description: 'Desde la ficha del paciente puedes llamar, enviar WhatsApp o email con un solo toque. ¡Sin salir de la aplicación!',
-    icon: <Phone className="w-8 h-8" />,
-    tip: 'Después de contactar, cambia el estado a "Contactado".',
-  },
-  {
-    id: 'schedule',
-    title: 'Agendar Citas',
-    description: 'Haz clic en "Agendar" para programar una llamada, mensaje o reunión. Si conectas Google Calendar, se creará automáticamente un evento con link de Google Meet.',
-    icon: <Calendar className="w-8 h-8" />,
-    tip: 'Al agendar una cita, el estado cambia automáticamente a "Agendado".',
-  },
-  {
-    id: 'followup',
-    title: 'Seguimiento',
-    description: 'Agrega notas después de cada contacto para recordar detalles importantes. Verás toda la actividad en la línea de tiempo del paciente.',
-    icon: <MessageCircle className="w-8 h-8" />,
-    tip: 'Las notas te ayudan a dar un servicio más personalizado.',
-  },
-  {
-    id: 'close',
-    title: 'Cerrar Ventas',
-    description: 'Cuando el paciente confirme su tratamiento, cambia el estado a "Cerrado". ¡Celebra cada venta!',
-    icon: <CheckCircle className="w-8 h-8" />,
-    tip: 'Revisa tus estadísticas en el Dashboard y Reportes.',
-  },
-  {
-    id: 'done',
-    title: '¡Listo para empezar!',
-    description: 'Ya conoces lo básico. Explora la aplicación y descubre más funciones. Si tienes dudas, revisa la sección de ayuda en Configuración.',
-    icon: <TrendingUp className="w-8 h-8" />,
-    tip: 'Conecta tu Google Calendar para aprovechar al máximo la app.',
-  },
-]
-
 interface OnboardingProps {
   onComplete: () => void
 }
@@ -82,6 +31,59 @@ interface OnboardingProps {
 export function Onboarding({ onComplete }: OnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0)
   const [isVisible, setIsVisible] = useState(true)
+  const { t } = useLanguage()
+
+  const onboardingSteps: OnboardingStep[] = useMemo(() => [
+    {
+      id: 'welcome',
+      title: t.onboarding.welcome,
+      description: t.onboarding.welcomeDesc,
+      icon: <Sparkles className="w-8 h-8" />,
+      tip: t.onboarding.tipSkip,
+    },
+    {
+      id: 'add-patient',
+      title: t.onboarding.addPatients,
+      description: t.onboarding.addPatientsDesc,
+      icon: <UserPlus className="w-8 h-8" />,
+      tip: t.onboarding.tipNew,
+    },
+    {
+      id: 'contact',
+      title: t.onboarding.contactPatients,
+      description: t.onboarding.contactPatientsDesc,
+      icon: <Phone className="w-8 h-8" />,
+      tip: t.onboarding.tipContacted,
+    },
+    {
+      id: 'schedule',
+      title: t.onboarding.scheduleAppointments,
+      description: t.onboarding.scheduleAppointmentsDesc,
+      icon: <Calendar className="w-8 h-8" />,
+      tip: t.onboarding.tipScheduled,
+    },
+    {
+      id: 'followup',
+      title: t.onboarding.followUp,
+      description: t.onboarding.followUpDesc,
+      icon: <MessageCircle className="w-8 h-8" />,
+      tip: t.onboarding.tipNotes,
+    },
+    {
+      id: 'close',
+      title: t.onboarding.closeSales,
+      description: t.onboarding.closeSalesDesc,
+      icon: <CheckCircle className="w-8 h-8" />,
+      tip: t.onboarding.tipReports,
+    },
+    {
+      id: 'done',
+      title: t.onboarding.ready,
+      description: t.onboarding.readyDesc,
+      icon: <TrendingUp className="w-8 h-8" />,
+      tip: t.onboarding.tipCalendar,
+    },
+  ], [t])
 
   const step = onboardingSteps[currentStep]
   const isFirstStep = currentStep === 0
@@ -174,7 +176,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
           {step.tip && (
             <div className="bg-primary-50 border border-primary-100 rounded-xl p-4 mb-6">
               <p className="text-sm text-primary-700 text-center">
-                <span className="font-semibold">💡 Tip:</span> {step.tip}
+                <span className="font-semibold">💡 {t.onboarding.tip}:</span> {step.tip}
               </p>
             </div>
           )}
@@ -193,14 +195,14 @@ export function Onboarding({ onComplete }: OnboardingProps) {
             )}
           >
             <ChevronLeft className="w-5 h-5" />
-            Anterior
+            {t.common.previous}
           </button>
 
           <button
             onClick={handleNext}
             className="flex items-center gap-2 px-6 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary-500/25"
           >
-            {isLastStep ? 'Comenzar' : 'Siguiente'}
+            {isLastStep ? t.onboarding.start : t.common.next}
             {!isLastStep && <ChevronRight className="w-5 h-5" />}
           </button>
         </div>
@@ -212,7 +214,7 @@ export function Onboarding({ onComplete }: OnboardingProps) {
               onClick={handleSkip}
               className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
             >
-              Saltar tutorial
+              {t.onboarding.skipTutorial}
             </button>
           </div>
         )}

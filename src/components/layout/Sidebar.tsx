@@ -17,23 +17,25 @@ import {
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
-
-const mainNavItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/pacientes', label: 'Pacientes', icon: UserRound },
-  { href: '/kanban', label: 'Pipeline', icon: Kanban },
-  { href: '/calendar', label: 'Agenda', icon: CalendarDays },
-  { href: '/reports', label: 'Reportes', icon: TrendingUp },
-]
-
-const secondaryNavItems = [
-  { href: '/treatments', label: 'Tratamientos', icon: Syringe },
-  { href: '/settings', label: 'Configuración', icon: Settings },
-]
+import { useLanguage } from '@/i18n'
 
 export function Sidebar() {
   const pathname = usePathname()
   const { state } = useApp()
+  const { t } = useLanguage()
+
+  const mainNavItems = [
+    { href: '/dashboard', label: t.nav.dashboard, icon: LayoutDashboard },
+    { href: '/pacientes', label: t.nav.patients, icon: UserRound },
+    { href: '/kanban', label: t.nav.pipeline, icon: Kanban },
+    { href: '/calendar', label: t.nav.calendar, icon: CalendarDays },
+    { href: '/reports', label: t.nav.reports, icon: TrendingUp },
+  ]
+
+  const secondaryNavItems = [
+    { href: '/treatments', label: t.nav.treatments, icon: Syringe },
+    { href: '/settings', label: t.nav.settings, icon: Settings },
+  ]
 
   const handleLogout = () => {
     localStorage.removeItem('clinic_logged_in')
@@ -61,14 +63,14 @@ export function Sidebar() {
           className="flex items-center justify-center gap-2 w-full h-11 bg-primary-500 hover:bg-primary-400 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary-500/25"
         >
           <Plus className="w-5 h-5" />
-          Nuevo Paciente
+          {t.nav.newPatient}
         </Link>
       </div>
 
       {/* Main Navigation */}
       <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
         <p className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-          Principal
+          {t.nav.home}
         </p>
         {mainNavItems.map((item) => {
           const isActive = pathname.startsWith(item.href)
@@ -92,7 +94,7 @@ export function Sidebar() {
 
         <div className="pt-6">
           <p className="px-3 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-            Configuración
+            {t.nav.settings}
           </p>
           {secondaryNavItems.map((item) => {
             const isActive = pathname.startsWith(item.href)
@@ -129,7 +131,7 @@ export function Sidebar() {
           <button
             onClick={handleLogout}
             className="p-2 text-slate-500 hover:text-red-400 hover:bg-slate-700 rounded-lg transition-colors"
-            title="Cerrar sesión"
+            title={t.auth.logout}
           >
             <LogOut className="w-4 h-4" />
           </button>

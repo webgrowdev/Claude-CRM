@@ -4,6 +4,11 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import { Lead, LeadStatus, Treatment, User, Notification, Note, FollowUp, Settings } from '@/types'
 import { initialLeads, treatments as initialTreatments, currentUser, notifications as initialNotifications } from '@/data/mockData'
 import { generateId } from '@/lib/utils'
+import {
+  getGoogleCalendarSettings,
+  createCalendarEvent,
+  deleteCalendarEvent,
+} from '@/services/googleCalendar'
 
 // State interface
 interface AppState {
@@ -195,7 +200,7 @@ interface AppContextType {
   deleteLead: (id: string) => void
   updateLeadStatus: (id: string, status: LeadStatus) => void
   addNote: (leadId: string, content: string) => void
-  addFollowUp: (leadId: string, followUp: Omit<FollowUp, 'id' | 'leadId' | 'completed'>) => void
+  addFollowUp: (leadId: string, followUp: Omit<FollowUp, 'id' | 'leadId' | 'completed'>, syncWithCalendar?: boolean) => Promise<FollowUp | null>
   completeFollowUp: (leadId: string, followUpId: string) => void
   getLeadById: (id: string) => Lead | undefined
   // Treatment actions
@@ -212,6 +217,8 @@ interface AppContextType {
   getUpcomingFollowUps: () => { lead: Lead; followUp: FollowUp }[]
   getRecentLeads: (count: number) => Lead[]
   getUnreadNotificationsCount: () => number
+  // Calendar integration
+  isCalendarConnected: () => boolean
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -303,14 +310,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'ADD_NOTE', payload: { leadId, note } })
   }
 
-  const addFollowUp = (leadId: string, followUpData: Omit<FollowUp, 'id' | 'leadId' | 'completed'>) => {
+  const addFollowUp = async (
+    leadId: string,
+    followUpData: Omit<FollowUp, 'id' | 'leadId' | 'completed'>,
+    syncWithCalendar: boolean = true
+  ): Promise<FollowUp | null> => {
+    const lead = state.leads.find(l => l.id === leadId)
+    if (!lead) return null
+
     const followUp: FollowUp = {
       ...followUpData,
       id: `fu-${generateId()}`,
       leadId,
       completed: false,
+      duration: followUpData.duration || 30, // default 30 min
     }
+
+    // Sync with Google Calendar if connected and it's a meeting
+    const calendarSettings = getGoogleCalendarSettings()
+    if (syncWithCalendar && calendarSettings.connected && followUpData.type === 'meeting') {
+      try {
+        const calendarEvent = await createCalendarEvent(followUp, lead)
+        if (calendarEvent) {
+          followUp.googleEventId = calendarEvent.googleEventId
+          followUp.meetLink = calendarEvent.meetLink
+          console.log('Created Google Calendar event with Meet link:', calendarEvent.meetLink)
+        }
+      } catch (error) {
+        console.error('Failed to create calendar event:', error)
+        // Continue without calendar sync
+      }
+    }
+
     dispatch({ type: 'ADD_FOLLOWUP', payload: { leadId, followUp } })
+    return followUp
+  }
+
+  const isCalendarConnected = (): boolean => {
+    const settings = getGoogleCalendarSettings()
+    return settings.connected
   }
 
   const completeFollowUp = (leadId: string, followUpId: string) => {
@@ -398,6 +436,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getUpcomingFollowUps,
     getRecentLeads,
     getUnreadNotificationsCount,
+    isCalendarConnected,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

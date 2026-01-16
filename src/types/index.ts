@@ -42,6 +42,10 @@ export interface FollowUp {
   completed: boolean
   completedAt?: Date
   notes?: string
+  // Google Calendar integration
+  googleEventId?: string
+  meetLink?: string
+  duration?: number // in minutes
 }
 
 // Treatment Interface

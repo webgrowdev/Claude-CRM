@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   Calendar,
   MessageCircle,
@@ -10,6 +11,8 @@ import {
   Copy,
   RefreshCw,
   Video,
+  AlertCircle,
+  CheckCircle2,
 } from 'lucide-react'
 import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Card, Button, Input, Modal } from '@/components/ui'
@@ -29,6 +32,7 @@ import {
 import { GoogleCalendarSettings, ManyChatSettings, CalendarEvent } from '@/types'
 
 export default function IntegrationsPage() {
+  const searchParams = useSearchParams()
   const [googleSettings, setGoogleSettings] = useState<GoogleCalendarSettings | null>(null)
   const [manychatSettings, setManychatSettings] = useState<ManyChatSettings | null>(null)
   const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([])
@@ -37,6 +41,43 @@ export default function IntegrationsPage() {
   const [manychatForm, setManychatForm] = useState({ apiKey: '', botId: '' })
   const [copied, setCopied] = useState(false)
   const [meetLink, setMeetLink] = useState<string | null>(null)
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+
+  // Handle OAuth callback results
+  useEffect(() => {
+    const success = searchParams.get('success')
+    const error = searchParams.get('error')
+
+    if (success === 'google_connected') {
+      setNotification({
+        type: 'success',
+        message: 'Google Calendar conectado exitosamente',
+      })
+      // Refresh settings
+      setGoogleSettings(getGoogleCalendarSettings())
+      // Clear URL params
+      window.history.replaceState({}, '', '/settings/integrations')
+    }
+
+    if (error) {
+      const errorMessages: Record<string, string> = {
+        google_auth_failed: 'Error al autenticar con Google',
+        no_code: 'No se recibió código de autorización',
+        token_exchange_failed: 'Error al obtener el token de acceso',
+        callback_failed: 'Error en el proceso de autenticación',
+      }
+      setNotification({
+        type: 'error',
+        message: errorMessages[error] || 'Error desconocido',
+      })
+      window.history.replaceState({}, '', '/settings/integrations')
+    }
+
+    // Auto-dismiss notification after 5 seconds
+    if (success || error) {
+      setTimeout(() => setNotification(null), 5000)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     setGoogleSettings(getGoogleCalendarSettings())
@@ -54,16 +95,15 @@ export default function IntegrationsPage() {
     setUpcomingEvents(events)
   }
 
-  const handleConnectGoogle = async () => {
-    setLoading(true)
+  const handleConnectGoogle = () => {
     try {
-      const settings = await connectGoogleCalendar()
-      setGoogleSettings(settings)
+      connectGoogleCalendar() // This redirects to Google OAuth
     } catch (error) {
       console.error('Failed to connect Google Calendar:', error)
-      alert('No se pudo conectar con Google Calendar. Verifica que las credenciales estén configuradas.')
-    } finally {
-      setLoading(false)
+      setNotification({
+        type: 'error',
+        message: 'No se pudo conectar con Google Calendar. Verifica que las credenciales estén configuradas.',
+      })
     }
   }
 
@@ -124,6 +164,30 @@ export default function IntegrationsPage() {
       <Header title="Integraciones" showBack />
 
       <PageContainer>
+        {/* Notification */}
+        {notification && (
+          <div
+            className={`mb-4 p-4 rounded-lg flex items-center gap-3 ${
+              notification.type === 'success'
+                ? 'bg-success-50 text-success-800'
+                : 'bg-error-50 text-error-800'
+            }`}
+          >
+            {notification.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-success-600" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-error-600" />
+            )}
+            <span>{notification.message}</span>
+            <button
+              onClick={() => setNotification(null)}
+              className="ml-auto p-1 hover:bg-black/5 rounded"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         <div className="space-y-6 lg:max-w-2xl">
           {/* Google Calendar Integration */}
           <Card>

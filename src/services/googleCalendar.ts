@@ -7,6 +7,7 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || ''
 const GOOGLE_CALENDAR_SCOPES = [
   'https://www.googleapis.com/auth/calendar',
   'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/userinfo.email',
 ]
 
 // Storage key for settings
@@ -19,8 +20,13 @@ const defaultSettings: GoogleCalendarSettings = {
   syncFollowUps: true,
 }
 
+// Extended settings with expiration
+interface ExtendedGoogleSettings extends GoogleCalendarSettings {
+  expiresAt?: number
+}
+
 // Get current settings from localStorage
-export function getGoogleCalendarSettings(): GoogleCalendarSettings {
+export function getGoogleCalendarSettings(): ExtendedGoogleSettings {
   if (typeof window === 'undefined') return defaultSettings
   const stored = localStorage.getItem(SETTINGS_KEY)
   if (!stored) return defaultSettings
@@ -32,83 +38,83 @@ export function getGoogleCalendarSettings(): GoogleCalendarSettings {
 }
 
 // Save settings to localStorage
-export function saveGoogleCalendarSettings(settings: GoogleCalendarSettings): void {
+export function saveGoogleCalendarSettings(settings: ExtendedGoogleSettings): void {
   if (typeof window === 'undefined') return
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
 }
 
-// Initialize Google OAuth
-export async function initializeGoogleAuth(): Promise<void> {
-  if (!GOOGLE_CLIENT_ID) {
-    console.warn('Google Client ID not configured')
-    return
-  }
-
-  // Load the Google API client library
-  await new Promise<void>((resolve) => {
-    if (typeof window === 'undefined') {
-      resolve()
-      return
-    }
-
-    const script = document.createElement('script')
-    script.src = 'https://apis.google.com/js/api.js'
-    script.onload = () => {
-      window.gapi?.load('client:auth2', () => {
-        resolve()
-      })
-    }
-    document.body.appendChild(script)
-  })
+// Check if token is expired
+export function isTokenExpired(): boolean {
+  const settings = getGoogleCalendarSettings()
+  if (!settings.expiresAt) return true
+  // Consider expired 5 minutes before actual expiration
+  return Date.now() > settings.expiresAt - (5 * 60 * 1000)
 }
 
-// Connect to Google Calendar
-export async function connectGoogleCalendar(): Promise<GoogleCalendarSettings> {
+// Generate OAuth URL for Google Calendar
+export function getGoogleAuthUrl(): string {
+  const redirectUri = `${window.location.origin}/api/auth/callback/google`
+
+  const params = new URLSearchParams({
+    client_id: GOOGLE_CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    scope: GOOGLE_CALENDAR_SCOPES.join(' '),
+    access_type: 'offline',
+    prompt: 'consent',
+  })
+
+  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
+}
+
+// Connect to Google Calendar (redirects to Google OAuth)
+export function connectGoogleCalendar(): void {
   if (!GOOGLE_CLIENT_ID) {
     throw new Error('Google Calendar integration not configured. Please add NEXT_PUBLIC_GOOGLE_CLIENT_ID to your environment variables.')
   }
 
-  try {
-    // Initialize gapi client
-    await window.gapi?.client.init({
-      clientId: GOOGLE_CLIENT_ID,
-      scope: GOOGLE_CALENDAR_SCOPES.join(' '),
-    })
-
-    // Sign in
-    const authInstance = window.gapi?.auth2.getAuthInstance()
-    const user = await authInstance?.signIn()
-
-    if (!user) {
-      throw new Error('Failed to authenticate with Google')
-    }
-
-    const authResponse = user.getAuthResponse()
-    const profile = user.getBasicProfile()
-
-    const settings: GoogleCalendarSettings = {
-      connected: true,
-      email: profile?.getEmail(),
-      accessToken: authResponse.access_token,
-      calendarId: 'primary',
-      autoCreateMeetLinks: true,
-      syncFollowUps: true,
-    }
-
-    saveGoogleCalendarSettings(settings)
-    return settings
-  } catch (error) {
-    console.error('Failed to connect to Google Calendar:', error)
-    throw error
-  }
+  const authUrl = getGoogleAuthUrl()
+  window.location.href = authUrl
 }
 
 // Disconnect from Google Calendar
 export function disconnectGoogleCalendar(): void {
-  const authInstance = window.gapi?.auth2.getAuthInstance()
-  authInstance?.signOut()
-
   saveGoogleCalendarSettings(defaultSettings)
+}
+
+// Make authenticated request to Google Calendar API
+async function googleCalendarRequest<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const settings = getGoogleCalendarSettings()
+
+  if (!settings.connected || !settings.accessToken) {
+    throw new Error('Google Calendar not connected')
+  }
+
+  const response = await fetch(
+    `https://www.googleapis.com/calendar/v3${endpoint}`,
+    {
+      ...options,
+      headers: {
+        Authorization: `Bearer ${settings.accessToken}`,
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    }
+  )
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      // Token expired, need to reconnect
+      disconnectGoogleCalendar()
+      throw new Error('Token expired. Please reconnect to Google Calendar.')
+    }
+    throw new Error(`Google Calendar API error: ${response.statusText}`)
+  }
+
+  return response.json()
 }
 
 // Create a calendar event from a follow-up
@@ -126,7 +132,7 @@ export async function createCalendarEvent(
   const endTime = new Date(followUp.scheduledAt)
   endTime.setMinutes(endTime.getMinutes() + 30) // Default 30 min duration
 
-  const eventData = {
+  const eventData: any = {
     summary: `${getFollowUpTitle(followUp.type)} - ${lead.name}`,
     description: `
 Lead: ${lead.name}
@@ -148,32 +154,27 @@ Creado automáticamente por Clinic CRM
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
     attendees: lead.email ? [{ email: lead.email }] : [],
-    conferenceData: settings.autoCreateMeetLinks && followUp.type === 'meeting' ? {
+  }
+
+  // Add Google Meet for meetings
+  if (settings.autoCreateMeetLinks && followUp.type === 'meeting') {
+    eventData.conferenceData = {
       createRequest: {
-        requestId: `clinic-crm-${followUp.id}`,
+        requestId: `clinic-crm-${followUp.id}-${Date.now()}`,
         conferenceSolutionKey: { type: 'hangoutsMeet' },
       },
-    } : undefined,
+    }
   }
 
   try {
-    const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${settings.calendarId || 'primary'}/events?conferenceDataVersion=1`,
+    const calendarId = settings.calendarId || 'primary'
+    const googleEvent = await googleCalendarRequest<any>(
+      `/calendars/${calendarId}/events?conferenceDataVersion=1`,
       {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${settings.accessToken}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(eventData),
       }
     )
-
-    if (!response.ok) {
-      throw new Error('Failed to create calendar event')
-    }
-
-    const googleEvent = await response.json()
 
     const calendarEvent: CalendarEvent = {
       id: `cal-${Date.now()}`,
@@ -208,14 +209,11 @@ export async function updateCalendarEvent(
   }
 
   try {
-    const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${settings.calendarId || 'primary'}/events/${googleEventId}`,
+    const calendarId = settings.calendarId || 'primary'
+    await googleCalendarRequest(
+      `/calendars/${calendarId}/events/${googleEventId}`,
       {
         method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${settings.accessToken}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           summary: updates.title,
           description: updates.description,
@@ -231,7 +229,7 @@ export async function updateCalendarEvent(
       }
     )
 
-    return response.ok
+    return true
   } catch (error) {
     console.error('Failed to update calendar event:', error)
     return false
@@ -247,8 +245,9 @@ export async function deleteCalendarEvent(googleEventId: string): Promise<boolea
   }
 
   try {
-    const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${settings.calendarId || 'primary'}/events/${googleEventId}`,
+    const calendarId = settings.calendarId || 'primary'
+    await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${calendarId}/events/${googleEventId}`,
       {
         method: 'DELETE',
         headers: {
@@ -257,7 +256,7 @@ export async function deleteCalendarEvent(googleEventId: string): Promise<boolea
       }
     )
 
-    return response.ok || response.status === 404 // Success or already deleted
+    return true
   } catch (error) {
     console.error('Failed to delete calendar event:', error)
     return false
@@ -273,22 +272,12 @@ export async function getUpcomingEvents(maxResults: number = 10): Promise<Calend
   }
 
   try {
+    const calendarId = settings.calendarId || 'primary'
     const now = new Date().toISOString()
-    const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${settings.calendarId || 'primary'}/events?` +
-      `timeMin=${now}&maxResults=${maxResults}&orderBy=startTime&singleEvents=true`,
-      {
-        headers: {
-          Authorization: `Bearer ${settings.accessToken}`,
-        },
-      }
+
+    const data = await googleCalendarRequest<any>(
+      `/calendars/${calendarId}/events?timeMin=${encodeURIComponent(now)}&maxResults=${maxResults}&orderBy=startTime&singleEvents=true`
     )
-
-    if (!response.ok) {
-      throw new Error('Failed to fetch events')
-    }
-
-    const data = await response.json()
 
     return data.items?.map((item: any) => ({
       id: item.id,
@@ -324,7 +313,7 @@ function getFollowUpTitle(type: string): string {
   }
 }
 
-// Generate a Google Meet link
+// Generate a Google Meet link by creating a temporary event
 export async function generateMeetLink(): Promise<string | null> {
   const settings = getGoogleCalendarSettings()
 
@@ -332,15 +321,17 @@ export async function generateMeetLink(): Promise<string | null> {
     return null
   }
 
-  // Create a temporary event to get a Meet link
+  const now = new Date()
+  const end = new Date(now.getTime() + 30 * 60 * 1000)
+
   const tempEvent = {
     summary: 'Clinic CRM - Videollamada',
     start: {
-      dateTime: new Date().toISOString(),
+      dateTime: now.toISOString(),
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
     end: {
-      dateTime: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+      dateTime: end.toISOString(),
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
     conferenceData: {
@@ -352,27 +343,21 @@ export async function generateMeetLink(): Promise<string | null> {
   }
 
   try {
-    const response = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1`,
+    const calendarId = settings.calendarId || 'primary'
+    const event = await googleCalendarRequest<any>(
+      `/calendars/${calendarId}/events?conferenceDataVersion=1`,
       {
         method: 'POST',
-        headers: {
-          Authorization: `Bearer ${settings.accessToken}`,
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(tempEvent),
       }
     )
 
-    if (!response.ok) {
-      throw new Error('Failed to generate Meet link')
-    }
-
-    const event = await response.json()
     const meetLink = event.conferenceData?.entryPoints?.[0]?.uri
 
     // Delete the temporary event
-    await deleteCalendarEvent(event.id)
+    if (event.id) {
+      await deleteCalendarEvent(event.id)
+    }
 
     return meetLink || null
   } catch (error) {
@@ -381,20 +366,87 @@ export async function generateMeetLink(): Promise<string | null> {
   }
 }
 
-// Declare gapi on window
-declare global {
-  interface Window {
-    gapi?: {
-      load: (api: string, callback: () => void) => void
-      client: {
-        init: (config: any) => Promise<void>
+// Create event for a meeting with a lead
+export async function createMeetingEvent(
+  lead: Lead,
+  scheduledAt: Date,
+  duration: number = 30, // minutes
+  notes?: string
+): Promise<{ event: CalendarEvent | null; meetLink: string | null }> {
+  const settings = getGoogleCalendarSettings()
+
+  if (!settings.connected || !settings.accessToken) {
+    return { event: null, meetLink: null }
+  }
+
+  const endTime = new Date(scheduledAt)
+  endTime.setMinutes(endTime.getMinutes() + duration)
+
+  const eventData = {
+    summary: `Cita - ${lead.name}`,
+    description: `
+Cliente: ${lead.name}
+Teléfono: ${lead.phone}
+${lead.email ? `Email: ${lead.email}` : ''}
+Tratamientos de interés: ${lead.treatments.join(', ') || 'No especificado'}
+
+${notes || ''}
+
+---
+Creado por Clinic CRM
+    `.trim(),
+    start: {
+      dateTime: scheduledAt.toISOString(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    },
+    end: {
+      dateTime: endTime.toISOString(),
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    },
+    attendees: lead.email ? [{ email: lead.email }] : [],
+    conferenceData: {
+      createRequest: {
+        requestId: `clinic-meeting-${lead.id}-${Date.now()}`,
+        conferenceSolutionKey: { type: 'hangoutsMeet' },
+      },
+    },
+    reminders: {
+      useDefault: false,
+      overrides: [
+        { method: 'email', minutes: 24 * 60 }, // 1 day before
+        { method: 'popup', minutes: 30 }, // 30 minutes before
+      ],
+    },
+  }
+
+  try {
+    const calendarId = settings.calendarId || 'primary'
+    const googleEvent = await googleCalendarRequest<any>(
+      `/calendars/${calendarId}/events?conferenceDataVersion=1&sendUpdates=all`,
+      {
+        method: 'POST',
+        body: JSON.stringify(eventData),
       }
-      auth2: {
-        getAuthInstance: () => {
-          signIn: () => Promise<any>
-          signOut: () => void
-        }
-      }
+    )
+
+    const meetLink = googleEvent.conferenceData?.entryPoints?.[0]?.uri || null
+
+    const calendarEvent: CalendarEvent = {
+      id: `cal-${Date.now()}`,
+      title: eventData.summary,
+      description: eventData.description,
+      start: scheduledAt,
+      end: endTime,
+      meetLink,
+      attendees: lead.email ? [lead.email] : [],
+      leadId: lead.id,
+      syncedWithGoogle: true,
+      googleEventId: googleEvent.id,
     }
+
+    return { event: calendarEvent, meetLink }
+  } catch (error) {
+    console.error('Failed to create meeting event:', error)
+    return { event: null, meetLink: null }
   }
 }

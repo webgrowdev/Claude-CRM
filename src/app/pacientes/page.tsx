@@ -28,6 +28,7 @@ import {
 import { AppShell } from '@/components/layout'
 import { Input, Card, Avatar, Badge, Modal, Button, Select, TextArea } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
+import { useLanguage } from '@/i18n/LanguageContext'
 import {
   formatTimeAgo,
   formatRelativeDate,
@@ -40,12 +41,12 @@ import {
 } from '@/lib/utils'
 import { LeadStatus, LeadSource, FollowUpType, Lead } from '@/types'
 
-const statusOptions: { value: LeadStatus; label: string; color: string; bg: string }[] = [
-  { value: 'new', label: 'Nuevo', color: 'text-primary-600', bg: 'bg-primary-100' },
-  { value: 'contacted', label: 'Contactado', color: 'text-amber-600', bg: 'bg-amber-100' },
-  { value: 'scheduled', label: 'Agendado', color: 'text-purple-600', bg: 'bg-purple-100' },
-  { value: 'closed', label: 'Cerrado', color: 'text-emerald-600', bg: 'bg-emerald-100' },
-  { value: 'lost', label: 'Perdido', color: 'text-red-600', bg: 'bg-red-100' },
+const getStatusOptions = (t: any): { value: LeadStatus; label: string; color: string; bg: string }[] => [
+  { value: 'new', label: t.status.new, color: 'text-primary-600', bg: 'bg-primary-100' },
+  { value: 'contacted', label: t.status.contacted, color: 'text-amber-600', bg: 'bg-amber-100' },
+  { value: 'scheduled', label: t.status.scheduled, color: 'text-purple-600', bg: 'bg-purple-100' },
+  { value: 'closed', label: t.status.closed, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+  { value: 'lost', label: t.status.lost, color: 'text-red-600', bg: 'bg-red-100' },
 ]
 
 const sourceIcons: Record<LeadSource, React.ReactNode> = {
@@ -60,6 +61,10 @@ const sourceIcons: Record<LeadSource, React.ReactNode> = {
 export default function PacientesPage() {
   const searchParams = useSearchParams()
   const { state, addLead, updateLeadStatus, addNote, addFollowUp, deleteLead, isCalendarConnected } = useApp()
+  const { t } = useLanguage()
+
+  // Get translated status options
+  const statusOptions = useMemo(() => getStatusOptions(t), [t])
 
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all')
@@ -90,12 +95,21 @@ export default function PacientesPage() {
 
   const calendarConnected = isCalendarConnected()
 
-  // Check for action param to open add modal
+  // Check for URL params: action, id, or selected
   useEffect(() => {
     if (searchParams.get('action') === 'new') {
       setShowAddModal(true)
     }
-  }, [searchParams])
+
+    // Handle patient selection from other pages (id or selected param)
+    const patientId = searchParams.get('id') || searchParams.get('selected')
+    if (patientId && state.leads.length > 0) {
+      const patient = state.leads.find(l => l.id === patientId)
+      if (patient) {
+        setSelectedPatient(patient)
+      }
+    }
+  }, [searchParams, state.leads])
 
   // Update selected patient when state changes
   useEffect(() => {
@@ -207,10 +221,14 @@ export default function PacientesPage() {
     })
 
     selectedPatient.followUps.forEach(fu => {
+      const typeLabel = fu.type === 'call' ? t.followUp.typeCall :
+                        fu.type === 'message' ? t.followUp.typeMessage :
+                        fu.type === 'email' ? t.followUp.typeEmail :
+                        t.followUp.typeMeeting
       items.push({
         id: fu.id,
         type: 'followup',
-        content: `${fu.type === 'call' ? 'Llamada' : fu.type === 'message' ? 'Mensaje' : fu.type === 'email' ? 'Email' : 'Reunión'}${fu.notes ? `: ${fu.notes}` : ''}`,
+        content: `${typeLabel}${fu.notes ? `: ${fu.notes}` : ''}`,
         date: new Date(fu.scheduledAt),
         completed: fu.completed,
         meetLink: fu.meetLink,
@@ -219,7 +237,7 @@ export default function PacientesPage() {
     })
 
     return items.sort((a, b) => b.date.getTime() - a.date.getTime())
-  }, [selectedPatient])
+  }, [selectedPatient, t])
 
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { all: state.leads.length }
@@ -231,14 +249,14 @@ export default function PacientesPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen">
+      <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen overflow-hidden">
         {/* Header */}
         <div className="flex-shrink-0 bg-white border-b border-slate-200 px-4 py-4 lg:px-6">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <h1 className="text-xl lg:text-2xl font-bold text-slate-900">Pacientes</h1>
+              <h1 className="text-xl lg:text-2xl font-bold text-slate-900">{t.patients.title}</h1>
               <p className="text-sm text-slate-500 hidden sm:block">
-                {state.leads.length} pacientes en total
+                {state.leads.length} {t.patients.totalPatients}
               </p>
             </div>
             <button
@@ -246,7 +264,7 @@ export default function PacientesPage() {
               className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary-500/25"
             >
               <UserPlus className="w-5 h-5" />
-              <span className="hidden sm:inline">Nuevo Paciente</span>
+              <span className="hidden sm:inline">{t.patients.newPatient}</span>
             </button>
           </div>
 
@@ -254,7 +272,7 @@ export default function PacientesPage() {
           <div className="flex flex-col sm:flex-row gap-3 mt-4">
             <div className="flex-1">
               <Input
-                placeholder="Buscar pacientes..."
+                placeholder={t.patients.searchPatients}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 icon={<Search className="w-5 h-5" />}
@@ -270,7 +288,7 @@ export default function PacientesPage() {
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 )}
               >
-                Todos ({statusCounts.all})
+                {t.common.all} ({statusCounts.all})
               </button>
               {statusOptions.map(status => (
                 <button
@@ -303,17 +321,17 @@ export default function PacientesPage() {
                   <Users className="w-8 h-8 text-slate-400" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-800">
-                  {searchQuery ? 'Sin resultados' : 'No hay pacientes'}
+                  {searchQuery ? t.common.noResults : t.patients.noPatients}
                 </h3>
                 <p className="text-sm text-slate-500 mt-1">
-                  {searchQuery ? 'Intenta con otra búsqueda' : 'Agrega tu primer paciente para comenzar'}
+                  {searchQuery ? t.patients.searchPatients : t.patients.addFirstPatient}
                 </p>
                 {!searchQuery && (
                   <button
                     onClick={() => setShowAddModal(true)}
                     className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors"
                   >
-                    Agregar Paciente
+                    {t.patients.addPatient}
                   </button>
                 )}
               </div>
@@ -374,7 +392,7 @@ export default function PacientesPage() {
                       <h2 className="text-xl font-bold text-slate-900">{selectedPatient.name}</h2>
                       <div className="flex items-center gap-2 mt-1 text-sm text-slate-500">
                         {sourceIcons[selectedPatient.source]}
-                        <span>Vía {getSourceLabel(selectedPatient.source)}</span>
+                        <span>{t.patients.via} {t.sources[selectedPatient.source]}</span>
                         <span className="text-slate-300">•</span>
                         <span>{formatTimeAgo(new Date(selectedPatient.createdAt))}</span>
                       </div>
@@ -395,7 +413,7 @@ export default function PacientesPage() {
                     className="flex flex-col items-center gap-1 p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors"
                   >
                     <Phone className="w-5 h-5 text-primary-600" />
-                    <span className="text-xs text-slate-600">Llamar</span>
+                    <span className="text-xs text-slate-600">{t.actions.call}</span>
                   </a>
                   <a
                     href={getWhatsAppUrl(selectedPatient.phone)}
@@ -404,7 +422,7 @@ export default function PacientesPage() {
                     className="flex flex-col items-center gap-1 p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors"
                   >
                     <MessageCircle className="w-5 h-5 text-emerald-600" />
-                    <span className="text-xs text-slate-600">WhatsApp</span>
+                    <span className="text-xs text-slate-600">{t.actions.whatsapp}</span>
                   </a>
                   {selectedPatient.email && (
                     <a
@@ -412,7 +430,7 @@ export default function PacientesPage() {
                       className="flex flex-col items-center gap-1 p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors"
                     >
                       <Mail className="w-5 h-5 text-amber-600" />
-                      <span className="text-xs text-slate-600">Email</span>
+                      <span className="text-xs text-slate-600">{t.actions.email}</span>
                     </a>
                   )}
                   <button
@@ -420,7 +438,7 @@ export default function PacientesPage() {
                     className="flex flex-col items-center gap-1 p-3 bg-primary-50 hover:bg-primary-100 rounded-xl transition-colors"
                   >
                     <Calendar className="w-5 h-5 text-primary-600" />
-                    <span className="text-xs text-primary-700 font-medium">Agendar</span>
+                    <span className="text-xs text-primary-700 font-medium">{t.actions.schedule}</span>
                   </button>
                 </div>
 
@@ -447,22 +465,22 @@ export default function PacientesPage() {
               <div className="flex-shrink-0 p-4 lg:p-6 border-b border-slate-100 bg-slate-50/50">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-slate-500">Teléfono</p>
+                    <p className="text-slate-500">{t.patientForm.phone}</p>
                     <p className="font-medium text-slate-900">{selectedPatient.phone}</p>
                   </div>
                   {selectedPatient.email && (
                     <div>
-                      <p className="text-slate-500">Email</p>
+                      <p className="text-slate-500">{t.patientForm.email}</p>
                       <p className="font-medium text-slate-900 truncate">{selectedPatient.email}</p>
                     </div>
                   )}
                 </div>
                 {selectedPatient.treatments.length > 0 && (
                   <div className="mt-3">
-                    <p className="text-sm text-slate-500 mb-1">Tratamientos de interés</p>
+                    <p className="text-sm text-slate-500 mb-1">{t.patients.treatmentsOfInterest}</p>
                     <div className="flex flex-wrap gap-1">
-                      {selectedPatient.treatments.map((t, i) => (
-                        <Badge key={i} variant="outline" size="sm">{t}</Badge>
+                      {selectedPatient.treatments.map((treatment, i) => (
+                        <Badge key={i} variant="outline" size="sm">{treatment}</Badge>
                       ))}
                     </div>
                   </div>
@@ -472,19 +490,19 @@ export default function PacientesPage() {
               {/* Timeline */}
               <div className="flex-1 overflow-y-auto p-4 lg:p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-slate-900">Actividad</h3>
+                  <h3 className="font-semibold text-slate-900">{t.patients.activity}</h3>
                   <button
                     onClick={() => setShowNoteModal(true)}
                     className="text-sm text-primary-600 hover:text-primary-700 font-medium"
                   >
-                    + Agregar nota
+                    + {t.patients.addNote}
                   </button>
                 </div>
 
                 {timeline.length === 0 ? (
                   <div className="text-center py-8 text-slate-500">
                     <FileText className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                    <p>No hay actividad todavía</p>
+                    <p>{t.patients.noActivity}</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -517,7 +535,7 @@ export default function PacientesPage() {
                           <p className="text-sm text-slate-800">{item.content}</p>
                           <p className="text-xs text-slate-400 mt-1">
                             {item.type === 'followup'
-                              ? (item.completed ? 'Completado ' : 'Programado para ') +
+                              ? (item.completed ? `${t.followUp.completed} ` : `${t.followUp.scheduledFor} `) +
                                 formatRelativeDate(item.date)
                               : formatTimeAgo(item.date)}
                           </p>
@@ -529,7 +547,7 @@ export default function PacientesPage() {
                               className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-medium rounded-lg transition-colors"
                             >
                               <Video className="w-3.5 h-3.5" />
-                              Unirse a Google Meet
+                              {t.calendar.joinMeet}
                               <ExternalLink className="w-3 h-3" />
                             </a>
                           )}
@@ -546,9 +564,9 @@ export default function PacientesPage() {
                 <div className="w-20 h-20 bg-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
                   <UserPlus className="w-10 h-10 text-slate-400" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-700">Selecciona un paciente</h3>
+                <h3 className="text-lg font-semibold text-slate-700">{t.patients.selectPatient}</h3>
                 <p className="text-sm text-slate-500 mt-1">
-                  Elige un paciente de la lista para ver sus detalles
+                  {t.patients.selectPatientDesc}
                 </p>
               </div>
             </div>
@@ -560,50 +578,50 @@ export default function PacientesPage() {
       <Modal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title="Nuevo Paciente"
+        title={t.patients.newPatient}
       >
         <form onSubmit={(e) => { e.preventDefault(); handleAddPatient() }} className="space-y-4">
           <Input
-            label="Nombre"
-            placeholder="Nombre del paciente"
+            label={t.patientForm.name}
+            placeholder={t.patientForm.namePlaceholder}
             value={newPatient.name}
             onChange={(e) => setNewPatient({ ...newPatient, name: e.target.value })}
             required
           />
           <Input
-            label="Teléfono"
-            placeholder="+52 55 1234 5678"
+            label={t.patientForm.phone}
+            placeholder={t.patientForm.phonePlaceholder}
             type="tel"
             value={newPatient.phone}
             onChange={(e) => setNewPatient({ ...newPatient, phone: e.target.value })}
             required
           />
           <Input
-            label="Email (opcional)"
-            placeholder="paciente@email.com"
+            label={`${t.patientForm.email} (${t.common.optional})`}
+            placeholder={t.patientForm.emailPlaceholder}
             type="email"
             value={newPatient.email}
             onChange={(e) => setNewPatient({ ...newPatient, email: e.target.value })}
           />
           <Select
-            label="Fuente"
+            label={t.patientForm.source}
             value={newPatient.source}
             onChange={(value) => setNewPatient({ ...newPatient, source: value as LeadSource })}
             options={[
-              { value: 'instagram', label: 'Instagram' },
-              { value: 'whatsapp', label: 'WhatsApp' },
-              { value: 'phone', label: 'Teléfono' },
-              { value: 'website', label: 'Sitio Web' },
-              { value: 'referral', label: 'Referido' },
-              { value: 'other', label: 'Otro' },
+              { value: 'instagram', label: t.sources.instagram },
+              { value: 'whatsapp', label: t.sources.whatsapp },
+              { value: 'phone', label: t.sources.phone },
+              { value: 'website', label: t.sources.website },
+              { value: 'referral', label: t.sources.referral },
+              { value: 'other', label: t.sources.other },
             ]}
           />
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="outline" fullWidth onClick={() => setShowAddModal(false)}>
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button type="submit" fullWidth>
-              Agregar Paciente
+              {t.patients.addPatient}
             </Button>
           </div>
         </form>
@@ -613,18 +631,18 @@ export default function PacientesPage() {
       <Modal
         isOpen={showFollowUpModal}
         onClose={() => setShowFollowUpModal(false)}
-        title="Programar Seguimiento"
+        title={t.followUp.title}
       >
         <div className="space-y-4">
           <Select
-            label="Tipo"
+            label={t.followUp.type}
             value={followUp.type}
             onChange={(value) => setFollowUp({ ...followUp, type: value as FollowUpType })}
             options={[
-              { value: 'call', label: 'Llamada' },
-              { value: 'message', label: 'Mensaje' },
-              { value: 'email', label: 'Email' },
-              { value: 'meeting', label: 'Reunión con videollamada' },
+              { value: 'call', label: t.followUp.typeCall },
+              { value: 'message', label: t.followUp.typeMessage },
+              { value: 'email', label: t.followUp.typeEmail },
+              { value: 'meeting', label: t.followUp.typeMeeting },
             ]}
           />
 
@@ -636,12 +654,12 @@ export default function PacientesPage() {
               <Video className={cn('w-5 h-5', calendarConnected ? 'text-purple-600' : 'text-slate-400')} />
               <div className="flex-1">
                 <p className={cn('text-sm font-medium', calendarConnected ? 'text-purple-700' : 'text-slate-600')}>
-                  {calendarConnected ? 'Se creará evento en Google Calendar' : 'Google Calendar no conectado'}
+                  {calendarConnected ? t.followUp.calendarConnected : t.followUp.calendarNotConnected}
                 </p>
                 <p className="text-xs text-slate-500">
                   {calendarConnected
-                    ? 'Se generará automáticamente un enlace de Google Meet'
-                    : 'Conecta tu calendario en Configuración → Integraciones'
+                    ? t.followUp.meetLinkAuto
+                    : t.followUp.connectCalendar
                   }
                 </p>
               </div>
@@ -650,7 +668,7 @@ export default function PacientesPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha y Hora</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">{t.followUp.dateTime}</label>
             <input
               type="datetime-local"
               value={followUp.scheduledAt}
@@ -661,7 +679,7 @@ export default function PacientesPage() {
 
           {followUp.type === 'meeting' && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">Duración</label>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">{t.followUp.duration}</label>
               <div className="flex gap-2">
                 {[15, 30, 45, 60, 90].map((mins) => (
                   <button
@@ -683,24 +701,24 @@ export default function PacientesPage() {
           )}
 
           <Input
-            label="Notas (opcional)"
-            placeholder="Ej: Confirmar disponibilidad para consulta"
+            label={`${t.followUp.notes} (${t.common.optional})`}
+            placeholder={t.followUp.notesPlaceholder}
             value={followUp.notes}
             onChange={(e) => setFollowUp({ ...followUp, notes: e.target.value })}
           />
 
           <div className="flex gap-3 pt-2">
             <Button variant="outline" fullWidth onClick={() => setShowFollowUpModal(false)} disabled={isCreatingFollowUp}>
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button fullWidth onClick={handleAddFollowUp} disabled={isCreatingFollowUp}>
               {isCreatingFollowUp ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {followUp.type === 'meeting' && calendarConnected ? 'Creando evento...' : 'Guardando...'}
+                  {followUp.type === 'meeting' && calendarConnected ? t.followUp.creatingEvent : t.followUp.saving}
                 </span>
               ) : (
-                followUp.type === 'meeting' && calendarConnected ? 'Crear con Google Meet' : 'Programar'
+                followUp.type === 'meeting' && calendarConnected ? t.followUp.createWithMeet : t.followUp.schedule
               )}
             </Button>
           </div>
@@ -711,21 +729,21 @@ export default function PacientesPage() {
       <Modal
         isOpen={showNoteModal}
         onClose={() => setShowNoteModal(false)}
-        title="Agregar Nota"
+        title={t.notes.title}
       >
         <div className="space-y-4">
           <TextArea
-            placeholder="Escribe una nota sobre este paciente..."
+            placeholder={t.notes.placeholder}
             value={noteContent}
             onChange={(e) => setNoteContent(e.target.value)}
             className="min-h-[120px]"
           />
           <div className="flex gap-3">
             <Button variant="outline" fullWidth onClick={() => setShowNoteModal(false)}>
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button fullWidth onClick={handleAddNote}>
-              Guardar
+              {t.common.save}
             </Button>
           </div>
         </div>
@@ -735,18 +753,18 @@ export default function PacientesPage() {
       <Modal
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
-        title="Eliminar Paciente"
+        title={t.patients.deletePatient}
         size="sm"
       >
         <p className="text-slate-600 mb-6">
-          ¿Estás seguro de que deseas eliminar a <strong>{selectedPatient?.name}</strong>? Esta acción no se puede deshacer.
+          {t.patients.deleteConfirm} <strong>{selectedPatient?.name}</strong>? {t.patients.deleteWarning}
         </p>
         <div className="flex gap-3">
           <Button variant="outline" fullWidth onClick={() => setShowDeleteConfirm(false)}>
-            Cancelar
+            {t.common.cancel}
           </Button>
           <Button variant="danger" fullWidth onClick={handleDelete}>
-            Eliminar
+            {t.common.delete}
           </Button>
         </div>
       </Modal>

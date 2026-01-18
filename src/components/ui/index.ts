@@ -34,3 +34,5 @@ export type { EmptyStateProps } from './EmptyState'
 export { Onboarding, useOnboarding } from './Onboarding'
 
 export { Tooltip } from './Tooltip'
+
+export { TimeSlotPicker } from './TimeSlotPicker'

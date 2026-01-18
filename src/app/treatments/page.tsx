@@ -22,19 +22,14 @@ import {
   Select,
 } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
+import { useLanguage } from '@/i18n/LanguageContext'
 import { formatCurrency } from '@/lib/utils'
 import { Treatment } from '@/types'
 
-const categories = [
-  { id: 'all', label: 'Todos' },
-  { id: 'Inyectables', label: 'Inyectables' },
-  { id: 'Láser', label: 'Láser' },
-  { id: 'Facial', label: 'Facial' },
-  { id: 'Corporal', label: 'Corporal' },
-]
-
 export default function TreatmentsPage() {
   const { state, addTreatment, updateTreatment, deleteTreatment } = useApp()
+  const { t } = useLanguage()
+
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
   const [showAddModal, setShowAddModal] = useState(false)
@@ -51,21 +46,30 @@ export default function TreatmentsPage() {
     description: '',
   })
 
+  // Categories with translations
+  const categories = useMemo(() => [
+    { id: 'all', label: t.treatments.categories.all },
+    { id: 'Inyectables', label: t.treatments.categories.injectable },
+    { id: 'Láser', label: t.treatments.categories.laser },
+    { id: 'Facial', label: t.treatments.categories.facial },
+    { id: 'Corporal', label: t.treatments.categories.body },
+  ], [t])
+
   const filteredTreatments = useMemo(() => {
     let treatments = [...state.treatments]
 
     // Filter by category
     if (activeCategory !== 'all') {
-      treatments = treatments.filter((t) => t.category === activeCategory)
+      treatments = treatments.filter((tr) => tr.category === activeCategory)
     }
 
     // Filter by search
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       treatments = treatments.filter(
-        (t) =>
-          t.name.toLowerCase().includes(query) ||
-          t.category.toLowerCase().includes(query)
+        (tr) =>
+          tr.name.toLowerCase().includes(query) ||
+          tr.category.toLowerCase().includes(query)
       )
     }
 
@@ -79,9 +83,9 @@ export default function TreatmentsPage() {
         count:
           cat.id === 'all'
             ? state.treatments.length
-            : state.treatments.filter((t) => t.category === cat.id).length,
+            : state.treatments.filter((tr) => tr.category === cat.id).length,
       })),
-    [state.treatments]
+    [state.treatments, categories]
   )
 
   const handleAdd = () => {
@@ -147,15 +151,15 @@ export default function TreatmentsPage() {
 
   const handleShare = async () => {
     const treatmentList = state.treatments
-      .map((t) => `• ${t.name}: ${formatCurrency(t.price)} (${t.duration} min)`)
+      .map((tr) => `• ${tr.name}: ${formatCurrency(tr.price)} (${tr.duration} min)`)
       .join('\n')
 
-    const text = `*Lista de Tratamientos*\n\n${treatmentList}\n\n_Contáctanos para más información_`
+    const text = `*${t.treatments.title}*\n\n${treatmentList}\n\n_${t.treatments.contactForInfo}_`
 
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Lista de Tratamientos',
+          title: t.treatments.title,
           text: text,
         })
       } catch (err) {
@@ -164,14 +168,20 @@ export default function TreatmentsPage() {
     } else {
       // Fallback: copy to clipboard
       await navigator.clipboard.writeText(text)
-      alert('Lista copiada al portapapeles')
+      alert(t.treatments.copiedToClipboard)
     }
+  }
+
+  // Get category label for display
+  const getCategoryLabel = (categoryId: string) => {
+    const cat = categories.find(c => c.id === categoryId)
+    return cat ? cat.label : categoryId
   }
 
   return (
     <AppShell>
       <Header
-        title="Tratamientos"
+        title={t.treatments.title}
         showBack
         rightContent={
           <div className="flex items-center gap-2">
@@ -205,7 +215,7 @@ export default function TreatmentsPage() {
         <div className="px-4 pt-4 lg:flex lg:items-center lg:justify-between lg:gap-4">
           <div className="lg:flex-1 lg:max-w-md">
             <Input
-              placeholder="Buscar tratamientos..."
+              placeholder={t.treatments.searchTreatments}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               icon={<Search className="w-5 h-5" />}
@@ -217,7 +227,7 @@ export default function TreatmentsPage() {
               onClick={handleShare}
               icon={<Share2 className="w-5 h-5" />}
             >
-              Compartir
+              {t.treatments.share}
             </Button>
             <Button
               onClick={() => {
@@ -232,7 +242,7 @@ export default function TreatmentsPage() {
               }}
               icon={<Plus className="w-5 h-5" />}
             >
-              Nuevo Tratamiento
+              {t.treatments.newTreatment}
             </Button>
           </div>
         </div>
@@ -251,16 +261,16 @@ export default function TreatmentsPage() {
           {filteredTreatments.length === 0 ? (
             <EmptyState
               icon={<Clock className="w-8 h-8" />}
-              title={searchQuery ? 'Sin resultados' : 'Sin tratamientos'}
+              title={searchQuery ? t.common.noResults : t.treatments.noTreatments}
               description={
                 searchQuery
-                  ? 'Intenta con otra búsqueda'
-                  : 'Agrega tu primer tratamiento'
+                  ? t.treatments.tryAnotherSearch
+                  : t.treatments.addFirstTreatment
               }
               action={
                 !searchQuery
                   ? {
-                      label: 'Agregar Tratamiento',
+                      label: t.treatments.addTreatment,
                       onClick: () => setShowAddModal(true),
                     }
                   : undefined
@@ -280,10 +290,10 @@ export default function TreatmentsPage() {
                       </p>
                       <div className="flex items-center gap-2 mt-0.5">
                         <Badge variant="outline" size="sm">
-                          {treatment.category}
+                          {getCategoryLabel(treatment.category)}
                         </Badge>
                         <span className="text-xs text-slate-500">
-                          {treatment.duration} min
+                          {treatment.duration} {t.treatments.minutes}
                         </span>
                       </div>
                     </div>
@@ -320,7 +330,7 @@ export default function TreatmentsPage() {
             onClick={handleShare}
             icon={<Share2 className="w-5 h-5" />}
           >
-            Compartir Lista de Precios
+            {t.treatments.shareList}
           </Button>
         </div>
       </PageContainer>
@@ -329,7 +339,7 @@ export default function TreatmentsPage() {
       <Modal
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
-        title="Nuevo Tratamiento"
+        title={t.treatments.newTreatment}
       >
         <form
           onSubmit={(e) => {
@@ -339,15 +349,15 @@ export default function TreatmentsPage() {
           className="space-y-4"
         >
           <Input
-            label="Nombre"
-            placeholder="Ej: Botox - Frente"
+            label={t.treatments.name}
+            placeholder={t.treatments.namePlaceholder}
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
           />
 
           <Select
-            label="Categoría"
+            label={t.treatments.category}
             value={formData.category}
             onChange={(value) => setFormData({ ...formData, category: value })}
             options={categories
@@ -357,7 +367,7 @@ export default function TreatmentsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Precio"
+              label={t.treatments.price}
               placeholder="0.00"
               type="number"
               value={formData.price}
@@ -367,7 +377,7 @@ export default function TreatmentsPage() {
               required
             />
             <Input
-              label="Duración (min)"
+              label={`${t.treatments.duration} (min)`}
               placeholder="30"
               type="number"
               value={formData.duration}
@@ -378,8 +388,8 @@ export default function TreatmentsPage() {
           </div>
 
           <Input
-            label="Descripción (opcional)"
-            placeholder="Breve descripción del tratamiento"
+            label={`${t.treatments.description} (${t.common.optional})`}
+            placeholder={t.treatments.descriptionPlaceholder}
             value={formData.description}
             onChange={(e) =>
               setFormData({ ...formData, description: e.target.value })
@@ -393,10 +403,10 @@ export default function TreatmentsPage() {
               fullWidth
               onClick={() => setShowAddModal(false)}
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button type="submit" fullWidth>
-              Agregar
+              {t.common.add}
             </Button>
           </div>
         </form>
@@ -406,7 +416,7 @@ export default function TreatmentsPage() {
       <Modal
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
-        title="Editar Tratamiento"
+        title={t.treatments.editTreatment}
       >
         <form
           onSubmit={(e) => {
@@ -416,15 +426,15 @@ export default function TreatmentsPage() {
           className="space-y-4"
         >
           <Input
-            label="Nombre"
-            placeholder="Ej: Botox - Frente"
+            label={t.treatments.name}
+            placeholder={t.treatments.namePlaceholder}
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
             required
           />
 
           <Select
-            label="Categoría"
+            label={t.treatments.category}
             value={formData.category}
             onChange={(value) => setFormData({ ...formData, category: value })}
             options={categories
@@ -434,7 +444,7 @@ export default function TreatmentsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <Input
-              label="Precio"
+              label={t.treatments.price}
               placeholder="0.00"
               type="number"
               value={formData.price}
@@ -444,7 +454,7 @@ export default function TreatmentsPage() {
               required
             />
             <Input
-              label="Duración (min)"
+              label={`${t.treatments.duration} (min)`}
               placeholder="30"
               type="number"
               value={formData.duration}
@@ -455,8 +465,8 @@ export default function TreatmentsPage() {
           </div>
 
           <Input
-            label="Descripción (opcional)"
-            placeholder="Breve descripción del tratamiento"
+            label={`${t.treatments.description} (${t.common.optional})`}
+            placeholder={t.treatments.descriptionPlaceholder}
             value={formData.description}
             onChange={(e) =>
               setFormData({ ...formData, description: e.target.value })
@@ -470,10 +480,10 @@ export default function TreatmentsPage() {
               fullWidth
               onClick={() => setShowEditModal(false)}
             >
-              Cancelar
+              {t.common.cancel}
             </Button>
             <Button type="submit" fullWidth>
-              Guardar
+              {t.common.save}
             </Button>
           </div>
         </form>
@@ -483,11 +493,11 @@ export default function TreatmentsPage() {
       <Modal
         isOpen={showDeleteConfirm}
         onClose={() => setShowDeleteConfirm(false)}
-        title="Eliminar Tratamiento"
+        title={t.treatments.deleteTreatment}
         size="sm"
       >
         <p className="text-slate-600 mb-6">
-          ¿Estás seguro de que deseas eliminar{' '}
+          {t.treatments.deleteConfirm}{' '}
           <strong>{selectedTreatment?.name}</strong>?
         </p>
         <div className="flex gap-3">
@@ -496,10 +506,10 @@ export default function TreatmentsPage() {
             fullWidth
             onClick={() => setShowDeleteConfirm(false)}
           >
-            Cancelar
+            {t.common.cancel}
           </Button>
           <Button variant="danger" fullWidth onClick={handleDelete}>
-            Eliminar
+            {t.common.delete}
           </Button>
         </div>
       </Modal>

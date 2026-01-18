@@ -108,7 +108,7 @@ export default function CalendarPage() {
 
   // Get follow-up type config
   const getFollowUpTypeConfig = (type: FollowUpType) => {
-    const configs = {
+    const configs: Record<FollowUpType, { icon: typeof Phone; color: string; bgColor: string; label: string }> = {
       call: {
         icon: Phone,
         color: 'text-blue-600',
@@ -132,6 +132,12 @@ export default function CalendarPage() {
         color: 'text-purple-600',
         bgColor: 'bg-purple-100',
         label: t.followUp.typeMeeting,
+      },
+      appointment: {
+        icon: CalendarIcon,
+        color: 'text-teal-600',
+        bgColor: 'bg-teal-100',
+        label: t.followUp.typeAppointment,
       },
     }
     return configs[type] || configs.call

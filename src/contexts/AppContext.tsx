@@ -37,6 +37,7 @@ type AppAction =
   | { type: 'MARK_NOTIFICATION_READ'; payload: string }
   | { type: 'CLEAR_NOTIFICATIONS' }
   | { type: 'UPDATE_SETTINGS'; payload: Partial<Settings> }
+  | { type: 'UPDATE_USER'; payload: User }
   | { type: 'SET_LOADING'; payload: boolean }
 
 // Initial state
@@ -182,6 +183,12 @@ function appReducer(state: AppState, action: AppAction): AppState {
         settings: { ...state.settings, ...action.payload },
       }
 
+    case 'UPDATE_USER':
+      return {
+        ...state,
+        user: action.payload,
+      }
+
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload }
 
@@ -212,6 +219,8 @@ interface AppContextType {
   clearNotifications: () => void
   // Settings actions
   updateSettings: (settings: Partial<Settings>) => void
+  // User actions
+  updateUser: (user: User) => void
   // Computed values
   getLeadsByStatus: (status: LeadStatus) => Lead[]
   getUpcomingFollowUps: () => { lead: Lead; followUp: FollowUp }[]
@@ -235,6 +244,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const savedLeads = localStorage.getItem('clinic_leads')
       const savedTreatments = localStorage.getItem('clinic_treatments')
       const savedSettings = localStorage.getItem('clinic_settings')
+      const savedUser = localStorage.getItem('clinic_user')
 
       dispatch({
         type: 'SET_LEADS',
@@ -248,6 +258,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (savedSettings) {
         dispatch({ type: 'UPDATE_SETTINGS', payload: JSON.parse(savedSettings) })
+      }
+
+      if (savedUser) {
+        dispatch({ type: 'UPDATE_USER', payload: JSON.parse(savedUser) })
       }
 
       dispatch({ type: 'SET_LOADING', payload: false })
@@ -274,6 +288,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('clinic_settings', JSON.stringify(state.settings))
     }
   }, [state.settings, state.isLoading])
+
+  useEffect(() => {
+    if (!state.isLoading) {
+      localStorage.setItem('clinic_user', JSON.stringify(state.user))
+    }
+  }, [state.user, state.isLoading])
 
   // Actions
   const addLead = (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'notes' | 'followUps'>) => {
@@ -394,6 +414,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'UPDATE_SETTINGS', payload: settings })
   }
 
+  const updateUser = (user: User) => {
+    dispatch({ type: 'UPDATE_USER', payload: user })
+  }
+
   const getLeadsByStatus = (status: LeadStatus) => {
     return state.leads.filter((lead) => lead.status === status)
   }
@@ -439,6 +463,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     markNotificationRead,
     clearNotifications,
     updateSettings,
+    updateUser,
     getLeadsByStatus,
     getUpcomingFollowUps,
     getRecentLeads,

@@ -116,6 +116,14 @@ const config: Config = {
         'spin-slow': 'spin 2s linear infinite',
         'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
         'bounce-soft': 'bounceSoft 1s ease-in-out',
+        // Splash screen animations
+        'logo-scale': 'logoScale 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+        'logo-glow': 'logoGlow 2s ease-in-out infinite',
+        'dot-bounce': 'dotBounce 1.2s ease-in-out infinite',
+        'dot-pulse': 'dotPulse 1.5s ease-in-out infinite',
+        'text-reveal': 'textReveal 0.6s ease-out forwards',
+        'tagline-slide': 'taglineSlide 0.8s ease-out 0.4s forwards',
+        'shimmer': 'shimmer 2s linear infinite',
       },
       keyframes: {
         fadeIn: {
@@ -145,6 +153,36 @@ const config: Config = {
         bounceSoft: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-5px)' },
+        },
+        // Splash screen keyframes
+        logoScale: {
+          '0%': { opacity: '0', transform: 'scale(0.5)' },
+          '50%': { transform: 'scale(1.05)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        logoGlow: {
+          '0%, 100%': { filter: 'drop-shadow(0 0 0px rgba(20, 184, 166, 0))' },
+          '50%': { filter: 'drop-shadow(0 0 20px rgba(20, 184, 166, 0.4))' },
+        },
+        dotBounce: {
+          '0%, 100%': { transform: 'translateX(-50%) translateY(0) scale(1)' },
+          '50%': { transform: 'translateX(-50%) translateY(-8px) scale(1.2)' },
+        },
+        dotPulse: {
+          '0%, 100%': { transform: 'translateX(-50%) scale(1)', opacity: '1' },
+          '50%': { transform: 'translateX(-50%) scale(1.4)', opacity: '0.8' },
+        },
+        textReveal: {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        taglineSlide: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
         },
       },
       borderRadius: {

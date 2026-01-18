@@ -19,8 +19,8 @@ export type LeadStatus = 'new' | 'contacted' | 'scheduled' | 'closed' | 'lost'
 // Lead Source Types
 export type LeadSource = 'instagram' | 'whatsapp' | 'phone' | 'website' | 'referral' | 'other'
 
-// Follow-up Types
-export type FollowUpType = 'call' | 'message' | 'email' | 'meeting'
+// Follow-up Types (expanded to include in-person appointments)
+export type FollowUpType = 'call' | 'message' | 'email' | 'meeting' | 'appointment'
 
 // =============================================
 // USER & ROLE TYPES
@@ -32,9 +32,10 @@ export interface User {
   id: string
   name: string
   email: string
+  phone?: string
   role: UserRole
   avatar?: string
-  specialty?: string // For doctors
+  specialty?: string // For doctors/display role
   color?: string // For calendar display
 }
 
@@ -98,6 +99,9 @@ export interface FollowUp {
   googleEventId?: string
   meetLink?: string
   duration?: number // in minutes
+  // Treatment selection
+  treatmentId?: string
+  treatmentName?: string
   // Enhanced fields
   assignedTo?: string
   reminderSent?: boolean

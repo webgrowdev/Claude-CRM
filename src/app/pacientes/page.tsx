@@ -27,7 +27,7 @@ import {
   MapPin,
 } from 'lucide-react'
 import { AppShell } from '@/components/layout'
-import { Input, Card, Avatar, Badge, Modal, Button, Select, TextArea } from '@/components/ui'
+import { Input, Card, Avatar, Badge, Modal, Button, Select, TextArea, TimeSlotPicker } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n/LanguageContext'
 import {
@@ -95,6 +95,19 @@ export default function PacientesPage() {
     duration: 30,
     treatmentId: '' as string,
   })
+  const [selectedSlotDate, setSelectedSlotDate] = useState<Date | null>(null)
+  const [selectedSlotTime, setSelectedSlotTime] = useState<string | null>(null)
+
+  // Get all existing appointments for conflict checking
+  const allAppointments = useMemo(() => {
+    const appointments: any[] = []
+    state.leads.forEach(lead => {
+      lead.followUps
+        .filter(fu => fu.type === 'meeting' || fu.type === 'appointment')
+        .forEach(fu => appointments.push(fu))
+    })
+    return appointments
+  }, [state.leads])
 
   const calendarConnected = isCalendarConnected()
 
@@ -166,6 +179,17 @@ export default function PacientesPage() {
 
   const handleAddFollowUp = async () => {
     if (!selectedPatient) return
+
+    // For meetings and appointments, use the slot picker date/time
+    let scheduledDate: Date
+    if ((followUp.type === 'meeting' || followUp.type === 'appointment') && selectedSlotDate && selectedSlotTime) {
+      const [hours, minutes] = selectedSlotTime.split(':').map(Number)
+      scheduledDate = new Date(selectedSlotDate)
+      scheduledDate.setHours(hours, minutes, 0, 0)
+    } else {
+      scheduledDate = new Date(followUp.scheduledAt)
+    }
+
     setIsCreatingFollowUp(true)
     try {
       // Get treatment name if selected
@@ -175,7 +199,7 @@ export default function PacientesPage() {
 
       await addFollowUp(selectedPatient.id, {
         type: followUp.type,
-        scheduledAt: new Date(followUp.scheduledAt),
+        scheduledAt: scheduledDate,
         notes: followUp.notes,
         duration: followUp.duration,
         treatmentId: followUp.treatmentId || undefined,
@@ -188,6 +212,8 @@ export default function PacientesPage() {
         duration: 30,
         treatmentId: '',
       })
+      setSelectedSlotDate(null)
+      setSelectedSlotTime(null)
       setShowFollowUpModal(false)
     } catch (error) {
       console.error('Error creating follow-up:', error)
@@ -716,16 +742,7 @@ export default function PacientesPage() {
             />
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">{t.followUp.dateTime}</label>
-            <input
-              type="datetime-local"
-              value={followUp.scheduledAt}
-              onChange={(e) => setFollowUp({ ...followUp, scheduledAt: e.target.value })}
-              className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </div>
-
+          {/* Duration selector for meetings and appointments */}
           {(followUp.type === 'meeting' || followUp.type === 'appointment') && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">{t.followUp.duration}</label>
@@ -746,6 +763,40 @@ export default function PacientesPage() {
                   </button>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Time Slot Picker for meetings and appointments */}
+          {(followUp.type === 'meeting' || followUp.type === 'appointment') ? (
+            <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+              <label className="block text-sm font-medium text-slate-700 mb-3">{t.followUp.dateTime}</label>
+              <TimeSlotPicker
+                selectedDate={selectedSlotDate}
+                selectedTime={selectedSlotTime}
+                onSelectDateTime={(date, time) => {
+                  setSelectedSlotDate(date)
+                  setSelectedSlotTime(time)
+                }}
+                existingAppointments={allAppointments}
+                duration={followUp.duration}
+              />
+              {selectedSlotDate && selectedSlotTime && (
+                <div className="mt-3 p-2 bg-primary-50 border border-primary-200 rounded-lg text-center">
+                  <p className="text-sm font-medium text-primary-700">
+                    {selectedSlotDate.toLocaleDateString()} - {selectedSlotTime}
+                  </p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">{t.followUp.dateTime}</label>
+              <input
+                type="datetime-local"
+                value={followUp.scheduledAt}
+                onChange={(e) => setFollowUp({ ...followUp, scheduledAt: e.target.value })}
+                className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
             </div>
           )}
 

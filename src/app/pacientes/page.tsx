@@ -24,6 +24,7 @@ import {
   Loader2,
   Trash2,
   UserPlus,
+  MapPin,
 } from 'lucide-react'
 import { AppShell } from '@/components/layout'
 import { Input, Card, Avatar, Badge, Modal, Button, Select, TextArea } from '@/components/ui'
@@ -91,6 +92,7 @@ export default function PacientesPage() {
     scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
     notes: '',
     duration: 30,
+    treatmentId: '' as string,
   })
 
   const calendarConnected = isCalendarConnected()
@@ -163,17 +165,25 @@ export default function PacientesPage() {
     if (!selectedPatient) return
     setIsCreatingFollowUp(true)
     try {
+      // Get treatment name if selected
+      const selectedTreatment = followUp.treatmentId
+        ? state.treatments.find(t => t.id === followUp.treatmentId)
+        : null
+
       await addFollowUp(selectedPatient.id, {
         type: followUp.type,
         scheduledAt: new Date(followUp.scheduledAt),
         notes: followUp.notes,
         duration: followUp.duration,
+        treatmentId: followUp.treatmentId || undefined,
+        treatmentName: selectedTreatment?.name,
       })
       setFollowUp({
         type: 'call',
         scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
         notes: '',
         duration: 30,
+        treatmentId: '',
       })
       setShowFollowUpModal(false)
     } catch (error) {
@@ -224,11 +234,13 @@ export default function PacientesPage() {
       const typeLabel = fu.type === 'call' ? t.followUp.typeCall :
                         fu.type === 'message' ? t.followUp.typeMessage :
                         fu.type === 'email' ? t.followUp.typeEmail :
+                        fu.type === 'appointment' ? t.followUp.typeAppointment :
                         t.followUp.typeMeeting
+      const treatmentInfo = fu.treatmentName ? ` (${fu.treatmentName})` : ''
       items.push({
         id: fu.id,
         type: 'followup',
-        content: `${typeLabel}${fu.notes ? `: ${fu.notes}` : ''}`,
+        content: `${typeLabel}${treatmentInfo}${fu.notes ? `: ${fu.notes}` : ''}`,
         date: new Date(fu.scheduledAt),
         completed: fu.completed,
         meetLink: fu.meetLink,
@@ -516,6 +528,8 @@ export default function PacientesPage() {
                                 ? 'bg-slate-100'
                                 : item.followUpType === 'meeting'
                                 ? item.completed ? 'bg-emerald-100' : 'bg-purple-100'
+                                : item.followUpType === 'appointment'
+                                ? item.completed ? 'bg-emerald-100' : 'bg-teal-100'
                                 : item.completed ? 'bg-emerald-100' : 'bg-primary-100'
                             )}
                           >
@@ -525,6 +539,8 @@ export default function PacientesPage() {
                               <CheckCircle className="w-4 h-4 text-emerald-600" />
                             ) : item.followUpType === 'meeting' ? (
                               <Video className="w-4 h-4 text-purple-600" />
+                            ) : item.followUpType === 'appointment' ? (
+                              <MapPin className="w-4 h-4 text-teal-600" />
                             ) : (
                               <Clock className="w-4 h-4 text-primary-600" />
                             )}
@@ -643,6 +659,7 @@ export default function PacientesPage() {
               { value: 'message', label: t.followUp.typeMessage },
               { value: 'email', label: t.followUp.typeEmail },
               { value: 'meeting', label: t.followUp.typeMeeting },
+              { value: 'appointment', label: t.followUp.typeAppointment },
             ]}
           />
 
@@ -667,6 +684,37 @@ export default function PacientesPage() {
             </div>
           )}
 
+          {followUp.type === 'appointment' && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-teal-50 border border-teal-200">
+              <MapPin className="w-5 h-5 text-teal-600" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-teal-700">
+                  {t.followUp.inPersonAppointment}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {t.followUp.appointmentInfo}
+                </p>
+              </div>
+              <CheckCircle className="w-5 h-5 text-teal-600" />
+            </div>
+          )}
+
+          {/* Treatment selection for appointments and meetings */}
+          {(followUp.type === 'appointment' || followUp.type === 'meeting') && state.treatments.length > 0 && (
+            <Select
+              label={t.followUp.selectTreatment}
+              value={followUp.treatmentId}
+              onChange={(value) => setFollowUp({ ...followUp, treatmentId: value })}
+              options={[
+                { value: '', label: t.followUp.noTreatmentSelected },
+                ...state.treatments.map(treatment => ({
+                  value: treatment.id,
+                  label: `${treatment.name} - $${treatment.price.toLocaleString()}`,
+                })),
+              ]}
+            />
+          )}
+
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">{t.followUp.dateTime}</label>
             <input
@@ -677,7 +725,7 @@ export default function PacientesPage() {
             />
           </div>
 
-          {followUp.type === 'meeting' && (
+          {(followUp.type === 'meeting' || followUp.type === 'appointment') && (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">{t.followUp.duration}</label>
               <div className="flex gap-2">

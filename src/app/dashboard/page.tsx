@@ -45,33 +45,53 @@ export default function DashboardPage() {
     return { newLeads, followUpsDue, closedThisWeek, conversionRate }
   }, [state.leads, upcomingFollowUps])
 
+  // Color class mapping for Tailwind JIT (classes must be static)
+  const colorClasses = {
+    primary: {
+      bg: 'bg-primary-100',
+      text: 'text-primary-600',
+    },
+    secondary: {
+      bg: 'bg-secondary-100',
+      text: 'text-secondary-600',
+    },
+    success: {
+      bg: 'bg-success-100',
+      text: 'text-success-600',
+    },
+    warning: {
+      bg: 'bg-warning-100',
+      text: 'text-warning-600',
+    },
+  } as const
+
   const statsCards = [
     {
       label: 'Pacientes Nuevos',
       value: stats.newLeads,
       change: '+3 hoy',
-      color: 'primary',
+      colorKey: 'primary' as keyof typeof colorClasses,
       icon: UserRound,
     },
     {
       label: 'Seguimientos',
       value: stats.followUpsDue,
       change: stats.followUpsDue > 0 ? `${stats.followUpsDue} pendientes` : 'Al día',
-      color: stats.followUpsDue > 0 ? 'warning' : 'success',
+      colorKey: (stats.followUpsDue > 0 ? 'warning' : 'success') as keyof typeof colorClasses,
       icon: Bell,
     },
     {
       label: 'Cerrados',
       value: stats.closedThisWeek,
       change: 'Esta semana',
-      color: 'success',
+      colorKey: 'success' as keyof typeof colorClasses,
       icon: CheckCircle,
     },
     {
       label: 'Conversión',
       value: `${stats.conversionRate}%`,
       change: '+5% vs mes anterior',
-      color: 'secondary',
+      colorKey: 'secondary' as keyof typeof colorClasses,
       icon: TrendingUp,
     },
   ]
@@ -113,12 +133,12 @@ export default function DashboardPage() {
               className="flex-shrink-0 w-[140px] lg:w-auto"
               padding="sm"
             >
-              <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg bg-${stat.color}-100 flex items-center justify-center mb-2`}>
-                <stat.icon className={`w-4 h-4 lg:w-5 lg:h-5 text-${stat.color}-600`} />
+              <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-lg ${colorClasses[stat.colorKey].bg} flex items-center justify-center mb-2`}>
+                <stat.icon className={`w-4 h-4 lg:w-5 lg:h-5 ${colorClasses[stat.colorKey].text}`} />
               </div>
               <p className="text-2xl lg:text-3xl font-bold text-slate-800">{stat.value}</p>
               <p className="text-xs lg:text-sm text-slate-500 mt-0.5">{stat.label}</p>
-              <p className={`text-xs mt-1 ${stat.color === 'warning' ? 'text-warning-600' : 'text-slate-400'}`}>
+              <p className={`text-xs mt-1 ${stat.colorKey === 'warning' ? 'text-warning-600' : 'text-slate-400'}`}>
                 {stat.change}
               </p>
             </Card>

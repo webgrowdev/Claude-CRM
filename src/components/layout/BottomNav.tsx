@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Inbox, CalendarDays, Users, MoreHorizontal } from 'lucide-react'
+import { Inbox, CalendarDays, Users, MoreHorizontal, MapPin } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/i18n'
 import { useApp } from '@/contexts/AppContext'
@@ -23,7 +23,7 @@ export function BottomNav() {
       icon: Inbox,
       badge: newLeadsCount || undefined
     },
-    { href: '/calendar', label: t.nav.calendar, icon: CalendarDays },
+    { href: '/appointments', label: t.appointments.title, icon: MapPin },
     { href: '/pacientes', label: t.nav.patients, icon: Users },
     { href: '/settings', label: t.nav.more, icon: MoreHorizontal },
   ]

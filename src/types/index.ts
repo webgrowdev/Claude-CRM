@@ -48,6 +48,8 @@ export interface Lead {
   name: string
   email?: string
   phone: string
+  identificationNumber?: string // DNI, passport, or other ID
+  identificationType?: 'dni' | 'passport' | 'other' // Type of ID document
   source: LeadSource
   status: LeadStatus
   funnelStatus?: FunnelStatus // New expanded status
@@ -87,6 +89,9 @@ export interface Note {
 // FOLLOW-UP TYPES
 // =============================================
 
+// Attendance status for in-person appointments
+export type AttendanceStatus = 'pending' | 'attended' | 'noshow' | 'cancelled' | 'rescheduled'
+
 export interface FollowUp {
   id: string
   leadId: string
@@ -106,6 +111,10 @@ export interface FollowUp {
   assignedTo?: string
   reminderSent?: boolean
   confirmedByPatient?: boolean
+  // Attendance tracking for appointments
+  attendanceStatus?: AttendanceStatus
+  attendanceMarkedAt?: Date
+  attendanceMarkedBy?: string
 }
 
 // =============================================

@@ -82,6 +82,7 @@ export default function PacientesPage() {
     name: '',
     phone: '',
     email: '',
+    identificationNumber: '',
     source: 'instagram' as LeadSource,
     treatments: [] as string[],
   })
@@ -135,7 +136,8 @@ export default function PacientesPage() {
       patients = patients.filter(p =>
         p.name.toLowerCase().includes(query) ||
         p.phone.includes(query) ||
-        p.email?.toLowerCase().includes(query)
+        p.email?.toLowerCase().includes(query) ||
+        p.identificationNumber?.toLowerCase().includes(query)
       )
     }
 
@@ -151,13 +153,14 @@ export default function PacientesPage() {
       name: newPatient.name,
       phone: newPatient.phone,
       email: newPatient.email || undefined,
+      identificationNumber: newPatient.identificationNumber || undefined,
       source: newPatient.source,
       status: 'new',
       treatments: newPatient.treatments,
       assignedTo: state.user.id,
     })
 
-    setNewPatient({ name: '', phone: '', email: '', source: 'instagram', treatments: [] })
+    setNewPatient({ name: '', phone: '', email: '', identificationNumber: '', source: 'instagram', treatments: [] })
     setShowAddModal(false)
   }
 
@@ -360,24 +363,16 @@ export default function PacientesPage() {
                   >
                     <Avatar name={patient.name} size="md" />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-slate-900 truncate">{patient.name}</p>
-                        <Badge
-                          variant={
-                            patient.status === 'new' ? 'primary' :
-                            patient.status === 'contacted' ? 'warning' :
-                            patient.status === 'scheduled' ? 'default' :
-                            patient.status === 'closed' ? 'success' : 'error'
-                          }
-                          size="sm"
-                        >
-                          {getStatusLabel(patient.status)}
-                        </Badge>
-                      </div>
+                      <p className="font-medium text-slate-900 truncate">{patient.name}</p>
                       <div className="flex items-center gap-2 mt-0.5 text-sm text-slate-500">
                         {sourceIcons[patient.source]}
                         <span>{patient.phone}</span>
                       </div>
+                      {patient.identificationNumber && (
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          {t.appointments.idNumber}: {patient.identificationNumber}
+                        </p>
+                      )}
                     </div>
                     <ChevronRight className="w-5 h-5 text-slate-300 lg:hidden" />
                   </button>
@@ -619,6 +614,12 @@ export default function PacientesPage() {
             value={newPatient.email}
             onChange={(e) => setNewPatient({ ...newPatient, email: e.target.value })}
           />
+          <Input
+            label={`${t.patientForm.identificationNumber} (${t.common.optional})`}
+            placeholder={t.patientForm.identificationPlaceholder}
+            value={newPatient.identificationNumber}
+            onChange={(e) => setNewPatient({ ...newPatient, identificationNumber: e.target.value })}
+          />
           <Select
             label={t.patientForm.source}
             value={newPatient.source}
@@ -699,8 +700,8 @@ export default function PacientesPage() {
             </div>
           )}
 
-          {/* Treatment selection for appointments and meetings */}
-          {(followUp.type === 'appointment' || followUp.type === 'meeting') && state.treatments.length > 0 && (
+          {/* Treatment selection for ALL follow-up types */}
+          {state.treatments.length > 0 && (
             <Select
               label={t.followUp.selectTreatment}
               value={followUp.treatmentId}

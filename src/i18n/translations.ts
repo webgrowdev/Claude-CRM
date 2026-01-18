@@ -35,6 +35,7 @@ export const translations = {
       patients: 'Pacientes',
       pipeline: 'Embudo',
       calendar: 'Agenda',
+      appointments: 'Citas',
       reports: 'Reportes',
       treatments: 'Tratamientos',
       settings: 'Configuración',
@@ -139,6 +140,8 @@ export const translations = {
       phonePlaceholder: '+52 55 1234 5678',
       email: 'Email',
       emailPlaceholder: 'paciente@email.com',
+      identificationNumber: 'DNI / Número de Identificación',
+      identificationPlaceholder: 'Ej: 12345678',
       source: 'Fuente',
     },
 
@@ -338,6 +341,28 @@ export const translations = {
       autoCreateLeads: 'Crear leads automáticamente',
     },
 
+    // Appointments
+    appointments: {
+      title: 'Citas Presenciales',
+      searchByNameOrId: 'Buscar por nombre o DNI...',
+      pending: 'Pendiente',
+      attended: 'Asistió',
+      noshow: 'No asistió',
+      cancelled: 'Cancelada',
+      rescheduled: 'Reprogramada',
+      total: 'Total',
+      noAppointments: 'Sin citas',
+      noAppointmentsDesc: 'No hay citas programadas para este día',
+      idNumber: 'DNI/ID',
+      needsAttendanceConfirmation: 'Requiere confirmar asistencia',
+      markAttendance: 'Marcar Asistencia',
+      currentStatus: 'Estado actual',
+      markAsAttended: 'Marcar como Asistió',
+      markAsNoShow: 'Marcar como No Asistió',
+      markAsRescheduled: 'Reprogramar',
+      viewPatientProfile: 'Ver perfil del paciente',
+    },
+
     // Reports
     reports: {
       title: 'Reportes',
@@ -476,6 +501,7 @@ export const translations = {
       patients: 'Patients',
       pipeline: 'Funnel',
       calendar: 'Calendar',
+      appointments: 'Appointments',
       reports: 'Reports',
       treatments: 'Treatments',
       settings: 'Settings',
@@ -580,6 +606,8 @@ export const translations = {
       phonePlaceholder: '+1 555 123 4567',
       email: 'Email',
       emailPlaceholder: 'patient@email.com',
+      identificationNumber: 'ID / Identification Number',
+      identificationPlaceholder: 'E.g.: 12345678',
       source: 'Source',
     },
 
@@ -777,6 +805,28 @@ export const translations = {
       copy: 'Copy',
       copied: 'Copied',
       autoCreateLeads: 'Create leads automatically',
+    },
+
+    // Appointments
+    appointments: {
+      title: 'In-Person Appointments',
+      searchByNameOrId: 'Search by name or ID...',
+      pending: 'Pending',
+      attended: 'Attended',
+      noshow: 'No Show',
+      cancelled: 'Cancelled',
+      rescheduled: 'Rescheduled',
+      total: 'Total',
+      noAppointments: 'No appointments',
+      noAppointmentsDesc: 'No appointments scheduled for this day',
+      idNumber: 'ID Number',
+      needsAttendanceConfirmation: 'Needs attendance confirmation',
+      markAttendance: 'Mark Attendance',
+      currentStatus: 'Current status',
+      markAsAttended: 'Mark as Attended',
+      markAsNoShow: 'Mark as No Show',
+      markAsRescheduled: 'Reschedule',
+      viewPatientProfile: 'View patient profile',
     },
 
     // Reports

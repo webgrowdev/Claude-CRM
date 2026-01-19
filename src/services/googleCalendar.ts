@@ -339,6 +339,60 @@ function getFollowUpTitle(type: string): string {
   }
 }
 
+// Get busy times from Google Calendar for a date range
+export interface BusyTime {
+  start: Date
+  end: Date
+}
+
+export async function getCalendarBusyTimes(
+  startDate: Date,
+  endDate: Date
+): Promise<BusyTime[]> {
+  const settings = getGoogleCalendarSettings()
+
+  if (!settings.connected || !settings.accessToken) {
+    return []
+  }
+
+  try {
+    const calendarId = settings.calendarId || 'primary'
+    const requestBody = {
+      timeMin: startDate.toISOString(),
+      timeMax: endDate.toISOString(),
+      items: [{ id: calendarId }],
+    }
+
+    const response = await fetch(
+      'https://www.googleapis.com/calendar/v3/freeBusy',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${settings.accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      }
+    )
+
+    if (!response.ok) {
+      console.error('Failed to fetch busy times:', response.statusText)
+      return []
+    }
+
+    const data = await response.json()
+    const busyPeriods = data.calendars?.[calendarId]?.busy || []
+
+    return busyPeriods.map((period: { start: string; end: string }) => ({
+      start: new Date(period.start),
+      end: new Date(period.end),
+    }))
+  } catch (error) {
+    console.error('Failed to fetch busy times:', error)
+    return []
+  }
+}
+
 // Generate a Google Meet link by creating a temporary event
 export async function generateMeetLink(): Promise<string | null> {
   const settings = getGoogleCalendarSettings()

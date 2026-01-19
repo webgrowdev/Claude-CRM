@@ -19,12 +19,16 @@ import {
   CheckCircle,
   Video,
   ExternalLink,
-  MoreHorizontal,
   ChevronRight,
   Loader2,
   Trash2,
   UserPlus,
   MapPin,
+  Filter,
+  SlidersHorizontal,
+  ArrowLeft,
+  Syringe,
+  CreditCard,
 } from 'lucide-react'
 import { AppShell } from '@/components/layout'
 import { Input, Card, Avatar, Badge, Modal, Button, Select, TextArea, TimeSlotPicker } from '@/components/ui'
@@ -59,10 +63,19 @@ const sourceIcons: Record<LeadSource, React.ReactNode> = {
   other: <HelpCircle className="w-4 h-4" />,
 }
 
+const sourceColors: Record<LeadSource, string> = {
+  instagram: 'text-pink-500 bg-pink-50',
+  whatsapp: 'text-green-500 bg-green-50',
+  phone: 'text-blue-500 bg-blue-50',
+  website: 'text-purple-500 bg-purple-50',
+  referral: 'text-amber-500 bg-amber-50',
+  other: 'text-slate-500 bg-slate-50',
+}
+
 export default function PacientesPage() {
   const searchParams = useSearchParams()
   const { state, addLead, updateLeadStatus, addNote, addFollowUp, deleteLead, isCalendarConnected } = useApp()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   // Get translated status options
   const statusOptions = useMemo(() => getStatusOptions(t), [t])
@@ -76,6 +89,7 @@ export default function PacientesPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isCreatingFollowUp, setIsCreatingFollowUp] = useState(false)
   const [noteContent, setNoteContent] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
 
   // New patient form
   const [newPatient, setNewPatient] = useState({
@@ -288,306 +302,423 @@ export default function PacientesPage() {
     return counts
   }, [state.leads])
 
+  // Get status info for display
+  const getStatusInfo = (status: LeadStatus) => {
+    const option = statusOptions.find(s => s.value === status)
+    return option || { label: status, color: 'text-slate-600', bg: 'bg-slate-100' }
+  }
+
   return (
     <AppShell>
-      <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen overflow-hidden">
-        {/* Header */}
-        <div className="flex-shrink-0 bg-white border-b border-slate-200 px-4 py-4 lg:px-6">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h1 className="text-xl lg:text-2xl font-bold text-slate-900">{t.patients.title}</h1>
-              <p className="text-sm text-slate-500 hidden sm:block">
-                {state.leads.length} {t.patients.totalPatients}
-              </p>
+      <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen overflow-hidden bg-slate-50">
+        {/* Header - Clean and Minimal */}
+        <div className="flex-shrink-0 bg-white border-b border-slate-200">
+          <div className="px-4 py-4 lg:px-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h1 className="text-xl lg:text-2xl font-bold text-slate-900">{t.patients.title}</h1>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  {state.leads.length} {t.patients.totalPatients}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary-500/25"
+              >
+                <Plus className="w-5 h-5" />
+                <span className="hidden sm:inline">{t.patients.newPatient}</span>
+              </button>
             </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary-500/25"
-            >
-              <UserPlus className="w-5 h-5" />
-              <span className="hidden sm:inline">{t.patients.newPatient}</span>
-            </button>
           </div>
 
-          {/* Search and Filters */}
-          <div className="flex flex-col sm:flex-row gap-3 mt-4">
-            <div className="flex-1">
-              <Input
-                placeholder={t.patients.searchPatients}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                icon={<Search className="w-5 h-5" />}
-              />
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          {/* Search and Filters - Improved */}
+          <div className="px-4 pb-4 lg:px-6">
+            <div className="flex gap-3">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder={t.patients.searchPatients}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all"
+                />
+              </div>
               <button
-                onClick={() => setStatusFilter('all')}
+                onClick={() => setShowFilters(!showFilters)}
                 className={cn(
-                  'px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-                  statusFilter === 'all'
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  "px-4 py-2.5 rounded-xl border transition-all flex items-center gap-2",
+                  showFilters
+                    ? "bg-primary-50 border-primary-200 text-primary-700"
+                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
                 )}
               >
-                {t.common.all} ({statusCounts.all})
+                <SlidersHorizontal className="w-4 h-4" />
+                <span className="hidden sm:inline">{language === 'es' ? 'Filtros' : 'Filters'}</span>
               </button>
-              {statusOptions.map(status => (
+            </div>
+
+            {/* Filter Pills - Animated */}
+            {showFilters && (
+              <div className="flex gap-2 mt-3 overflow-x-auto pb-1 scrollbar-hide animate-slide-down">
                 <button
-                  key={status.value}
-                  onClick={() => setStatusFilter(status.value)}
+                  onClick={() => setStatusFilter('all')}
                   className={cn(
-                    'px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all',
-                    statusFilter === status.value
-                      ? `${status.bg} ${status.color}`
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all',
+                    statusFilter === 'all'
+                      ? 'bg-slate-900 text-white shadow-lg'
+                      : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
                   )}
                 >
-                  {status.label} ({statusCounts[status.value]})
+                  {t.common.all} ({statusCounts.all})
                 </button>
-              ))}
-            </div>
+                {statusOptions.map(status => (
+                  <button
+                    key={status.value}
+                    onClick={() => setStatusFilter(status.value)}
+                    className={cn(
+                      'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all',
+                      statusFilter === status.value
+                        ? `${status.bg} ${status.color} shadow-md`
+                        : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
+                    )}
+                  >
+                    {status.label} ({statusCounts[status.value]})
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Content */}
+        {/* Content - Improved Layout */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Patient List */}
+          {/* Patient List - Better Cards */}
           <div className={cn(
-            'flex-1 overflow-y-auto bg-slate-50',
-            selectedPatient && 'hidden lg:block lg:w-96 lg:flex-none lg:border-r lg:border-slate-200'
+            'flex-1 overflow-y-auto',
+            selectedPatient && 'hidden lg:block lg:w-[400px] lg:flex-none lg:border-r lg:border-slate-200 lg:bg-white'
           )}>
             {filteredPatients.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                <div className="w-16 h-16 bg-slate-200 rounded-2xl flex items-center justify-center mb-4">
-                  <Users className="w-8 h-8 text-slate-400" />
+                <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+                  <Users className="w-10 h-10 text-slate-300" />
                 </div>
                 <h3 className="text-lg font-semibold text-slate-800">
                   {searchQuery ? t.common.noResults : t.patients.noPatients}
                 </h3>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-sm text-slate-500 mt-1 max-w-xs">
                   {searchQuery ? t.patients.searchPatients : t.patients.addFirstPatient}
                 </p>
                 {!searchQuery && (
                   <button
                     onClick={() => setShowAddModal(true)}
-                    className="mt-4 px-4 py-2 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors"
+                    className="mt-6 px-6 py-3 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/25"
                   >
                     {t.patients.addPatient}
                   </button>
                 )}
               </div>
             ) : (
-              <div className="divide-y divide-slate-200">
-                {filteredPatients.map((patient) => (
-                  <button
-                    key={patient.id}
-                    onClick={() => setSelectedPatient(patient)}
-                    className={cn(
-                      'w-full flex items-center gap-3 p-4 text-left hover:bg-white transition-all',
-                      selectedPatient?.id === patient.id && 'bg-white border-l-4 border-primary-500'
-                    )}
-                  >
-                    <Avatar name={patient.name} size="md" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-slate-900 truncate">{patient.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5 text-sm text-slate-500">
-                        {sourceIcons[patient.source]}
-                        <span>{patient.phone}</span>
-                      </div>
-                      {patient.identificationNumber && (
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          {t.appointments.idNumber}: {patient.identificationNumber}
-                        </p>
+              <div className="p-3 lg:p-4 space-y-2">
+                {filteredPatients.map((patient) => {
+                  const statusInfo = getStatusInfo(patient.status)
+                  const isSelected = selectedPatient?.id === patient.id
+
+                  return (
+                    <button
+                      key={patient.id}
+                      onClick={() => setSelectedPatient(patient)}
+                      className={cn(
+                        'w-full p-4 rounded-xl text-left transition-all',
+                        isSelected
+                          ? 'bg-primary-50 border-2 border-primary-200 shadow-md'
+                          : 'bg-white border border-slate-100 hover:border-slate-200 hover:shadow-md'
                       )}
-                    </div>
-                    <ChevronRight className="w-5 h-5 text-slate-300 lg:hidden" />
-                  </button>
-                ))}
+                    >
+                      <div className="flex items-start gap-3">
+                        <Avatar name={patient.name} size="md" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-slate-900 truncate">{patient.name}</p>
+                            <span className={cn(
+                              'px-2 py-0.5 rounded-full text-xs font-medium',
+                              statusInfo.bg, statusInfo.color
+                            )}>
+                              {statusInfo.label}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={cn(
+                              'p-1 rounded',
+                              sourceColors[patient.source]
+                            )}>
+                              {sourceIcons[patient.source]}
+                            </span>
+                            <span className="text-sm text-slate-500">{patient.phone}</span>
+                          </div>
+
+                          {patient.identificationNumber && (
+                            <div className="flex items-center gap-1.5 mt-1.5">
+                              <CreditCard className="w-3 h-3 text-slate-400" />
+                              <span className="text-xs text-slate-400">
+                                {t.appointments.idNumber}: {patient.identificationNumber}
+                              </span>
+                            </div>
+                          )}
+
+                          {patient.treatments.length > 0 && (
+                            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                              <Syringe className="w-3 h-3 text-slate-400" />
+                              {patient.treatments.slice(0, 2).map((treatment, i) => (
+                                <span key={i} className="px-2 py-0.5 bg-slate-100 text-slate-600 text-xs rounded-full">
+                                  {treatment}
+                                </span>
+                              ))}
+                              {patient.treatments.length > 2 && (
+                                <span className="text-xs text-slate-400">
+                                  +{patient.treatments.length - 2}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <ChevronRight className={cn(
+                          "w-5 h-5 text-slate-300 transition-transform lg:hidden",
+                          isSelected && "text-primary-500"
+                        )} />
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             )}
           </div>
 
-          {/* Patient Detail Panel */}
+          {/* Patient Detail Panel - Redesigned */}
           {selectedPatient ? (
             <div className="flex-1 flex flex-col overflow-hidden bg-white">
-              {/* Detail Header */}
-              <div className="flex-shrink-0 p-4 lg:p-6 border-b border-slate-200">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
+              {/* Detail Header - Cleaner */}
+              <div className="flex-shrink-0 border-b border-slate-100">
+                <div className="p-4 lg:p-6">
+                  <div className="flex items-start gap-4">
                     <button
                       onClick={() => setSelectedPatient(null)}
-                      className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-slate-100"
+                      className="lg:hidden p-2 -ml-2 rounded-lg hover:bg-slate-100 transition-colors"
                     >
-                      <X className="w-5 h-5" />
+                      <ArrowLeft className="w-5 h-5 text-slate-600" />
                     </button>
-                    <Avatar name={selectedPatient.name} size="lg" />
-                    <div>
-                      <h2 className="text-xl font-bold text-slate-900">{selectedPatient.name}</h2>
-                      <div className="flex items-center gap-2 mt-1 text-sm text-slate-500">
-                        {sourceIcons[selectedPatient.source]}
-                        <span>{t.patients.via} {t.sources[selectedPatient.source]}</span>
-                        <span className="text-slate-300">•</span>
-                        <span>{formatTimeAgo(new Date(selectedPatient.createdAt))}</span>
+
+                    <Avatar name={selectedPatient.name} size="xl" />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <h2 className="text-xl font-bold text-slate-900">{selectedPatient.name}</h2>
+                          <div className="flex items-center gap-2 mt-1">
+                            <span className={cn('p-1.5 rounded-lg', sourceColors[selectedPatient.source])}>
+                              {sourceIcons[selectedPatient.source]}
+                            </span>
+                            <span className="text-sm text-slate-500">
+                              {t.patients.via} {t.sources[selectedPatient.source]}
+                            </span>
+                            <span className="text-slate-300">•</span>
+                            <span className="text-sm text-slate-500">{formatTimeAgo(new Date(selectedPatient.createdAt))}</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setShowDeleteConfirm(true)}
+                          className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
                       </div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setShowDeleteConfirm(true)}
-                    className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
 
-                {/* Quick Actions */}
-                <div className="grid grid-cols-4 gap-2 mt-4">
-                  <a
-                    href={getPhoneUrl(selectedPatient.phone)}
-                    className="flex flex-col items-center gap-1 p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors"
-                  >
-                    <Phone className="w-5 h-5 text-primary-600" />
-                    <span className="text-xs text-slate-600">{t.actions.call}</span>
-                  </a>
-                  <a
-                    href={getWhatsAppUrl(selectedPatient.phone)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex flex-col items-center gap-1 p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors"
-                  >
-                    <MessageCircle className="w-5 h-5 text-emerald-600" />
-                    <span className="text-xs text-slate-600">{t.actions.whatsapp}</span>
-                  </a>
-                  {selectedPatient.email && (
+                  {/* Quick Actions - Redesigned */}
+                  <div className="flex gap-2 mt-4 overflow-x-auto pb-1">
                     <a
-                      href={getEmailUrl(selectedPatient.email)}
-                      className="flex flex-col items-center gap-1 p-3 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors"
+                      href={getPhoneUrl(selectedPatient.phone)}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl transition-colors font-medium text-sm"
                     >
-                      <Mail className="w-5 h-5 text-amber-600" />
-                      <span className="text-xs text-slate-600">{t.actions.email}</span>
+                      <Phone className="w-4 h-4" />
+                      {t.actions.call}
                     </a>
-                  )}
-                  <button
-                    onClick={() => setShowFollowUpModal(true)}
-                    className="flex flex-col items-center gap-1 p-3 bg-primary-50 hover:bg-primary-100 rounded-xl transition-colors"
-                  >
-                    <Calendar className="w-5 h-5 text-primary-600" />
-                    <span className="text-xs text-primary-700 font-medium">{t.actions.schedule}</span>
-                  </button>
-                </div>
-
-                {/* Status Selector */}
-                <div className="flex gap-2 mt-4 overflow-x-auto pb-1">
-                  {statusOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => updateLeadStatus(selectedPatient.id, option.value)}
-                      className={cn(
-                        'px-3 py-1.5 rounded-full text-sm font-medium transition-all whitespace-nowrap',
-                        selectedPatient.status === option.value
-                          ? `${option.bg} ${option.color} ring-2 ring-offset-1 ring-current`
-                          : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                      )}
+                    <a
+                      href={getWhatsAppUrl(selectedPatient.phone)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 px-4 py-2.5 bg-green-50 hover:bg-green-100 text-green-700 rounded-xl transition-colors font-medium text-sm"
                     >
-                      {option.label}
+                      <MessageCircle className="w-4 h-4" />
+                      {t.actions.whatsapp}
+                    </a>
+                    {selectedPatient.email && (
+                      <a
+                        href={getEmailUrl(selectedPatient.email)}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-xl transition-colors font-medium text-sm"
+                      >
+                        <Mail className="w-4 h-4" />
+                        {t.actions.email}
+                      </a>
+                    )}
+                    <button
+                      onClick={() => setShowFollowUpModal(true)}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl transition-colors font-medium text-sm shadow-lg shadow-primary-500/25"
+                    >
+                      <Calendar className="w-4 h-4" />
+                      {t.actions.schedule}
                     </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Contact Info + Treatments */}
-              <div className="flex-shrink-0 p-4 lg:p-6 border-b border-slate-100 bg-slate-50/50">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-slate-500">{t.patientForm.phone}</p>
-                    <p className="font-medium text-slate-900">{selectedPatient.phone}</p>
                   </div>
-                  {selectedPatient.email && (
-                    <div>
-                      <p className="text-slate-500">{t.patientForm.email}</p>
-                      <p className="font-medium text-slate-900 truncate">{selectedPatient.email}</p>
-                    </div>
-                  )}
-                </div>
-                {selectedPatient.treatments.length > 0 && (
-                  <div className="mt-3">
-                    <p className="text-sm text-slate-500 mb-1">{t.patients.treatmentsOfInterest}</p>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedPatient.treatments.map((treatment, i) => (
-                        <Badge key={i} variant="outline" size="sm">{treatment}</Badge>
+
+                  {/* Status Selector - Improved */}
+                  <div className="mt-4 p-3 bg-slate-50 rounded-xl">
+                    <p className="text-xs font-medium text-slate-500 mb-2">{language === 'es' ? 'Estado del paciente' : 'Patient status'}</p>
+                    <div className="flex gap-2 flex-wrap">
+                      {statusOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => updateLeadStatus(selectedPatient.id, option.value)}
+                          className={cn(
+                            'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
+                            selectedPatient.status === option.value
+                              ? `${option.bg} ${option.color} ring-2 ring-offset-1 ring-current`
+                              : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
+                          )}
+                        >
+                          {option.label}
+                        </button>
                       ))}
                     </div>
                   </div>
-                )}
+                </div>
               </div>
 
-              {/* Timeline */}
+              {/* Contact Info Card */}
+              <div className="flex-shrink-0 p-4 lg:px-6 lg:py-4 border-b border-slate-100">
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-4">
+                  <h3 className="text-sm font-semibold text-slate-800 mb-3">{t.patients.contactInfo}</h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-slate-500 text-xs mb-0.5">{t.patientForm.phone}</p>
+                      <p className="font-medium text-slate-900">{selectedPatient.phone}</p>
+                    </div>
+                    {selectedPatient.email && (
+                      <div>
+                        <p className="text-slate-500 text-xs mb-0.5">{t.patientForm.email}</p>
+                        <p className="font-medium text-slate-900 truncate">{selectedPatient.email}</p>
+                      </div>
+                    )}
+                    {selectedPatient.identificationNumber && (
+                      <div>
+                        <p className="text-slate-500 text-xs mb-0.5">{t.patientForm.identificationNumber}</p>
+                        <p className="font-medium text-slate-900">{selectedPatient.identificationNumber}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedPatient.treatments.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-slate-200">
+                      <p className="text-slate-500 text-xs mb-2">{t.patients.treatmentsOfInterest}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedPatient.treatments.map((treatment, i) => (
+                          <span key={i} className="px-3 py-1 bg-white text-slate-700 text-sm rounded-lg border border-slate-200">
+                            {treatment}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Timeline - Improved */}
               <div className="flex-1 overflow-y-auto p-4 lg:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-semibold text-slate-900">{t.patients.activity}</h3>
                   <button
                     onClick={() => setShowNoteModal(true)}
-                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
                   >
-                    + {t.patients.addNote}
+                    <Plus className="w-4 h-4" />
+                    {t.patients.addNote}
                   </button>
                 </div>
 
                 {timeline.length === 0 ? (
-                  <div className="text-center py-8 text-slate-500">
-                    <FileText className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                    <p>{t.patients.noActivity}</p>
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                      <FileText className="w-8 h-8 text-slate-300" />
+                    </div>
+                    <p className="text-slate-500">{t.patients.noActivity}</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {timeline.map((item) => (
-                      <div key={item.id} className="flex gap-3">
-                        <div className="flex flex-col items-center">
-                          <div
-                            className={cn(
-                              'w-8 h-8 rounded-full flex items-center justify-center',
-                              item.type === 'note'
-                                ? 'bg-slate-100'
-                                : item.followUpType === 'meeting'
-                                ? item.completed ? 'bg-emerald-100' : 'bg-purple-100'
-                                : item.followUpType === 'appointment'
-                                ? item.completed ? 'bg-emerald-100' : 'bg-teal-100'
-                                : item.completed ? 'bg-emerald-100' : 'bg-primary-100'
-                            )}
-                          >
+                      <div
+                        key={item.id}
+                        className={cn(
+                          "p-4 rounded-xl border transition-all",
+                          item.type === 'note'
+                            ? 'bg-slate-50 border-slate-200'
+                            : item.completed
+                            ? 'bg-green-50 border-green-200'
+                            : item.followUpType === 'meeting'
+                            ? 'bg-purple-50 border-purple-200'
+                            : item.followUpType === 'appointment'
+                            ? 'bg-teal-50 border-teal-200'
+                            : 'bg-blue-50 border-blue-200'
+                        )}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className={cn(
+                            'p-2 rounded-lg',
+                            item.type === 'note'
+                              ? 'bg-slate-200 text-slate-600'
+                              : item.completed
+                              ? 'bg-green-200 text-green-700'
+                              : item.followUpType === 'meeting'
+                              ? 'bg-purple-200 text-purple-700'
+                              : item.followUpType === 'appointment'
+                              ? 'bg-teal-200 text-teal-700'
+                              : 'bg-blue-200 text-blue-700'
+                          )}>
                             {item.type === 'note' ? (
-                              <FileText className="w-4 h-4 text-slate-500" />
+                              <FileText className="w-4 h-4" />
                             ) : item.completed ? (
-                              <CheckCircle className="w-4 h-4 text-emerald-600" />
+                              <CheckCircle className="w-4 h-4" />
                             ) : item.followUpType === 'meeting' ? (
-                              <Video className="w-4 h-4 text-purple-600" />
+                              <Video className="w-4 h-4" />
                             ) : item.followUpType === 'appointment' ? (
-                              <MapPin className="w-4 h-4 text-teal-600" />
+                              <MapPin className="w-4 h-4" />
                             ) : (
-                              <Clock className="w-4 h-4 text-primary-600" />
+                              <Clock className="w-4 h-4" />
                             )}
                           </div>
-                          <div className="flex-1 w-px bg-slate-200 mt-2" />
-                        </div>
-                        <div className="flex-1 pb-4">
-                          <p className="text-sm text-slate-800">{item.content}</p>
-                          <p className="text-xs text-slate-400 mt-1">
-                            {item.type === 'followup'
-                              ? (item.completed ? `${t.followUp.completed} ` : `${t.followUp.scheduledFor} `) +
-                                formatRelativeDate(item.date)
-                              : formatTimeAgo(item.date)}
-                          </p>
-                          {item.meetLink && (
-                            <a
-                              href={item.meetLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-medium rounded-lg transition-colors"
-                            >
-                              <Video className="w-3.5 h-3.5" />
-                              {t.calendar.joinMeet}
-                              <ExternalLink className="w-3 h-3" />
-                            </a>
-                          )}
+
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-slate-800">{item.content}</p>
+                            <p className="text-xs text-slate-500 mt-1">
+                              {item.type === 'followup'
+                                ? (item.completed ? `${t.followUp.completed} ` : `${t.followUp.scheduledFor} `) +
+                                  formatRelativeDate(item.date)
+                                : formatTimeAgo(item.date)}
+                            </p>
+
+                            {item.meetLink && (
+                              <a
+                                href={item.meetLink}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-medium rounded-lg transition-colors"
+                              >
+                                <Video className="w-3.5 h-3.5" />
+                                {t.calendar.joinMeet}
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -596,13 +727,13 @@ export default function PacientesPage() {
               </div>
             </div>
           ) : (
-            <div className="hidden lg:flex flex-1 items-center justify-center bg-slate-50">
-              <div className="text-center">
-                <div className="w-20 h-20 bg-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <UserPlus className="w-10 h-10 text-slate-400" />
+            <div className="hidden lg:flex flex-1 items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
+              <div className="text-center max-w-sm">
+                <div className="w-24 h-24 bg-white rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+                  <UserPlus className="w-12 h-12 text-slate-300" />
                 </div>
-                <h3 className="text-lg font-semibold text-slate-700">{t.patients.selectPatient}</h3>
-                <p className="text-sm text-slate-500 mt-1">
+                <h3 className="text-xl font-semibold text-slate-700">{t.patients.selectPatient}</h3>
+                <p className="text-sm text-slate-500 mt-2">
                   {t.patients.selectPatientDesc}
                 </p>
               </div>
@@ -675,6 +806,7 @@ export default function PacientesPage() {
         isOpen={showFollowUpModal}
         onClose={() => setShowFollowUpModal(false)}
         title={t.followUp.title}
+        size="lg"
       >
         <div className="space-y-4">
           <Select
@@ -731,12 +863,20 @@ export default function PacientesPage() {
             <Select
               label={t.followUp.selectTreatment}
               value={followUp.treatmentId}
-              onChange={(value) => setFollowUp({ ...followUp, treatmentId: value })}
+              onChange={(value) => {
+                const selectedTreatment = state.treatments.find(t => t.id === value)
+                setFollowUp({
+                  ...followUp,
+                  treatmentId: value,
+                  // Auto-fill duration from treatment if meeting/appointment
+                  duration: selectedTreatment?.duration || followUp.duration,
+                })
+              }}
               options={[
                 { value: '', label: t.followUp.noTreatmentSelected },
                 ...state.treatments.map(treatment => ({
                   value: treatment.id,
-                  label: `${treatment.name} - $${treatment.price.toLocaleString()}`,
+                  label: `${treatment.name} (${treatment.duration} min) - $${treatment.price.toLocaleString()}`,
                 })),
               ]}
             />

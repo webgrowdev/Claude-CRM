@@ -15,6 +15,7 @@ import {
   ChevronDown,
   Kanban,
   HelpCircle,
+  MapPin,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui'
@@ -42,6 +43,7 @@ export function Sidebar() {
 
   // Secondary items
   const secondaryNavItems = [
+    { href: '/appointments', label: t.nav.appointments, icon: MapPin },
     { href: '/kanban', label: t.nav.pipeline, icon: Kanban },
     { href: '/treatments', label: t.nav.treatments, icon: Syringe },
     { href: '/settings', label: t.nav.settings, icon: Settings },

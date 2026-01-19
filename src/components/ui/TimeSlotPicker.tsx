@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   format,
   addDays,
@@ -11,12 +11,15 @@ import {
   setHours,
   setMinutes,
   addMinutes,
+  startOfDay,
+  endOfDay,
 } from 'date-fns'
 import { es, enUS } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Clock, Check, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Clock, Check, Calendar, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/i18n'
 import { FollowUp } from '@/types'
+import { getCalendarBusyTimes, getGoogleCalendarSettings, BusyTime } from '@/services/googleCalendar'
 
 interface TimeSlot {
   time: string // "09:00"
@@ -24,6 +27,7 @@ interface TimeSlot {
   minute: number
   available: boolean
   conflictingAppointment?: string
+  isGoogleBusy?: boolean
 }
 
 interface TimeSlotPickerProps {
@@ -53,11 +57,53 @@ export function TimeSlotPicker({
 
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { locale }))
   const [internalSelectedDate, setInternalSelectedDate] = useState<Date | null>(selectedDate)
+  const [googleBusyTimes, setGoogleBusyTimes] = useState<BusyTime[]>([])
+  const [isLoadingBusy, setIsLoadingBusy] = useState(false)
+  const [isCalendarConnected, setIsCalendarConnected] = useState(false)
+
+  // Check if Google Calendar is connected
+  useEffect(() => {
+    const settings = getGoogleCalendarSettings()
+    setIsCalendarConnected(settings.connected)
+  }, [])
+
+  // Fetch Google Calendar busy times when week changes
+  useEffect(() => {
+    async function fetchBusyTimes() {
+      const settings = getGoogleCalendarSettings()
+      if (!settings.connected) {
+        setGoogleBusyTimes([])
+        return
+      }
+
+      setIsLoadingBusy(true)
+      try {
+        const startDate = startOfDay(weekStart)
+        const endDate = endOfDay(addDays(weekStart, 6))
+        const busyTimes = await getCalendarBusyTimes(startDate, endDate)
+        setGoogleBusyTimes(busyTimes)
+      } catch (error) {
+        console.error('Error fetching busy times:', error)
+        setGoogleBusyTimes([])
+      } finally {
+        setIsLoadingBusy(false)
+      }
+    }
+
+    fetchBusyTimes()
+  }, [weekStart])
 
   // Generate week days
   const weekDays = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   }, [weekStart])
+
+  // Check if a time slot conflicts with Google Calendar
+  const isGoogleBusy = (slotStart: Date, slotEnd: Date): boolean => {
+    return googleBusyTimes.some(busy =>
+      slotStart < busy.end && slotEnd > busy.start
+    )
+  }
 
   // Generate time slots for the selected date
   const timeSlots = useMemo(() => {
@@ -75,7 +121,7 @@ export function TimeSlotPicker({
       const slotStart = currentTime
       const slotEnd = addMinutes(currentTime, duration)
 
-      // Check for conflicts with existing appointments
+      // Check for conflicts with existing appointments (local)
       const conflict = existingAppointments.find(apt => {
         if (apt.completed) return false
         const aptDate = new Date(apt.scheduledAt)
@@ -88,19 +134,26 @@ export function TimeSlotPicker({
         return (slotStart < aptEnd && slotEnd > aptStart)
       })
 
+      // Check for conflicts with Google Calendar
+      const googleConflict = isGoogleBusy(slotStart, slotEnd)
+
+      const isPast = isBefore(currentTime, new Date())
+      const isAvailable = !conflict && !googleConflict && !isPast
+
       slots.push({
         time: timeString,
         hour: currentTime.getHours(),
         minute: currentTime.getMinutes(),
-        available: !conflict && !isBefore(currentTime, new Date()),
-        conflictingAppointment: conflict?.notes || (conflict ? 'Ocupado' : undefined),
+        available: isAvailable,
+        conflictingAppointment: conflict?.notes || (conflict ? (language === 'es' ? 'Ocupado (CRM)' : 'Busy (CRM)') : undefined),
+        isGoogleBusy: googleConflict && !conflict,
       })
 
       currentTime = addMinutes(currentTime, slotInterval)
     }
 
     return slots
-  }, [internalSelectedDate, existingAppointments, workingHours, duration, slotInterval])
+  }, [internalSelectedDate, existingAppointments, workingHours, duration, slotInterval, googleBusyTimes, language])
 
   const handleSelectDate = (date: Date) => {
     setInternalSelectedDate(date)
@@ -148,7 +201,9 @@ export function TimeSlotPicker({
         return (slotStart < aptEnd && slotEnd > aptStart)
       })
 
-      if (!conflict && !isBefore(currentTime, new Date())) {
+      const googleConflict = isGoogleBusy(slotStart, slotEnd)
+
+      if (!conflict && !googleConflict && !isBefore(currentTime, new Date())) {
         available++
       }
       total++
@@ -157,6 +212,31 @@ export function TimeSlotPicker({
 
     return { available, total }
   }
+
+  const translations = {
+    es: {
+      available: 'Disponible',
+      busyCRM: 'Ocupado (CRM)',
+      busyGoogle: 'Ocupado (Google)',
+      full: 'Lleno',
+      availableSlots: 'disp.',
+      noAvailable: 'No hay horarios disponibles para este día',
+      syncingGoogle: 'Sincronizando con Google Calendar...',
+      googleConnected: 'Sincronizado con Google Calendar',
+    },
+    en: {
+      available: 'Available',
+      busyCRM: 'Busy (CRM)',
+      busyGoogle: 'Busy (Google)',
+      full: 'Full',
+      availableSlots: 'avail.',
+      noAvailable: 'No available slots for this day',
+      syncingGoogle: 'Syncing with Google Calendar...',
+      googleConnected: 'Synced with Google Calendar',
+    },
+  }
+
+  const text = translations[language] || translations.es
 
   return (
     <div className="space-y-4">
@@ -191,6 +271,26 @@ export function TimeSlotPicker({
           <ChevronRight className="w-5 h-5 text-slate-600" />
         </button>
       </div>
+
+      {/* Google Calendar Sync Status */}
+      {isCalendarConnected && (
+        <div className={cn(
+          "flex items-center gap-2 px-3 py-2 rounded-lg text-xs",
+          isLoadingBusy ? "bg-blue-50 text-blue-600" : "bg-green-50 text-green-600"
+        )}>
+          {isLoadingBusy ? (
+            <>
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <span>{text.syncingGoogle}</span>
+            </>
+          ) : (
+            <>
+              <Calendar className="w-3.5 h-3.5" />
+              <span>{text.googleConnected}</span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Week Days */}
       <div className="grid grid-cols-7 gap-1">
@@ -231,7 +331,7 @@ export function TimeSlotPicker({
                   isSelected ? 'text-white/70' : 'text-slate-400',
                   availability.available === 0 && !isSelected && 'text-red-400'
                 )}>
-                  {availability.available > 0 ? `${availability.available} disp.` : 'Lleno'}
+                  {availability.available > 0 ? `${availability.available} ${text.availableSlots}` : text.full}
                 </span>
               )}
             </button>
@@ -264,9 +364,10 @@ export function TimeSlotPicker({
                     'py-2 px-3 rounded-lg text-sm font-medium transition-all relative',
                     isSelected && 'bg-primary-500 text-white ring-2 ring-primary-300',
                     !isSelected && slot.available && 'bg-green-50 text-green-700 hover:bg-green-100 border border-green-200',
-                    !slot.available && 'bg-slate-100 text-slate-400 cursor-not-allowed line-through'
+                    !slot.available && slot.isGoogleBusy && 'bg-purple-50 text-purple-400 cursor-not-allowed border border-purple-200',
+                    !slot.available && !slot.isGoogleBusy && 'bg-slate-100 text-slate-400 cursor-not-allowed line-through'
                   )}
-                  title={slot.conflictingAppointment}
+                  title={slot.conflictingAppointment || (slot.isGoogleBusy ? text.busyGoogle : undefined)}
                 >
                   {slot.time}
                   {isSelected && (
@@ -279,24 +380,28 @@ export function TimeSlotPicker({
 
           {timeSlots.filter(s => s.available).length === 0 && (
             <p className="text-center text-sm text-slate-500 py-4">
-              {language === 'es'
-                ? 'No hay horarios disponibles para este día'
-                : 'No available slots for this day'}
+              {text.noAvailable}
             </p>
           )}
         </div>
       )}
 
       {/* Legend */}
-      <div className="flex items-center justify-center gap-4 pt-2 border-t border-slate-100">
+      <div className="flex items-center justify-center gap-4 pt-2 border-t border-slate-100 flex-wrap">
         <div className="flex items-center gap-1.5 text-xs text-slate-500">
           <div className="w-3 h-3 rounded bg-green-100 border border-green-300" />
-          <span>{language === 'es' ? 'Disponible' : 'Available'}</span>
+          <span>{text.available}</span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-slate-500">
           <div className="w-3 h-3 rounded bg-slate-100 border border-slate-300" />
-          <span>{language === 'es' ? 'Ocupado' : 'Occupied'}</span>
+          <span>{text.busyCRM}</span>
         </div>
+        {isCalendarConnected && (
+          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <div className="w-3 h-3 rounded bg-purple-100 border border-purple-300" />
+            <span>{text.busyGoogle}</span>
+          </div>
+        )}
       </div>
     </div>
   )

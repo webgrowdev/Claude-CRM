@@ -36,7 +36,7 @@ import {
   RotateCcw,
 } from 'lucide-react'
 import { AppShell, Header, PageContainer } from '@/components/layout'
-import { Card, Avatar, Button, Badge, Modal, Input, Select, EmptyState } from '@/components/ui'
+import { Card, Avatar, Button, Badge, Modal, Input, Select, EmptyState, TimeSlotPicker } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n'
 import { cn } from '@/lib/utils'
@@ -57,8 +57,11 @@ export default function AppointmentsPage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [searchQuery, setSearchQuery] = useState('')
   const [showAttendanceModal, setShowAttendanceModal] = useState(false)
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithLead | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'attended' | 'noshow'>('all')
+  const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null)
+  const [rescheduleTime, setRescheduleTime] = useState<string | null>(null)
 
   // Get all in-person appointments (type === 'appointment')
   const allAppointments = useMemo(() => {
@@ -73,6 +76,17 @@ export default function AppointmentsPage() {
     return appointments.sort(
       (a, b) => new Date(a.followUp.scheduledAt).getTime() - new Date(b.followUp.scheduledAt).getTime()
     )
+  }, [state.leads])
+
+  // Get all appointments and meetings for conflict checking in reschedule
+  const allScheduledEvents = useMemo(() => {
+    const events: FollowUp[] = []
+    state.leads.forEach((lead) => {
+      lead.followUps
+        .filter((fu) => (fu.type === 'appointment' || fu.type === 'meeting') && !fu.completed)
+        .forEach((fu) => events.push(fu))
+    })
+    return events
   }, [state.leads])
 
   // Filter appointments by search (name or DNI)
@@ -139,6 +153,15 @@ export default function AppointmentsPage() {
   const handleMarkAttendance = (status: AttendanceStatus) => {
     if (!selectedAppointment) return
 
+    // If rescheduling, open the reschedule modal instead
+    if (status === 'rescheduled') {
+      setShowAttendanceModal(false)
+      setRescheduleDate(null)
+      setRescheduleTime(null)
+      setShowRescheduleModal(true)
+      return
+    }
+
     const { lead, followUp } = selectedAppointment
     const updatedFollowUp: FollowUp = {
       ...followUp,
@@ -159,6 +182,38 @@ export default function AppointmentsPage() {
     dispatch({ type: 'UPDATE_LEAD', payload: updatedLead })
     setShowAttendanceModal(false)
     setSelectedAppointment(null)
+  }
+
+  const handleReschedule = () => {
+    if (!selectedAppointment || !rescheduleDate || !rescheduleTime) return
+
+    const { lead, followUp } = selectedAppointment
+    const [hours, minutes] = rescheduleTime.split(':').map(Number)
+    const newDate = new Date(rescheduleDate)
+    newDate.setHours(hours, minutes, 0, 0)
+
+    const updatedFollowUp: FollowUp = {
+      ...followUp,
+      scheduledAt: newDate,
+      attendanceStatus: 'pending', // Reset status for rescheduled appointment
+      attendanceMarkedAt: undefined,
+      completed: false,
+      completedAt: undefined,
+    }
+
+    // Update the lead with the modified follow-up
+    const updatedLead: Lead = {
+      ...lead,
+      followUps: lead.followUps.map((fu) =>
+        fu.id === followUp.id ? updatedFollowUp : fu
+      ),
+    }
+
+    dispatch({ type: 'UPDATE_LEAD', payload: updatedLead })
+    setShowRescheduleModal(false)
+    setSelectedAppointment(null)
+    setRescheduleDate(null)
+    setRescheduleTime(null)
   }
 
   const openAttendanceModal = (item: AppointmentWithLead) => {
@@ -510,6 +565,91 @@ export default function AppointmentsPage() {
             >
               {t.appointments.viewPatientProfile}
             </Button>
+          </div>
+        )}
+      </Modal>
+
+      {/* Reschedule Modal */}
+      <Modal
+        isOpen={showRescheduleModal}
+        onClose={() => {
+          setShowRescheduleModal(false)
+          setSelectedAppointment(null)
+        }}
+        title={t.appointments.markAsRescheduled}
+        size="lg"
+      >
+        {selectedAppointment && (
+          <div className="space-y-4">
+            {/* Patient Info */}
+            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+              <Avatar name={selectedAppointment.lead.name} size="md" />
+              <div>
+                <p className="font-medium text-slate-800">{selectedAppointment.lead.name}</p>
+                <p className="text-sm text-slate-500">
+                  {language === 'es' ? 'Cita anterior:' : 'Previous appointment:'}{' '}
+                  {format(new Date(selectedAppointment.followUp.scheduledAt), "d MMM yyyy 'a las' HH:mm", { locale })}
+                </p>
+              </div>
+            </div>
+
+            {/* Treatment */}
+            {selectedAppointment.followUp.treatmentName && (
+              <div className="p-3 bg-primary-50 rounded-lg">
+                <p className="text-sm font-medium text-primary-800">
+                  {t.followUp.selectTreatment}: {selectedAppointment.followUp.treatmentName}
+                </p>
+              </div>
+            )}
+
+            {/* Time Slot Picker */}
+            <div className="border border-slate-200 rounded-lg p-4 bg-white">
+              <label className="block text-sm font-medium text-slate-700 mb-3">
+                {language === 'es' ? 'Seleccionar nueva fecha y hora' : 'Select new date and time'}
+              </label>
+              <TimeSlotPicker
+                selectedDate={rescheduleDate}
+                selectedTime={rescheduleTime}
+                onSelectDateTime={(date, time) => {
+                  setRescheduleDate(date)
+                  setRescheduleTime(time)
+                }}
+                existingAppointments={allScheduledEvents.filter(
+                  fu => fu.id !== selectedAppointment.followUp.id
+                )}
+                duration={selectedAppointment.followUp.duration || 30}
+              />
+
+              {rescheduleDate && rescheduleTime && (
+                <div className="mt-3 p-2 bg-primary-50 border border-primary-200 rounded-lg text-center">
+                  <p className="text-sm font-medium text-primary-700">
+                    {language === 'es' ? 'Nueva cita:' : 'New appointment:'}{' '}
+                    {rescheduleDate.toLocaleDateString()} - {rescheduleTime}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                fullWidth
+                onClick={() => {
+                  setShowRescheduleModal(false)
+                  setSelectedAppointment(null)
+                }}
+              >
+                {t.common.cancel}
+              </Button>
+              <Button
+                fullWidth
+                onClick={handleReschedule}
+                disabled={!rescheduleDate || !rescheduleTime}
+              >
+                {language === 'es' ? 'Reprogramar Cita' : 'Reschedule Appointment'}
+              </Button>
+            </div>
           </div>
         )}
       </Modal>

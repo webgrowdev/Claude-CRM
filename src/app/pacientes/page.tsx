@@ -29,6 +29,7 @@ import {
   ArrowLeft,
   Syringe,
   CreditCard,
+  Settings,
 } from 'lucide-react'
 import { AppShell } from '@/components/layout'
 import { Input, Card, Avatar, Badge, Modal, Button, Select, TextArea, TimeSlotPicker } from '@/components/ui'
@@ -823,24 +824,41 @@ export default function PacientesPage() {
           />
 
           {followUp.type === 'meeting' && (
-            <div className={cn(
-              'flex items-center gap-2 p-3 rounded-lg',
-              calendarConnected ? 'bg-purple-50 border border-purple-200' : 'bg-slate-50 border border-slate-200'
-            )}>
-              <Video className={cn('w-5 h-5', calendarConnected ? 'text-purple-600' : 'text-slate-400')} />
-              <div className="flex-1">
-                <p className={cn('text-sm font-medium', calendarConnected ? 'text-purple-700' : 'text-slate-600')}>
-                  {calendarConnected ? t.followUp.calendarConnected : t.followUp.calendarNotConnected}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {calendarConnected
-                    ? t.followUp.meetLinkAuto
-                    : t.followUp.connectCalendar
-                  }
-                </p>
+            calendarConnected ? (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-50 border border-purple-200">
+                <Video className="w-5 h-5 text-purple-600" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-purple-700">
+                    {t.followUp.calendarConnected}
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    {t.followUp.meetLinkAuto}
+                  </p>
+                </div>
+                <CheckCircle className="w-5 h-5 text-purple-600" />
               </div>
-              {calendarConnected && <CheckCircle className="w-5 h-5 text-purple-600" />}
-            </div>
+            ) : (
+              <div className="p-4 rounded-lg bg-red-50 border border-red-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <Video className="w-5 h-5 text-red-500" />
+                  <p className="text-sm font-semibold text-red-700">
+                    {language === 'es' ? 'Google Calendar requerido' : 'Google Calendar required'}
+                  </p>
+                </div>
+                <p className="text-xs text-red-600 mb-3">
+                  {language === 'es'
+                    ? 'Para agendar videollamadas necesitas conectar tu Google Calendar. Esto permite crear eventos automáticamente y generar enlaces de Google Meet.'
+                    : 'To schedule video calls you need to connect your Google Calendar. This allows automatic event creation and Google Meet link generation.'}
+                </p>
+                <a
+                  href="/settings/integrations"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 text-sm font-medium rounded-lg transition-colors"
+                >
+                  <Settings className="w-4 h-4" />
+                  {language === 'es' ? 'Conectar Google Calendar' : 'Connect Google Calendar'}
+                </a>
+              </div>
+            )
           )}
 
           {followUp.type === 'appointment' && (
@@ -864,20 +882,38 @@ export default function PacientesPage() {
               label={t.followUp.selectTreatment}
               value={followUp.treatmentId}
               onChange={(value) => {
-                const selectedTreatment = state.treatments.find(t => t.id === value)
+                const selectedTreatment = state.treatments.find(tr => tr.id === value)
+                // Use the appropriate duration based on follow-up type
+                let duration = followUp.duration
+                if (selectedTreatment) {
+                  if (followUp.type === 'appointment') {
+                    duration = selectedTreatment.inPersonDuration || selectedTreatment.duration
+                  } else if (followUp.type === 'meeting') {
+                    duration = selectedTreatment.videocallDuration || selectedTreatment.duration
+                  } else {
+                    duration = selectedTreatment.duration
+                  }
+                }
                 setFollowUp({
                   ...followUp,
                   treatmentId: value,
-                  // Auto-fill duration from treatment if meeting/appointment
-                  duration: selectedTreatment?.duration || followUp.duration,
+                  duration: duration,
                 })
               }}
               options={[
                 { value: '', label: t.followUp.noTreatmentSelected },
-                ...state.treatments.map(treatment => ({
-                  value: treatment.id,
-                  label: `${treatment.name} (${treatment.duration} min) - $${treatment.price.toLocaleString()}`,
-                })),
+                ...state.treatments.map(treatment => {
+                  // Show the appropriate duration based on follow-up type
+                  const displayDuration = followUp.type === 'appointment'
+                    ? (treatment.inPersonDuration || treatment.duration)
+                    : followUp.type === 'meeting'
+                    ? (treatment.videocallDuration || treatment.duration)
+                    : treatment.duration
+                  return {
+                    value: treatment.id,
+                    label: `${treatment.name} (${displayDuration} min) - $${treatment.price.toLocaleString()}`,
+                  }
+                }),
               ]}
             />
           )}
@@ -908,26 +944,29 @@ export default function PacientesPage() {
 
           {/* Time Slot Picker for meetings and appointments */}
           {(followUp.type === 'meeting' || followUp.type === 'appointment') ? (
-            <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
-              <label className="block text-sm font-medium text-slate-700 mb-3">{t.followUp.dateTime}</label>
-              <TimeSlotPicker
-                selectedDate={selectedSlotDate}
-                selectedTime={selectedSlotTime}
-                onSelectDateTime={(date, time) => {
-                  setSelectedSlotDate(date)
-                  setSelectedSlotTime(time)
-                }}
-                existingAppointments={allAppointments}
-                duration={followUp.duration}
-              />
-              {selectedSlotDate && selectedSlotTime && (
-                <div className="mt-3 p-2 bg-primary-50 border border-primary-200 rounded-lg text-center">
-                  <p className="text-sm font-medium text-primary-700">
-                    {selectedSlotDate.toLocaleDateString()} - {selectedSlotTime}
-                  </p>
-                </div>
-              )}
-            </div>
+            // Only show slot picker if it's an appointment OR if it's a meeting with calendar connected
+            (followUp.type === 'appointment' || calendarConnected) ? (
+              <div className="border border-slate-200 rounded-lg p-4 bg-slate-50">
+                <label className="block text-sm font-medium text-slate-700 mb-3">{t.followUp.dateTime}</label>
+                <TimeSlotPicker
+                  selectedDate={selectedSlotDate}
+                  selectedTime={selectedSlotTime}
+                  onSelectDateTime={(date, time) => {
+                    setSelectedSlotDate(date)
+                    setSelectedSlotTime(time)
+                  }}
+                  existingAppointments={allAppointments}
+                  duration={followUp.duration}
+                />
+                {selectedSlotDate && selectedSlotTime && (
+                  <div className="mt-3 p-2 bg-primary-50 border border-primary-200 rounded-lg text-center">
+                    <p className="text-sm font-medium text-primary-700">
+                      {selectedSlotDate.toLocaleDateString()} - {selectedSlotTime}
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : null
           ) : (
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1.5">{t.followUp.dateTime}</label>
@@ -951,14 +990,18 @@ export default function PacientesPage() {
             <Button variant="outline" fullWidth onClick={() => setShowFollowUpModal(false)} disabled={isCreatingFollowUp}>
               {t.common.cancel}
             </Button>
-            <Button fullWidth onClick={handleAddFollowUp} disabled={isCreatingFollowUp}>
+            <Button
+              fullWidth
+              onClick={handleAddFollowUp}
+              disabled={isCreatingFollowUp || (followUp.type === 'meeting' && !calendarConnected)}
+            >
               {isCreatingFollowUp ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {followUp.type === 'meeting' && calendarConnected ? t.followUp.creatingEvent : t.followUp.saving}
+                  {followUp.type === 'meeting' ? t.followUp.creatingEvent : t.followUp.saving}
                 </span>
               ) : (
-                followUp.type === 'meeting' && calendarConnected ? t.followUp.createWithMeet : t.followUp.schedule
+                followUp.type === 'meeting' ? t.followUp.createWithMeet : t.followUp.schedule
               )}
             </Button>
           </div>

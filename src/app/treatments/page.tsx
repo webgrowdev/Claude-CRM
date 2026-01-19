@@ -28,7 +28,7 @@ import { Treatment } from '@/types'
 
 export default function TreatmentsPage() {
   const { state, addTreatment, updateTreatment, deleteTreatment } = useApp()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   const [searchQuery, setSearchQuery] = useState('')
   const [activeCategory, setActiveCategory] = useState('all')
@@ -42,7 +42,8 @@ export default function TreatmentsPage() {
     name: '',
     category: 'Facial',
     price: '',
-    duration: '',
+    duration: '', // Default videocall duration
+    inPersonDuration: '', // In-person appointment duration
     description: '',
   })
 
@@ -91,11 +92,16 @@ export default function TreatmentsPage() {
   const handleAdd = () => {
     if (!formData.name || !formData.price) return
 
+    const videocallDuration = parseInt(formData.duration) || 30
+    const inPersonDuration = parseInt(formData.inPersonDuration) || videocallDuration
+
     addTreatment({
       name: formData.name,
       category: formData.category,
       price: parseFloat(formData.price),
-      duration: parseInt(formData.duration) || 30,
+      duration: videocallDuration, // Default/videocall duration
+      videocallDuration: videocallDuration,
+      inPersonDuration: inPersonDuration,
       description: formData.description,
     })
 
@@ -104,6 +110,7 @@ export default function TreatmentsPage() {
       category: 'Facial',
       price: '',
       duration: '',
+      inPersonDuration: '',
       description: '',
     })
     setShowAddModal(false)
@@ -112,12 +119,17 @@ export default function TreatmentsPage() {
   const handleEdit = () => {
     if (!selectedTreatment || !formData.name || !formData.price) return
 
+    const videocallDuration = parseInt(formData.duration) || 30
+    const inPersonDuration = parseInt(formData.inPersonDuration) || videocallDuration
+
     updateTreatment({
       ...selectedTreatment,
       name: formData.name,
       category: formData.category,
       price: parseFloat(formData.price),
-      duration: parseInt(formData.duration) || 30,
+      duration: videocallDuration,
+      videocallDuration: videocallDuration,
+      inPersonDuration: inPersonDuration,
       description: formData.description,
     })
 
@@ -138,7 +150,8 @@ export default function TreatmentsPage() {
       name: treatment.name,
       category: treatment.category,
       price: treatment.price.toString(),
-      duration: treatment.duration.toString(),
+      duration: (treatment.videocallDuration || treatment.duration).toString(),
+      inPersonDuration: (treatment.inPersonDuration || treatment.duration).toString(),
       description: treatment.description || '',
     })
     setShowEditModal(true)
@@ -198,6 +211,7 @@ export default function TreatmentsPage() {
                   category: 'Facial',
                   price: '',
                   duration: '',
+                  inPersonDuration: '',
                   description: '',
                 })
                 setShowAddModal(true)
@@ -236,6 +250,7 @@ export default function TreatmentsPage() {
                   category: 'Facial',
                   price: '',
                   duration: '',
+                  inPersonDuration: '',
                   description: '',
                 })
                 setShowAddModal(true)
@@ -365,26 +380,47 @@ export default function TreatmentsPage() {
               .map((c) => ({ value: c.id, label: c.label }))}
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label={t.treatments.price}
-              placeholder="0.00"
-              type="number"
-              value={formData.price}
-              onChange={(e) =>
-                setFormData({ ...formData, price: e.target.value })
-              }
-              required
-            />
-            <Input
-              label={`${t.treatments.duration} (min)`}
-              placeholder="30"
-              type="number"
-              value={formData.duration}
-              onChange={(e) =>
-                setFormData({ ...formData, duration: e.target.value })
-              }
-            />
+          <Input
+            label={t.treatments.price}
+            placeholder="0.00"
+            type="number"
+            value={formData.price}
+            onChange={(e) =>
+              setFormData({ ...formData, price: e.target.value })
+            }
+            required
+          />
+
+          {/* Duration Fields - Videocall and In-Person */}
+          <div className="p-3 bg-slate-50 rounded-lg space-y-3">
+            <p className="text-sm font-medium text-slate-700">
+              {language === 'es' ? 'Duraciones' : 'Durations'}
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label={language === 'es' ? 'Videollamada (min)' : 'Videocall (min)'}
+                placeholder="30"
+                type="number"
+                value={formData.duration}
+                onChange={(e) =>
+                  setFormData({ ...formData, duration: e.target.value })
+                }
+              />
+              <Input
+                label={language === 'es' ? 'Presencial (min)' : 'In-Person (min)'}
+                placeholder="45"
+                type="number"
+                value={formData.inPersonDuration}
+                onChange={(e) =>
+                  setFormData({ ...formData, inPersonDuration: e.target.value })
+                }
+              />
+            </div>
+            <p className="text-xs text-slate-500">
+              {language === 'es'
+                ? 'Define la duración para cada tipo de cita'
+                : 'Set duration for each appointment type'}
+            </p>
           </div>
 
           <Input
@@ -442,26 +478,47 @@ export default function TreatmentsPage() {
               .map((c) => ({ value: c.id, label: c.label }))}
           />
 
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label={t.treatments.price}
-              placeholder="0.00"
-              type="number"
-              value={formData.price}
-              onChange={(e) =>
-                setFormData({ ...formData, price: e.target.value })
-              }
-              required
-            />
-            <Input
-              label={`${t.treatments.duration} (min)`}
-              placeholder="30"
-              type="number"
-              value={formData.duration}
-              onChange={(e) =>
-                setFormData({ ...formData, duration: e.target.value })
-              }
-            />
+          <Input
+            label={t.treatments.price}
+            placeholder="0.00"
+            type="number"
+            value={formData.price}
+            onChange={(e) =>
+              setFormData({ ...formData, price: e.target.value })
+            }
+            required
+          />
+
+          {/* Duration Fields - Videocall and In-Person */}
+          <div className="p-3 bg-slate-50 rounded-lg space-y-3">
+            <p className="text-sm font-medium text-slate-700">
+              {language === 'es' ? 'Duraciones' : 'Durations'}
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label={language === 'es' ? 'Videollamada (min)' : 'Videocall (min)'}
+                placeholder="30"
+                type="number"
+                value={formData.duration}
+                onChange={(e) =>
+                  setFormData({ ...formData, duration: e.target.value })
+                }
+              />
+              <Input
+                label={language === 'es' ? 'Presencial (min)' : 'In-Person (min)'}
+                placeholder="45"
+                type="number"
+                value={formData.inPersonDuration}
+                onChange={(e) =>
+                  setFormData({ ...formData, inPersonDuration: e.target.value })
+                }
+              />
+            </div>
+            <p className="text-xs text-slate-500">
+              {language === 'es'
+                ? 'Define la duración para cada tipo de cita'
+                : 'Set duration for each appointment type'}
+            </p>
           </div>
 
           <Input

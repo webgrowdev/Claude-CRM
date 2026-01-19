@@ -36,6 +36,7 @@ export function Sidebar() {
       icon: Inbox,
       badge: state.leads.filter(l => l.status === 'new').length || undefined
     },
+    { href: '/appointments', label: t.nav.appointments, icon: MapPin },
     { href: '/calendar', label: t.nav.calendar, icon: CalendarDays },
     { href: '/pacientes', label: t.nav.patients, icon: Users },
     { href: '/reports', label: t.nav.reports, icon: BarChart3 },
@@ -43,7 +44,6 @@ export function Sidebar() {
 
   // Secondary items
   const secondaryNavItems = [
-    { href: '/appointments', label: t.nav.appointments, icon: MapPin },
     { href: '/kanban', label: t.nav.pipeline, icon: Kanban },
     { href: '/treatments', label: t.nav.treatments, icon: Syringe },
     { href: '/settings', label: t.nav.settings, icon: Settings },

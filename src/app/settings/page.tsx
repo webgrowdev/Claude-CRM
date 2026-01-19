@@ -20,6 +20,10 @@ import {
   BookOpen,
   Globe,
   Check,
+  Moon,
+  History,
+  Download,
+  Stethoscope,
 } from 'lucide-react'
 import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Card, Avatar, Modal, Button } from '@/components/ui'
@@ -119,6 +123,12 @@ export default function SettingsPage() {
           href: '/settings/team',
           chevron: true,
         },
+        {
+          icon: <Moon className="w-5 h-5 text-slate-500" />,
+          label: language === 'es' ? 'Modo Oscuro' : 'Dark Mode',
+          href: '/settings/appearance',
+          chevron: true,
+        },
       ],
     },
     {
@@ -146,6 +156,24 @@ export default function SettingsPage() {
           icon: <Link2 className="w-5 h-5 text-slate-500" />,
           label: t.settings.integrations,
           href: '/settings/integrations',
+          chevron: true,
+        },
+        {
+          icon: <Stethoscope className="w-5 h-5 text-slate-500" />,
+          label: language === 'es' ? 'Gestión de Doctores' : 'Doctor Management',
+          href: '/settings/doctors',
+          chevron: true,
+        },
+        {
+          icon: <History className="w-5 h-5 text-slate-500" />,
+          label: language === 'es' ? 'Registro de Actividad' : 'Activity Log',
+          href: '/settings/audit',
+          chevron: true,
+        },
+        {
+          icon: <Download className="w-5 h-5 text-slate-500" />,
+          label: language === 'es' ? 'Exportar Datos' : 'Export Data',
+          href: '/settings/export',
           chevron: true,
         },
       ],

@@ -32,7 +32,7 @@ import {
   Settings,
 } from 'lucide-react'
 import { AppShell } from '@/components/layout'
-import { Input, Card, Avatar, Badge, Modal, Button, Select, TextArea, TimeSlotPicker } from '@/components/ui'
+import { Input, Card, Avatar, Badge, Modal, Button, Select, TextArea, TimeSlotPicker, LeadScoreBadge, LeadScoreDetail } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n/LanguageContext'
 import {
@@ -45,7 +45,8 @@ import {
   getEmailUrl,
   cn,
 } from '@/lib/utils'
-import { LeadStatus, LeadSource, FollowUpType, Lead } from '@/types'
+import { LeadStatus, LeadSource, FollowUpType, Lead, LeadScore } from '@/types'
+import { calculateLeadScore } from '@/services/leadScoring'
 
 const getStatusOptions = (t: any): { value: LeadStatus; label: string; color: string; bg: string }[] => [
   { value: 'new', label: t.status.new, color: 'text-primary-600', bg: 'bg-primary-100' },
@@ -309,6 +310,14 @@ export default function PacientesPage() {
     return option || { label: status, color: 'text-slate-600', bg: 'bg-slate-100' }
   }
 
+  // Calculate lead score
+  const getPatientScore = (patient: Lead): LeadScore => {
+    if (patient.score && patient.score.total !== undefined) {
+      return patient.score
+    }
+    return calculateLeadScore(patient, state.treatments)
+  }
+
   return (
     <AppShell>
       <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen overflow-hidden bg-slate-50">
@@ -441,6 +450,7 @@ export default function PacientesPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="font-semibold text-slate-900 truncate">{patient.name}</p>
+                            <LeadScoreBadge score={getPatientScore(patient).total} size="sm" showLabel={false} />
                             <span className={cn(
                               'px-2 py-0.5 rounded-full text-xs font-medium',
                               statusInfo.bg, statusInfo.color
@@ -631,6 +641,14 @@ export default function PacientesPage() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Lead Score Section */}
+                <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-4 mt-4">
+                  <h3 className="text-sm font-semibold text-slate-800 mb-3">
+                    {language === 'es' ? 'Puntuación del Lead' : 'Lead Score'}
+                  </h3>
+                  <LeadScoreDetail score={getPatientScore(selectedPatient)} />
                 </div>
               </div>
 

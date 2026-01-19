@@ -152,7 +152,9 @@ export interface Treatment {
   name: string
   category: string
   price: number
-  duration: number // in minutes
+  duration: number // in minutes (default/videocall duration)
+  inPersonDuration?: number // in minutes (duration for in-person appointments)
+  videocallDuration?: number // in minutes (duration for videocalls, defaults to duration)
   description?: string
   active?: boolean
 }

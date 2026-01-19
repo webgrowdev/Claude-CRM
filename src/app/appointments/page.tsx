@@ -15,8 +15,8 @@ import {
   startOfWeek,
   endOfWeek,
   isBefore,
-  isAfter,
   addMinutes,
+  addDays,
 } from 'date-fns'
 import { es, enUS } from 'date-fns/locale'
 import {
@@ -28,15 +28,18 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  User,
-  Phone,
   CreditCard,
   MapPin,
   AlertTriangle,
   RotateCcw,
+  Phone,
+  UserCheck,
+  UserX,
+  Syringe,
+  ChevronDown,
 } from 'lucide-react'
-import { AppShell, Header, PageContainer } from '@/components/layout'
-import { Card, Avatar, Button, Badge, Modal, Input, Select, EmptyState, TimeSlotPicker } from '@/components/ui'
+import { AppShell } from '@/components/layout'
+import { Card, Avatar, Button, Badge, Modal, TimeSlotPicker } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n'
 import { cn } from '@/lib/utils'
@@ -49,7 +52,7 @@ interface AppointmentWithLead {
 
 export default function AppointmentsPage() {
   const router = useRouter()
-  const { state, completeFollowUp, dispatch } = useApp()
+  const { state, dispatch } = useApp()
   const { t, language } = useLanguage()
   const locale = language === 'es' ? es : enUS
 
@@ -62,6 +65,7 @@ export default function AppointmentsPage() {
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'attended' | 'noshow'>('all')
   const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null)
   const [rescheduleTime, setRescheduleTime] = useState<string | null>(null)
+  const [showCalendar, setShowCalendar] = useState(true)
 
   // Get all in-person appointments (type === 'appointment')
   const allAppointments = useMemo(() => {
@@ -125,6 +129,19 @@ export default function AppointmentsPage() {
       )
   }, [filteredAppointments, selectedDate])
 
+  // Today's stats
+  const todayAppointments = useMemo(() => {
+    return allAppointments.filter(({ followUp }) => isSameDay(new Date(followUp.scheduledAt), new Date()))
+  }, [allAppointments])
+
+  const todayStats = useMemo(() => {
+    const total = todayAppointments.length
+    const attended = todayAppointments.filter(a => a.followUp.attendanceStatus === 'attended').length
+    const noshow = todayAppointments.filter(a => a.followUp.attendanceStatus === 'noshow').length
+    const pending = total - attended - noshow
+    return { total, attended, noshow, pending }
+  }, [todayAppointments])
+
   // Days with appointments
   const daysWithAppointments = useMemo(() => {
     const days = new Map<string, { total: number; pending: number; attended: number; noshow: number }>()
@@ -150,6 +167,27 @@ export default function AppointmentsPage() {
     return eachDayOfInterval({ start: calendarStart, end: calendarEnd })
   }, [currentMonth, locale])
 
+  // Quick check-in
+  const handleQuickCheckIn = (item: AppointmentWithLead, status: AttendanceStatus) => {
+    const { lead, followUp } = item
+    const updatedFollowUp: FollowUp = {
+      ...followUp,
+      attendanceStatus: status,
+      attendanceMarkedAt: new Date(),
+      completed: status === 'attended',
+      completedAt: status === 'attended' ? new Date() : undefined,
+    }
+
+    const updatedLead: Lead = {
+      ...lead,
+      followUps: lead.followUps.map((fu) =>
+        fu.id === followUp.id ? updatedFollowUp : fu
+      ),
+    }
+
+    dispatch({ type: 'UPDATE_LEAD', payload: updatedLead })
+  }
+
   const handleMarkAttendance = (status: AttendanceStatus) => {
     if (!selectedAppointment) return
 
@@ -162,24 +200,7 @@ export default function AppointmentsPage() {
       return
     }
 
-    const { lead, followUp } = selectedAppointment
-    const updatedFollowUp: FollowUp = {
-      ...followUp,
-      attendanceStatus: status,
-      attendanceMarkedAt: new Date(),
-      completed: status === 'attended',
-      completedAt: status === 'attended' ? new Date() : undefined,
-    }
-
-    // Update the lead with the modified follow-up
-    const updatedLead: Lead = {
-      ...lead,
-      followUps: lead.followUps.map((fu) =>
-        fu.id === followUp.id ? updatedFollowUp : fu
-      ),
-    }
-
-    dispatch({ type: 'UPDATE_LEAD', payload: updatedLead })
+    handleQuickCheckIn(selectedAppointment, status)
     setShowAttendanceModal(false)
     setSelectedAppointment(null)
   }
@@ -195,13 +216,12 @@ export default function AppointmentsPage() {
     const updatedFollowUp: FollowUp = {
       ...followUp,
       scheduledAt: newDate,
-      attendanceStatus: 'pending', // Reset status for rescheduled appointment
+      attendanceStatus: 'pending',
       attendanceMarkedAt: undefined,
       completed: false,
       completedAt: undefined,
     }
 
-    // Update the lead with the modified follow-up
     const updatedLead: Lead = {
       ...lead,
       followUps: lead.followUps.map((fu) =>
@@ -221,6 +241,21 @@ export default function AppointmentsPage() {
     setShowAttendanceModal(true)
   }
 
+  const getStatusColor = (status?: AttendanceStatus) => {
+    switch (status) {
+      case 'attended':
+        return 'bg-green-500'
+      case 'noshow':
+        return 'bg-red-500'
+      case 'cancelled':
+        return 'bg-slate-400'
+      case 'rescheduled':
+        return 'bg-amber-500'
+      default:
+        return 'bg-blue-500'
+    }
+  }
+
   const getStatusBadge = (status?: AttendanceStatus) => {
     switch (status) {
       case 'attended':
@@ -236,251 +271,408 @@ export default function AppointmentsPage() {
     }
   }
 
-  const weekDays = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
-  const weekDaysEn = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+  const weekDays = language === 'es'
+    ? ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+    : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+  // Next 7 days for quick selection
+  const next7Days = Array.from({ length: 7 }, (_, i) => addDays(new Date(), i))
 
   return (
     <AppShell>
-      <Header
-        title={t.appointments.title}
-        rightContent={
-          <button
-            onClick={() => router.push('/pacientes?action=new')}
-            className="p-2 rounded-lg bg-primary-500 text-white hover:bg-primary-600 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-          </button>
-        }
-      />
-
-      <PageContainer>
-        <div className="lg:grid lg:grid-cols-[1fr_380px] lg:gap-6">
-          {/* Left: Calendar */}
-          <div>
-            {/* Search and filters */}
-            <div className="flex gap-3 mb-4">
-              <div className="flex-1 relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input
-                  type="text"
-                  placeholder={t.appointments.searchByNameOrId}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
+      <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
+        {/* Header */}
+        <div className="flex-shrink-0 bg-white border-b border-slate-200 shadow-sm">
+          <div className="px-4 py-4 lg:px-6">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-6 h-6 text-primary-500" />
+                  <h1 className="text-xl lg:text-2xl font-bold text-slate-900">{t.appointments.title}</h1>
+                </div>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  {language === 'es'
+                    ? `${todayStats.total} citas hoy • ${todayStats.pending} pendientes`
+                    : `${todayStats.total} appointments today • ${todayStats.pending} pending`}
+                </p>
               </div>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
-                className="px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm"
+              <button
+                onClick={() => router.push('/pacientes?action=new')}
+                className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary-500/25"
               >
-                <option value="all">{t.common.all}</option>
-                <option value="pending">{t.appointments.pending}</option>
-                <option value="attended">{t.appointments.attended}</option>
-                <option value="noshow">{t.appointments.noshow}</option>
-              </select>
+                <Plus className="w-5 h-5" />
+                <span className="hidden sm:inline">{language === 'es' ? 'Nueva Cita' : 'New Appointment'}</span>
+              </button>
             </div>
 
-            {/* Mini Calendar */}
-            <Card className="mb-4">
-              {/* Month Navigation */}
-              <div className="flex items-center justify-between mb-4">
-                <button
-                  onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-                  className="p-2 rounded-lg hover:bg-slate-100"
-                >
-                  <ChevronLeft className="w-5 h-5 text-slate-600" />
-                </button>
-                <h3 className="font-semibold text-slate-800 capitalize">
-                  {format(currentMonth, 'MMMM yyyy', { locale })}
-                </h3>
-                <button
-                  onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-                  className="p-2 rounded-lg hover:bg-slate-100"
-                >
-                  <ChevronRight className="w-5 h-5 text-slate-600" />
-                </button>
+            {/* Quick Stats */}
+            <div className="grid grid-cols-4 gap-3 mt-4">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-blue-600">{todayStats.total}</p>
+                <p className="text-xs text-blue-600/70 font-medium">{t.appointments.total}</p>
               </div>
-
-              {/* Weekday headers */}
-              <div className="grid grid-cols-7 gap-1 mb-2">
-                {(language === 'es' ? weekDays : weekDaysEn).map((day) => (
-                  <div key={day} className="text-center text-xs font-medium text-slate-400 py-1">
-                    {day}
-                  </div>
-                ))}
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-amber-600">{todayStats.pending}</p>
+                <p className="text-xs text-amber-600/70 font-medium">{t.appointments.pending}</p>
               </div>
-
-              {/* Calendar grid */}
-              <div className="grid grid-cols-7 gap-1">
-                {calendarDays.map((day) => {
-                  const dateKey = format(day, 'yyyy-MM-dd')
-                  const dayData = daysWithAppointments.get(dateKey)
-                  const isSelected = isSameDay(day, selectedDate)
-                  const isCurrentMonth = isSameMonth(day, currentMonth)
-
-                  return (
-                    <button
-                      key={dateKey}
-                      onClick={() => setSelectedDate(day)}
-                      className={cn(
-                        'aspect-square p-1 rounded-lg text-sm transition-all relative',
-                        isSelected && 'bg-primary-500 text-white',
-                        !isSelected && isToday(day) && 'bg-primary-100 text-primary-700',
-                        !isSelected && !isToday(day) && isCurrentMonth && 'hover:bg-slate-100',
-                        !isCurrentMonth && 'text-slate-300'
-                      )}
-                    >
-                      <span className="block">{format(day, 'd')}</span>
-                      {dayData && dayData.total > 0 && (
-                        <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
-                          {dayData.pending > 0 && (
-                            <span className={cn(
-                              "w-1.5 h-1.5 rounded-full",
-                              isSelected ? "bg-white/70" : "bg-blue-500"
-                            )} />
-                          )}
-                          {dayData.attended > 0 && (
-                            <span className={cn(
-                              "w-1.5 h-1.5 rounded-full",
-                              isSelected ? "bg-white/70" : "bg-green-500"
-                            )} />
-                          )}
-                          {dayData.noshow > 0 && (
-                            <span className={cn(
-                              "w-1.5 h-1.5 rounded-full",
-                              isSelected ? "bg-white/70" : "bg-red-500"
-                            )} />
-                          )}
-                        </div>
-                      )}
-                    </button>
-                  )
-                })}
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-green-600">{todayStats.attended}</p>
+                <p className="text-xs text-green-600/70 font-medium">{t.appointments.attended}</p>
               </div>
-
-              {/* Legend */}
-              <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-slate-100">
-                <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                  <span className="w-2 h-2 rounded-full bg-blue-500" />
-                  {t.appointments.pending}
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                  <span className="w-2 h-2 rounded-full bg-green-500" />
-                  {t.appointments.attended}
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                  <span className="w-2 h-2 rounded-full bg-red-500" />
-                  {t.appointments.noshow}
-                </div>
+              <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 text-center">
+                <p className="text-2xl font-bold text-red-600">{todayStats.noshow}</p>
+                <p className="text-xs text-red-600/70 font-medium">{t.appointments.noshow}</p>
               </div>
-            </Card>
-
-            {/* Today's stats */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <Card padding="sm" className="text-center">
-                <p className="text-2xl font-bold text-slate-800">
-                  {selectedDateAppointments.length}
-                </p>
-                <p className="text-xs text-slate-500">{t.appointments.total}</p>
-              </Card>
-              <Card padding="sm" className="text-center">
-                <p className="text-2xl font-bold text-green-600">
-                  {selectedDateAppointments.filter(a => a.followUp.attendanceStatus === 'attended').length}
-                </p>
-                <p className="text-xs text-slate-500">{t.appointments.attended}</p>
-              </Card>
-              <Card padding="sm" className="text-center">
-                <p className="text-2xl font-bold text-red-600">
-                  {selectedDateAppointments.filter(a => a.followUp.attendanceStatus === 'noshow').length}
-                </p>
-                <p className="text-xs text-slate-500">{t.appointments.noshow}</p>
-              </Card>
-            </div>
-          </div>
-
-          {/* Right: Appointment List */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-slate-800">
-                {format(selectedDate, "EEEE d 'de' MMMM", { locale })}
-              </h3>
-              {isToday(selectedDate) && (
-                <Badge variant="primary" size="sm">{t.time.today}</Badge>
-              )}
             </div>
 
-            {selectedDateAppointments.length === 0 ? (
-              <EmptyState
-                icon={<CalendarIcon className="w-8 h-8" />}
-                title={t.appointments.noAppointments}
-                description={t.appointments.noAppointmentsDesc}
-              />
-            ) : (
-              <div className="space-y-3">
-                {selectedDateAppointments.map(({ lead, followUp }) => {
-                  const isPast = isBefore(new Date(followUp.scheduledAt), new Date())
-                  const needsAttention = isPast && !followUp.attendanceStatus
+            {/* Quick Day Selection */}
+            <div className="flex gap-2 mt-4 overflow-x-auto pb-1 scrollbar-hide">
+              {next7Days.map((day) => {
+                const isSelected = isSameDay(day, selectedDate)
+                const dayData = daysWithAppointments.get(format(day, 'yyyy-MM-dd'))
 
-                  return (
-                    <Card
-                      key={followUp.id}
-                      padding="sm"
-                      className={cn(
-                        'cursor-pointer transition-all hover:shadow-md',
-                        needsAttention && 'border-l-4 border-l-warning-500'
-                      )}
-                      onClick={() => openAttendanceModal({ lead, followUp })}
-                    >
-                      <div className="flex items-start gap-3">
-                        <Avatar name={lead.name} size="md" />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between">
-                            <p className="font-medium text-slate-800 truncate">{lead.name}</p>
-                            {getStatusBadge(followUp.attendanceStatus)}
-                          </div>
-
-                          <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3.5 h-3.5" />
-                              {format(new Date(followUp.scheduledAt), 'HH:mm')}
-                            </span>
-                            {followUp.duration && (
-                              <span>{followUp.duration} min</span>
-                            )}
-                          </div>
-
-                          {lead.identificationNumber && (
-                            <div className="flex items-center gap-1 mt-1 text-xs text-slate-400">
-                              <CreditCard className="w-3 h-3" />
-                              {t.appointments.idNumber}: {lead.identificationNumber}
-                            </div>
-                          )}
-
-                          {followUp.treatmentName && (
-                            <div className="mt-2">
-                              <Badge variant="outline" size="sm">
-                                {followUp.treatmentName}
-                              </Badge>
-                            </div>
-                          )}
-
-                          {needsAttention && (
-                            <div className="flex items-center gap-1 mt-2 text-xs text-warning-600">
-                              <AlertTriangle className="w-3 h-3" />
-                              {t.appointments.needsAttendanceConfirmation}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </Card>
-                  )
-                })}
-              </div>
-            )}
+                return (
+                  <button
+                    key={day.toISOString()}
+                    onClick={() => setSelectedDate(day)}
+                    className={cn(
+                      'flex flex-col items-center min-w-[60px] py-2 px-3 rounded-xl transition-all',
+                      isSelected
+                        ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/30'
+                        : isToday(day)
+                        ? 'bg-primary-100 text-primary-700'
+                        : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+                    )}
+                  >
+                    <span className={cn('text-xs font-medium', isSelected ? 'text-white/80' : 'text-slate-400')}>
+                      {isToday(day) ? (language === 'es' ? 'Hoy' : 'Today') : format(day, 'EEE', { locale })}
+                    </span>
+                    <span className="text-lg font-bold">{format(day, 'd')}</span>
+                    {dayData && dayData.total > 0 && (
+                      <span className={cn(
+                        'text-[10px] font-medium',
+                        isSelected ? 'text-white/80' : 'text-slate-400'
+                      )}>
+                        {dayData.total} {language === 'es' ? 'citas' : 'apt'}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+              <button
+                onClick={() => setShowCalendar(!showCalendar)}
+                className="flex flex-col items-center justify-center min-w-[60px] py-2 px-3 rounded-xl bg-white border border-slate-200 text-slate-500 hover:bg-slate-50 transition-all"
+              >
+                <CalendarIcon className="w-5 h-5" />
+                <ChevronDown className={cn('w-4 h-4 transition-transform', showCalendar && 'rotate-180')} />
+              </button>
+            </div>
           </div>
         </div>
-      </PageContainer>
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
+          {/* Left: Calendar (collapsible on mobile) */}
+          {showCalendar && (
+            <div className="flex-shrink-0 bg-white border-b lg:border-b-0 lg:border-r border-slate-200 lg:w-80 overflow-y-auto">
+              <div className="p-4">
+                {/* Month Navigation */}
+                <div className="flex items-center justify-between mb-4">
+                  <button
+                    onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                    className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5 text-slate-600" />
+                  </button>
+                  <h3 className="font-semibold text-slate-800 capitalize">
+                    {format(currentMonth, 'MMMM yyyy', { locale })}
+                  </h3>
+                  <button
+                    onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                    className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                  >
+                    <ChevronRight className="w-5 h-5 text-slate-600" />
+                  </button>
+                </div>
+
+                {/* Weekday headers */}
+                <div className="grid grid-cols-7 gap-1 mb-2">
+                  {weekDays.map((day) => (
+                    <div key={day} className="text-center text-xs font-medium text-slate-400 py-1">
+                      {day.charAt(0)}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar grid */}
+                <div className="grid grid-cols-7 gap-1">
+                  {calendarDays.map((day) => {
+                    const dateKey = format(day, 'yyyy-MM-dd')
+                    const dayData = daysWithAppointments.get(dateKey)
+                    const isSelected = isSameDay(day, selectedDate)
+                    const isCurrentMonth = isSameMonth(day, currentMonth)
+
+                    return (
+                      <button
+                        key={dateKey}
+                        onClick={() => setSelectedDate(day)}
+                        className={cn(
+                          'aspect-square p-1 rounded-lg text-sm transition-all relative',
+                          isSelected && 'bg-primary-500 text-white shadow-md',
+                          !isSelected && isToday(day) && 'bg-primary-100 text-primary-700 font-bold',
+                          !isSelected && !isToday(day) && isCurrentMonth && 'hover:bg-slate-100',
+                          !isCurrentMonth && 'text-slate-300'
+                        )}
+                      >
+                        <span className="block">{format(day, 'd')}</span>
+                        {dayData && dayData.total > 0 && (
+                          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                            {dayData.pending > 0 && (
+                              <span className={cn(
+                                "w-1.5 h-1.5 rounded-full",
+                                isSelected ? "bg-white/70" : "bg-blue-500"
+                              )} />
+                            )}
+                            {dayData.attended > 0 && (
+                              <span className={cn(
+                                "w-1.5 h-1.5 rounded-full",
+                                isSelected ? "bg-white/70" : "bg-green-500"
+                              )} />
+                            )}
+                            {dayData.noshow > 0 && (
+                              <span className={cn(
+                                "w-1.5 h-1.5 rounded-full",
+                                isSelected ? "bg-white/70" : "bg-red-500"
+                              )} />
+                            )}
+                          </div>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {/* Legend */}
+                <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-slate-100">
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <span className="w-2 h-2 rounded-full bg-blue-500" />
+                    {t.appointments.pending}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                    {t.appointments.attended}
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                    <span className="w-2 h-2 rounded-full bg-red-500" />
+                    {t.appointments.noshow}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Right: Appointment List */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Search and filters */}
+            <div className="flex-shrink-0 p-4 bg-white border-b border-slate-200">
+              <div className="flex gap-3">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder={t.appointments.searchByNameOrId}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all"
+                  />
+                </div>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value as typeof filterStatus)}
+                  className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium"
+                >
+                  <option value="all">{t.common.all}</option>
+                  <option value="pending">{t.appointments.pending}</option>
+                  <option value="attended">{t.appointments.attended}</option>
+                  <option value="noshow">{t.appointments.noshow}</option>
+                </select>
+              </div>
+
+              {/* Selected date header */}
+              <div className="flex items-center justify-between mt-3">
+                <h3 className="font-semibold text-slate-800 capitalize">
+                  {format(selectedDate, "EEEE, d 'de' MMMM", { locale })}
+                </h3>
+                <span className="text-sm text-slate-500">
+                  {selectedDateAppointments.length} {language === 'es' ? 'citas' : 'appointments'}
+                </span>
+              </div>
+            </div>
+
+            {/* Appointment List */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {selectedDateAppointments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-center py-12">
+                  <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-lg">
+                    <CalendarIcon className="w-10 h-10 text-slate-300" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-slate-800">{t.appointments.noAppointments}</h3>
+                  <p className="text-sm text-slate-500 mt-1 max-w-xs">{t.appointments.noAppointmentsDesc}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {selectedDateAppointments.map(({ lead, followUp }) => {
+                    const isPast = isBefore(new Date(followUp.scheduledAt), new Date())
+                    const needsAttention = isPast && !followUp.attendanceStatus
+                    const status = followUp.attendanceStatus || 'pending'
+
+                    return (
+                      <div
+                        key={followUp.id}
+                        className={cn(
+                          'bg-white rounded-2xl border transition-all overflow-hidden',
+                          needsAttention
+                            ? 'border-amber-300 shadow-lg shadow-amber-100'
+                            : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
+                        )}
+                      >
+                        {/* Time indicator */}
+                        <div className={cn(
+                          'h-1',
+                          getStatusColor(followUp.attendanceStatus)
+                        )} />
+
+                        <div className="p-4">
+                          <div className="flex items-start gap-3">
+                            {/* Time Column */}
+                            <div className="flex flex-col items-center">
+                              <div className={cn(
+                                'w-14 h-14 rounded-xl flex flex-col items-center justify-center',
+                                status === 'attended' ? 'bg-green-100' :
+                                status === 'noshow' ? 'bg-red-100' :
+                                'bg-slate-100'
+                              )}>
+                                <Clock className={cn(
+                                  'w-4 h-4',
+                                  status === 'attended' ? 'text-green-600' :
+                                  status === 'noshow' ? 'text-red-600' :
+                                  'text-slate-500'
+                                )} />
+                                <span className={cn(
+                                  'text-sm font-bold',
+                                  status === 'attended' ? 'text-green-700' :
+                                  status === 'noshow' ? 'text-red-700' :
+                                  'text-slate-700'
+                                )}>
+                                  {format(new Date(followUp.scheduledAt), 'HH:mm')}
+                                </span>
+                              </div>
+                              {followUp.duration && (
+                                <span className="text-xs text-slate-400 mt-1">{followUp.duration}min</span>
+                              )}
+                            </div>
+
+                            {/* Patient Info */}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <Avatar name={lead.name} size="sm" />
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-slate-900 truncate">{lead.name}</p>
+                                  {lead.identificationNumber && (
+                                    <p className="text-xs text-slate-400 flex items-center gap-1">
+                                      <CreditCard className="w-3 h-3" />
+                                      {lead.identificationNumber}
+                                    </p>
+                                  )}
+                                </div>
+                                {getStatusBadge(followUp.attendanceStatus)}
+                              </div>
+
+                              {followUp.treatmentName && (
+                                <div className="mt-2 flex items-center gap-1.5">
+                                  <Syringe className="w-3.5 h-3.5 text-primary-500" />
+                                  <span className="text-sm text-primary-700 font-medium">
+                                    {followUp.treatmentName}
+                                  </span>
+                                </div>
+                              )}
+
+                              {needsAttention && (
+                                <div className="flex items-center gap-1 mt-2 px-2 py-1 bg-amber-50 rounded-lg text-xs text-amber-600 font-medium">
+                                  <AlertTriangle className="w-3.5 h-3.5" />
+                                  {t.appointments.needsAttendanceConfirmation}
+                                </div>
+                              )}
+
+                              {/* Quick Actions */}
+                              {status === 'pending' && (
+                                <div className="flex gap-2 mt-3">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleQuickCheckIn({ lead, followUp }, 'attended')
+                                    }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition-colors"
+                                  >
+                                    <UserCheck className="w-3.5 h-3.5" />
+                                    {language === 'es' ? 'Asistió' : 'Attended'}
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      handleQuickCheckIn({ lead, followUp }, 'noshow')
+                                    }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
+                                  >
+                                    <UserX className="w-3.5 h-3.5" />
+                                    {language === 'es' ? 'No vino' : 'No Show'}
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      openAttendanceModal({ lead, followUp })
+                                    }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-medium transition-colors"
+                                  >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                    {language === 'es' ? 'Más' : 'More'}
+                                  </button>
+                                </div>
+                              )}
+
+                              {status !== 'pending' && (
+                                <div className="flex gap-2 mt-3">
+                                  <a
+                                    href={`tel:${lead.phone}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-xs font-medium transition-colors"
+                                  >
+                                    <Phone className="w-3.5 h-3.5" />
+                                    {language === 'es' ? 'Llamar' : 'Call'}
+                                  </a>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      router.push(`/pacientes?id=${lead.id}`)
+                                    }}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-medium transition-colors"
+                                  >
+                                    {language === 'es' ? 'Ver perfil' : 'View profile'}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Attendance Modal */}
       <Modal
@@ -491,10 +683,10 @@ export default function AppointmentsPage() {
         {selectedAppointment && (
           <div className="space-y-4">
             {/* Patient Info */}
-            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+            <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl">
               <Avatar name={selectedAppointment.lead.name} size="lg" />
               <div>
-                <p className="font-medium text-slate-800">{selectedAppointment.lead.name}</p>
+                <p className="font-semibold text-slate-800">{selectedAppointment.lead.name}</p>
                 {selectedAppointment.lead.identificationNumber && (
                   <p className="text-sm text-slate-500">
                     {t.appointments.idNumber}: {selectedAppointment.lead.identificationNumber}
@@ -508,15 +700,16 @@ export default function AppointmentsPage() {
 
             {/* Treatment */}
             {selectedAppointment.followUp.treatmentName && (
-              <div className="p-3 bg-primary-50 rounded-lg">
+              <div className="p-3 bg-primary-50 rounded-xl flex items-center gap-2">
+                <Syringe className="w-4 h-4 text-primary-600" />
                 <p className="text-sm font-medium text-primary-800">
-                  {t.followUp.selectTreatment}: {selectedAppointment.followUp.treatmentName}
+                  {selectedAppointment.followUp.treatmentName}
                 </p>
               </div>
             )}
 
             {/* Current Status */}
-            <div className="flex items-center justify-between p-3 border border-slate-200 rounded-lg">
+            <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl">
               <span className="text-sm text-slate-600">{t.appointments.currentStatus}:</span>
               {getStatusBadge(selectedAppointment.followUp.attendanceStatus)}
             </div>

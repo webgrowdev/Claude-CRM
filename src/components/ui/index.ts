@@ -36,3 +36,7 @@ export { Onboarding, useOnboarding } from './Onboarding'
 export { Tooltip } from './Tooltip'
 
 export { TimeSlotPicker } from './TimeSlotPicker'
+
+export { LeadScoreBadge, LeadScoreDetail } from './LeadScoreBadge'
+
+export { ThemeSwitcher } from './ThemeSwitcher'

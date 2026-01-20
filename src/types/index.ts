@@ -69,6 +69,16 @@ export interface Lead {
   lastContactAt?: Date
   nextActionAt?: Date
   nextAction?: string
+  // Lead Scoring
+  score?: LeadScore
+  // Payments
+  payments?: Payment[]
+  totalPaid?: number
+  totalPending?: number
+  // Surveys
+  surveyResponses?: SurveyResponse[]
+  lastSurveySentAt?: Date
+  npsScore?: number
 }
 
 // Alias for clarity
@@ -397,4 +407,219 @@ export interface DaySchedule {
   date: Date
   doctorId: string
   slots: TimeSlot[]
+}
+
+// =============================================
+// LEAD SCORING TYPES
+// =============================================
+
+export interface LeadScore {
+  total: number // 0-100
+  engagement: number // Based on responses, interactions
+  value: number // Based on treatment interest value
+  timing: number // Based on urgency/recency
+  fit: number // Based on profile completeness
+  lastCalculated: Date
+}
+
+export interface LeadScoreFactors {
+  respondedToMessages: number // +15 per response
+  attendedAppointments: number // +20 per attended
+  missedAppointments: number // -15 per no-show
+  highValueTreatment: number // +10 if interested in expensive treatments
+  recentActivity: number // +10 if active in last 7 days
+  profileComplete: number // +10 if has email, phone, DNI
+  referralSource: number // +5 if referral
+}
+
+// =============================================
+// PAYMENT TYPES
+// =============================================
+
+export type PaymentMethod = 'cash' | 'card' | 'transfer' | 'mercadopago' | 'other'
+export type PaymentStatus = 'pending' | 'partial' | 'paid' | 'refunded' | 'cancelled'
+
+export interface Payment {
+  id: string
+  leadId: string
+  treatmentId?: string
+  treatmentName?: string
+  amount: number
+  method: PaymentMethod
+  status: PaymentStatus
+  reference?: string // Transaction ID or receipt number
+  notes?: string
+  createdAt: Date
+  createdBy: string
+  // For payment plans
+  isInstallment?: boolean
+  installmentNumber?: number
+  totalInstallments?: number
+  parentPaymentId?: string // Links installments together
+}
+
+export interface PaymentPlan {
+  id: string
+  leadId: string
+  treatmentId: string
+  totalAmount: number
+  downPayment: number
+  installments: number
+  installmentAmount: number
+  startDate: Date
+  payments: Payment[]
+  status: 'active' | 'completed' | 'defaulted' | 'cancelled'
+}
+
+// =============================================
+// SATISFACTION SURVEY TYPES
+// =============================================
+
+export interface SurveyQuestion {
+  id: string
+  question: string
+  type: 'rating' | 'text' | 'yesno' | 'nps'
+}
+
+export interface SurveyResponse {
+  id: string
+  leadId: string
+  appointmentId?: string
+  treatmentId?: string
+  responses: {
+    questionId: string
+    answer: string | number
+  }[]
+  npsScore?: number // 0-10 Net Promoter Score
+  overallRating?: number // 1-5 stars
+  feedback?: string
+  createdAt: Date
+  sentAt?: Date
+  completedAt?: Date
+}
+
+// =============================================
+// AUDIT LOG TYPES
+// =============================================
+
+export type AuditAction =
+  | 'create'
+  | 'update'
+  | 'delete'
+  | 'view'
+  | 'export'
+  | 'login'
+  | 'logout'
+  | 'settings_change'
+
+export type AuditEntity =
+  | 'lead'
+  | 'patient'
+  | 'appointment'
+  | 'treatment'
+  | 'payment'
+  | 'user'
+  | 'settings'
+  | 'report'
+
+export interface AuditLog {
+  id: string
+  userId: string
+  userName: string
+  action: AuditAction
+  entity: AuditEntity
+  entityId?: string
+  entityName?: string
+  changes?: {
+    field: string
+    oldValue: unknown
+    newValue: unknown
+  }[]
+  ipAddress?: string
+  userAgent?: string
+  timestamp: Date
+}
+
+// =============================================
+// WHATSAPP TEMPLATE TYPES
+// =============================================
+
+export interface WhatsAppTemplate {
+  id: string
+  name: string
+  category: 'greeting' | 'appointment' | 'reminder' | 'followup' | 'payment' | 'custom'
+  content: string // With placeholders like {{name}}, {{date}}, {{treatment}}
+  variables: string[] // List of variable names used
+  active: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface WhatsAppMessage {
+  id: string
+  leadId: string
+  templateId?: string
+  content: string
+  sentAt: Date
+  sentBy: string
+  delivered?: boolean
+  read?: boolean
+  response?: string
+  responseAt?: Date
+}
+
+// =============================================
+// DOCTOR / STAFF TYPES
+// =============================================
+
+export interface Doctor {
+  id: string
+  name: string
+  email: string
+  phone?: string
+  specialty: string
+  color: string // For calendar display
+  avatar?: string
+  active: boolean
+  // Scheduling
+  workingHours: {
+    [key: number]: { // 0-6 for Sunday-Saturday
+      start: string
+      end: string
+      enabled: boolean
+    }
+  }
+  slotDuration: number // Default appointment duration
+  breakTimes?: {
+    start: string
+    end: string
+  }[]
+}
+
+// =============================================
+// EXPORT TYPES
+// =============================================
+
+export type ExportFormat = 'csv' | 'excel' | 'pdf'
+
+export interface ExportOptions {
+  format: ExportFormat
+  dateRange?: {
+    start: Date
+    end: Date
+  }
+  includeFields: string[]
+  filters?: LeadFilters
+}
+
+// =============================================
+// THEME TYPES
+// =============================================
+
+export type ThemeMode = 'light' | 'dark' | 'system'
+
+export interface ThemeSettings {
+  mode: ThemeMode
+  primaryColor?: string
+  accentColor?: string
 }

@@ -7,7 +7,10 @@ import { Inbox, CalendarDays, Users, MoreHorizontal, MapPin, LayoutDashboard } f
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/i18n'
 import { useApp } from '@/contexts/AppContext'
-
+type AppointmentLike = {
+  date?: string | Date
+  status?: string
+}
 export function BottomNav() {
   const pathname = usePathname()
   const { t, language } = useLanguage()
@@ -21,7 +24,7 @@ export function BottomNav() {
 
   // Siempre usar arrays seguros aunque state o las propiedades no estén aún
   const leads = state?.leads ?? []
-  const appointments = state?.appointments ?? []
+  const appointments = (state?.appointments ?? []) as AppointmentLike[]
 
   // Count new leads for badge
   const newLeadsCount = leads.filter(l => l.status === 'new').length
@@ -32,10 +35,18 @@ export function BottomNav() {
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
 
-  const todayAppointmentsCount = appointments.filter(apt => {
+  const todayAppointmentsCount = appointments.filter((apt) => {
+    if (!apt.date) return false // si no hay fecha, no cuenta
+
     const aptDate = new Date(apt.date)
-    return aptDate >= today && aptDate < tomorrow && apt.status !== 'cancelled'
+
+    return (
+      aptDate >= today &&
+      aptDate < tomorrow &&
+      apt.status !== 'cancelled'
+    )
   }).length
+
 
 
   // Count urgent leads (48h+ waiting)

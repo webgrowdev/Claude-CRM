@@ -19,8 +19,12 @@ export function BottomNav() {
     setMounted(true)
   }, [])
 
+  // Siempre usar arrays seguros aunque state o las propiedades no estén aún
+  const leads = state?.leads ?? []
+  const appointments = state?.appointments ?? []
+
   // Count new leads for badge
-  const newLeadsCount = state.leads.filter(l => l.status === 'new').length
+  const newLeadsCount = leads.filter(l => l.status === 'new').length
 
   // Count today's appointments
   const today = new Date()
@@ -28,15 +32,18 @@ export function BottomNav() {
   const tomorrow = new Date(today)
   tomorrow.setDate(tomorrow.getDate() + 1)
 
-  const todayAppointmentsCount = state.appointments.filter(apt => {
+  const todayAppointmentsCount = appointments.filter(apt => {
     const aptDate = new Date(apt.date)
     return aptDate >= today && aptDate < tomorrow && apt.status !== 'cancelled'
   }).length
 
+
   // Count urgent leads (48h+ waiting)
   const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000)
-  const urgentCount = state.leads.filter(l =>
-    l.status === 'new' && new Date(l.createdAt) < fortyEightHoursAgo
+  const urgentCount = leads.filter(l =>
+    l.status === 'new' &&
+    l.createdAt &&
+    new Date(l.createdAt) < fortyEightHoursAgo
   ).length
 
   const navItems = [

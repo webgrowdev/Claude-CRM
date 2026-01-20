@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react'
-import { Lead, LeadStatus, Treatment, User, Notification, Note, FollowUp, Settings } from '@/types'
+import { Lead, LeadStatus, Treatment, User, Notification, Note, FollowUp, Settings, Appointment } from '@/types'
 import { initialLeads, treatments as initialTreatments, currentUser, notifications as initialNotifications } from '@/data/mockData'
 import { generateId } from '@/lib/utils'
 import {
@@ -18,6 +18,8 @@ interface AppState {
   notifications: Notification[]
   settings: Settings
   isLoading: boolean
+  appointments: Appointment[]   // 👈 agregar
+
 }
 
 // Action types
@@ -39,6 +41,10 @@ type AppAction =
   | { type: 'UPDATE_SETTINGS'; payload: Partial<Settings> }
   | { type: 'UPDATE_USER'; payload: User }
   | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_APPOINTMENTS'; payload: Appointment[] }
+  | { type: 'ADD_APPOINTMENT'; payload: Appointment }
+  | { type: 'UPDATE_APPOINTMENT'; payload: Appointment }
+  | { type: 'DELETE_APPOINTMENT'; payload: string }
 
 // Initial state
 const initialSettings: Settings = {
@@ -53,6 +59,7 @@ const initialSettings: Settings = {
 const initialState: AppState = {
   leads: [],
   treatments: [],
+  appointments: [],
   user: currentUser,
   notifications: [],
   settings: initialSettings,
@@ -109,6 +116,26 @@ function appReducer(state: AppState, action: AppAction): AppState {
               }
             : lead
         ),
+      }
+      
+    case 'SET_APPOINTMENTS':
+      return { ...state, appointments: action.payload }
+
+    case 'ADD_APPOINTMENT':
+      return { ...state, appointments: [...state.appointments, action.payload] }
+
+    case 'UPDATE_APPOINTMENT':
+      return {
+        ...state,
+        appointments: state.appointments.map((apt) =>
+          apt.id === action.payload.id ? action.payload : apt
+        ),
+      }
+
+    case 'DELETE_APPOINTMENT':
+      return {
+        ...state,
+        appointments: state.appointments.filter((apt) => apt.id !== action.payload),
       }
 
     case 'ADD_FOLLOWUP':

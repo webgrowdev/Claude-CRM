@@ -57,3 +57,11 @@ export {
   InboxSkeleton,
   PatientDetailSkeleton,
 } from './Skeleton'
+
+export {
+  GuidedTour,
+  useTour,
+  dashboardTourSteps,
+  inboxTourSteps,
+} from './GuidedTour'
+export type { TourStep } from './GuidedTour'

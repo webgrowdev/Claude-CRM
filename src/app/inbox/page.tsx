@@ -17,21 +17,27 @@ import {
   Users,
   TrendingUp,
   Plus,
+  Flame,
+  Sparkles,
+  Zap,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { AppShell } from '@/components/layout/AppShell'
-import { Avatar, Card, Badge, Button, Modal } from '@/components/ui'
+import { Avatar, Card, Badge, Button, Modal, LeadScoreBadge, InboxFAB } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n'
-import { cn, formatTimeAgo, formatRelativeDate, getSourceLabel } from '@/lib/utils'
+import { cn, formatTimeAgo, formatRelativeDate, getSourceLabel, getWhatsAppUrl, getPhoneUrl } from '@/lib/utils'
 import { Lead, LeadSource, LeadStatus } from '@/types'
+import { calculateLeadScore } from '@/services/leadScoring'
 import { format, isAfter, subHours, addHours, isToday, startOfDay, endOfDay } from 'date-fns'
 
-type InboxFilter = 'all' | 'new' | 'urgent' | 'today'
+type InboxFilter = 'all' | 'new' | 'urgent' | 'today' | 'hot'
 
 export default function InboxPage() {
   const router = useRouter()
   const { state, updateLeadStatus, addFollowUp } = useApp()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<InboxFilter>('all')
@@ -39,10 +45,60 @@ export default function InboxPage() {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [showFilterMenu, setShowFilterMenu] = useState(false)
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['urgent', 'hot', 'new']))
 
-  // Get filtered leads
+  // Calculate scores for all leads
+  const leadsWithScores = useMemo(() => {
+    return state.leads.map(lead => ({
+      ...lead,
+      calculatedScore: calculateLeadScore(lead, state.treatments)
+    }))
+  }, [state.leads, state.treatments])
+
+  // Categorize leads by priority
+  const categorizedLeads = useMemo(() => {
+    const now = new Date()
+    const fortyEightHoursAgo = subHours(now, 48)
+
+    // Urgent: New leads waiting 48+ hours
+    const urgent = leadsWithScores.filter(
+      lead => lead.status === 'new' && new Date(lead.createdAt) < fortyEightHoursAgo
+    ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+
+    // Hot leads: High score (70+), not closed/lost
+    const hot = leadsWithScores.filter(
+      lead => lead.calculatedScore.total >= 70 &&
+              lead.status !== 'closed' &&
+              lead.status !== 'lost' &&
+              !urgent.some(u => u.id === lead.id)
+    ).sort((a, b) => b.calculatedScore.total - a.calculatedScore.total)
+
+    // New leads (not urgent)
+    const newLeads = leadsWithScores.filter(
+      lead => lead.status === 'new' &&
+              !urgent.some(u => u.id === lead.id)
+    ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+
+    // Today's follow-ups
+    const todayFollowUps = leadsWithScores.filter(lead =>
+      lead.followUps.some(f => !f.completed && isToday(new Date(f.scheduledAt)))
+    )
+
+    // All other active leads
+    const other = leadsWithScores.filter(
+      lead => lead.status !== 'closed' &&
+              lead.status !== 'lost' &&
+              !urgent.some(u => u.id === lead.id) &&
+              !hot.some(h => h.id === lead.id) &&
+              !newLeads.some(n => n.id === lead.id)
+    )
+
+    return { urgent, hot, new: newLeads, today: todayFollowUps, other }
+  }, [leadsWithScores])
+
+  // Get filtered leads based on current filter and search
   const filteredLeads = useMemo(() => {
-    let leads = [...state.leads]
+    let leads = [...leadsWithScores]
 
     // Search filter
     if (search) {
@@ -70,15 +126,21 @@ export default function InboxPage() {
         leads = leads.filter((lead) => lead.status === 'new')
         break
       case 'urgent':
-        // Leads that are new and waiting more than 48 hours
         leads = leads.filter(
           (lead) =>
             lead.status === 'new' &&
             new Date(lead.createdAt) < fortyEightHoursAgo
         )
         break
+      case 'hot':
+        leads = leads.filter(
+          (lead) =>
+            lead.calculatedScore.total >= 70 &&
+            lead.status !== 'closed' &&
+            lead.status !== 'lost'
+        )
+        break
       case 'today':
-        // Leads with follow-ups scheduled for today
         leads = leads.filter((lead) =>
           lead.followUps.some(
             (f) =>
@@ -88,49 +150,29 @@ export default function InboxPage() {
         )
         break
       default:
-        // All leads, sorted by status priority
-        leads = leads.sort((a, b) => {
-          const statusPriority: Record<LeadStatus, number> = {
-            new: 0,
-            contacted: 1,
-            scheduled: 2,
-            closed: 3,
-            lost: 4,
-          }
-          return statusPriority[a.status] - statusPriority[b.status]
-        })
+        leads = leads.filter(l => l.status !== 'closed' && l.status !== 'lost')
     }
 
-    // Sort by date (newest first for 'new' filter, otherwise by next action)
-    return leads.sort((a, b) => {
-      if (filter === 'new' || filter === 'urgent') {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      }
-      return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-    })
-  }, [state.leads, search, filter, channelFilter])
+    // Sort by score for most filters
+    if (filter === 'hot' || filter === 'all') {
+      return leads.sort((a, b) => b.calculatedScore.total - a.calculatedScore.total)
+    }
+
+    return leads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  }, [leadsWithScores, search, filter, channelFilter])
 
   // Stats
   const stats = useMemo(() => {
-    const now = new Date()
-    const fortyEightHoursAgo = subHours(now, 48)
-    const newLeads = state.leads.filter((l) => l.status === 'new')
-    const urgentLeads = newLeads.filter(
-      (l) => new Date(l.createdAt) < fortyEightHoursAgo
-    )
-    const todayFollowUps = state.leads.filter((l) =>
-      l.followUps.some((f) => !f.completed && isToday(new Date(f.scheduledAt)))
-    )
-
     return {
-      newCount: newLeads.length,
-      urgentCount: urgentLeads.length,
-      todayCount: todayFollowUps.length,
-      totalActive: state.leads.filter(
+      urgentCount: categorizedLeads.urgent.length,
+      hotCount: categorizedLeads.hot.length,
+      newCount: categorizedLeads.new.length,
+      todayCount: categorizedLeads.today.length,
+      totalActive: leadsWithScores.filter(
         (l) => l.status !== 'closed' && l.status !== 'lost'
       ).length,
     }
-  }, [state.leads])
+  }, [categorizedLeads, leadsWithScores])
 
   // Get channel icon
   const getChannelIcon = (source: LeadSource) => {
@@ -147,7 +189,7 @@ export default function InboxPage() {
   }
 
   // Get status badge
-  const getStatusBadge = (lead: Lead) => {
+  const getStatusBadge = (lead: Lead & { calculatedScore: any }) => {
     const now = new Date()
     const fortyEightHoursAgo = subHours(now, 48)
     const isUrgent =
@@ -172,7 +214,7 @@ export default function InboxPage() {
 
     const config = statusConfig[lead.status]
     return (
-      <Badge variant={config.variant as 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'default'} size="sm">
+      <Badge variant={config.variant as any} size="sm">
         {config.label}
       </Badge>
     )
@@ -181,13 +223,12 @@ export default function InboxPage() {
   // Quick actions
   const handleCall = (lead: Lead, e: React.MouseEvent) => {
     e.stopPropagation()
-    window.open(`tel:${lead.phone}`, '_self')
+    window.open(getPhoneUrl(lead.phone), '_self')
   }
 
   const handleWhatsApp = (lead: Lead, e: React.MouseEvent) => {
     e.stopPropagation()
-    const phone = lead.phone.replace(/\D/g, '')
-    window.open(`https://wa.me/${phone}`, '_blank')
+    window.open(getWhatsAppUrl(lead.phone), '_blank')
   }
 
   const handleEmail = (lead: Lead, e: React.MouseEvent) => {
@@ -210,11 +251,22 @@ export default function InboxPage() {
     }
   }
 
+  const toggleSection = (section: string) => {
+    const newExpanded = new Set(expandedSections)
+    if (newExpanded.has(section)) {
+      newExpanded.delete(section)
+    } else {
+      newExpanded.add(section)
+    }
+    setExpandedSections(newExpanded)
+  }
+
   const filterTabs = [
-    { id: 'all' as InboxFilter, label: t.inbox.allLeads, count: stats.totalActive },
-    { id: 'new' as InboxFilter, label: t.inbox.newLeads, count: stats.newCount },
-    { id: 'urgent' as InboxFilter, label: t.inbox.urgent, count: stats.urgentCount },
-    { id: 'today' as InboxFilter, label: t.inbox.toCallToday, count: stats.todayCount },
+    { id: 'all' as InboxFilter, label: language === 'es' ? 'Todos' : 'All', count: stats.totalActive, icon: Users },
+    { id: 'urgent' as InboxFilter, label: language === 'es' ? 'Urgente' : 'Urgent', count: stats.urgentCount, icon: AlertCircle, color: 'text-red-500' },
+    { id: 'hot' as InboxFilter, label: language === 'es' ? 'Calientes' : 'Hot', count: stats.hotCount, icon: Flame, color: 'text-orange-500' },
+    { id: 'new' as InboxFilter, label: language === 'es' ? 'Nuevos' : 'New', count: stats.newCount, icon: Sparkles, color: 'text-blue-500' },
+    { id: 'today' as InboxFilter, label: language === 'es' ? 'Hoy' : 'Today', count: stats.todayCount, icon: Calendar, color: 'text-purple-500' },
   ]
 
   const channelOptions: { value: LeadSource | 'all'; label: string }[] = [
@@ -225,6 +277,160 @@ export default function InboxPage() {
     { value: 'website', label: 'Web' },
     { value: 'referral', label: getSourceLabel('referral') },
   ]
+
+  // Lead card component
+  const LeadCard = ({ lead }: { lead: Lead & { calculatedScore: any } }) => (
+    <div
+      onClick={() => router.push(`/pacientes?id=${lead.id}`)}
+      className={cn(
+        'flex items-start gap-4 p-4 bg-white hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100',
+        lead.status === 'new' && 'border-l-4 border-l-blue-500'
+      )}
+    >
+      <Avatar name={lead.name} size="lg" />
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2 mb-1">
+          <div className="flex items-center gap-2">
+            <h3 className="font-semibold text-slate-800 truncate">
+              {lead.name}
+            </h3>
+            <LeadScoreBadge score={lead.calculatedScore.total} size="sm" showLabel={false} />
+            {getChannelIcon(lead.source)}
+          </div>
+          {getStatusBadge(lead)}
+        </div>
+
+        {lead.treatments.length > 0 && (
+          <p className="text-sm text-slate-600 truncate mb-1">
+            {lead.treatments.join(', ')}
+          </p>
+        )}
+
+        <div className="flex items-center gap-3 text-xs text-slate-500">
+          <span className="flex items-center gap-1">
+            <Clock className="w-3.5 h-3.5" />
+            {formatTimeAgo(new Date(lead.createdAt))}
+          </span>
+          {lead.followUps.some((f) => !f.completed) && (
+            <span className="flex items-center gap-1 text-primary-600">
+              <Calendar className="w-3.5 h-3.5" />
+              {formatRelativeDate(
+                new Date(lead.followUps.find((f) => !f.completed)!.scheduledAt)
+              )}
+            </span>
+          )}
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex items-center gap-2 mt-3">
+          <a
+            href={getPhoneUrl(lead.phone)}
+            onClick={(e) => e.stopPropagation()}
+            className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
+            title={language === 'es' ? 'Llamar' : 'Call'}
+          >
+            <Phone className="w-4 h-4" />
+          </a>
+          <a
+            href={getWhatsAppUrl(lead.phone)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="p-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition-colors"
+            title="WhatsApp"
+          >
+            <MessageCircle className="w-4 h-4" />
+          </a>
+          {lead.email && (
+            <a
+              href={`mailto:${lead.email}`}
+              onClick={(e) => e.stopPropagation()}
+              className="p-2 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors"
+              title="Email"
+            >
+              <Mail className="w-4 h-4" />
+            </a>
+          )}
+          <button
+            onClick={(e) => handleSchedule(lead, e)}
+            className="p-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg transition-colors"
+            title={language === 'es' ? 'Agendar' : 'Schedule'}
+          >
+            <Calendar className="w-4 h-4" />
+          </button>
+          {lead.status === 'new' && (
+            <button
+              onClick={(e) => handleMarkContacted(lead, e)}
+              className="flex items-center gap-1 px-3 py-1.5 bg-success-50 text-success-700 rounded-lg text-xs font-medium hover:bg-success-100 transition-colors ml-auto"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              {language === 'es' ? 'Contactado' : 'Contacted'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <ChevronRight className="w-5 h-5 text-slate-300 flex-shrink-0 mt-2" />
+    </div>
+  )
+
+  // Priority section component
+  const PrioritySection = ({
+    id,
+    title,
+    subtitle,
+    leads,
+    icon: Icon,
+    bgColor,
+    borderColor,
+    iconColor,
+  }: {
+    id: string
+    title: string
+    subtitle: string
+    leads: (Lead & { calculatedScore: any })[]
+    icon: any
+    bgColor: string
+    borderColor: string
+    iconColor: string
+  }) => {
+    if (leads.length === 0) return null
+    const isExpanded = expandedSections.has(id)
+
+    return (
+      <div className={cn('mb-4 rounded-2xl overflow-hidden border', borderColor)}>
+        <button
+          onClick={() => toggleSection(id)}
+          className={cn('w-full flex items-center justify-between p-4', bgColor)}
+        >
+          <div className="flex items-center gap-3">
+            <div className={cn('p-2 rounded-lg', bgColor)}>
+              <Icon className={cn('w-5 h-5', iconColor)} />
+            </div>
+            <div className="text-left">
+              <h3 className="font-semibold text-slate-800">
+                {leads.length} {title}
+              </h3>
+              <p className="text-xs text-slate-500">{subtitle}</p>
+            </div>
+          </div>
+          {isExpanded ? (
+            <ChevronUp className="w-5 h-5 text-slate-400" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-slate-400" />
+          )}
+        </button>
+        {isExpanded && (
+          <div className="bg-white">
+            {leads.map(lead => (
+              <LeadCard key={lead.id} lead={lead} />
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <AppShell>
@@ -243,6 +449,7 @@ export default function InboxPage() {
                 variant="primary"
                 size="sm"
                 onClick={() => router.push('/pacientes?action=new')}
+                className="hidden lg:flex"
               >
                 <Plus className="w-4 h-4 mr-1" />
                 {t.nav.newLead}
@@ -274,6 +481,7 @@ export default function InboxPage() {
                       : 'bg-gray-100 text-slate-600 hover:bg-gray-200'
                   )}
                 >
+                  <tab.icon className={cn('w-4 h-4', filter !== tab.id && tab.color)} />
                   {tab.label}
                   {tab.count > 0 && (
                     <span
@@ -338,132 +546,116 @@ export default function InboxPage() {
           </div>
         </div>
 
-        {/* Lead List */}
-        <div className="divide-y divide-gray-100">
-          {filteredLeads.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 px-4">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                <Users className="w-8 h-8 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-medium text-slate-700 mb-2">
-                {t.inbox.noNewLeads}
-              </h3>
-              <p className="text-sm text-slate-500 text-center mb-4">
-                {filter === 'new'
-                  ? t.inbox.checkFollowUp
-                  : t.patients.addFirstPatient}
-              </p>
-              {filter === 'new' && (
-                <Button variant="outline" onClick={() => setFilter('all')}>
-                  {t.inbox.allLeads}
-                </Button>
+        {/* Content */}
+        <div className="p-4 lg:p-6">
+          {filter === 'all' && !search ? (
+            // Show priority sections when viewing all
+            <>
+              <PrioritySection
+                id="urgent"
+                title={language === 'es' ? 'Urgentes' : 'Urgent'}
+                subtitle={language === 'es' ? '+48h sin contactar' : '48+ hours not contacted'}
+                leads={categorizedLeads.urgent}
+                icon={AlertCircle}
+                bgColor="bg-red-50"
+                borderColor="border-red-200"
+                iconColor="text-red-600"
+              />
+
+              <PrioritySection
+                id="hot"
+                title={language === 'es' ? 'Leads Calientes' : 'Hot Leads'}
+                subtitle={language === 'es' ? 'Alta probabilidad de conversión' : 'High conversion probability'}
+                leads={categorizedLeads.hot}
+                icon={Flame}
+                bgColor="bg-orange-50"
+                borderColor="border-orange-200"
+                iconColor="text-orange-600"
+              />
+
+              <PrioritySection
+                id="new"
+                title={language === 'es' ? 'Nuevos' : 'New'}
+                subtitle={language === 'es' ? 'Recién llegados' : 'Just arrived'}
+                leads={categorizedLeads.new}
+                icon={Sparkles}
+                bgColor="bg-blue-50"
+                borderColor="border-blue-200"
+                iconColor="text-blue-600"
+              />
+
+              {categorizedLeads.other.length > 0 && (
+                <PrioritySection
+                  id="other"
+                  title={language === 'es' ? 'En Seguimiento' : 'In Progress'}
+                  subtitle={language === 'es' ? 'Leads activos' : 'Active leads'}
+                  leads={categorizedLeads.other}
+                  icon={Users}
+                  bgColor="bg-slate-50"
+                  borderColor="border-slate-200"
+                  iconColor="text-slate-600"
+                />
+              )}
+
+              {stats.totalActive === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 px-4">
+                  <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mb-4">
+                    <Users className="w-10 h-10 text-slate-300" />
+                  </div>
+                  <h3 className="text-lg font-medium text-slate-700 mb-2">
+                    {t.inbox.noNewLeads}
+                  </h3>
+                  <p className="text-sm text-slate-500 text-center mb-4">
+                    {t.patients.addFirstPatient}
+                  </p>
+                  <Button onClick={() => router.push('/pacientes?action=new')}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    {language === 'es' ? 'Agregar Paciente' : 'Add Patient'}
+                  </Button>
+                </div>
+              )}
+            </>
+          ) : (
+            // Show flat list when filtering or searching
+            <div className="bg-white rounded-2xl overflow-hidden border border-gray-200">
+              {filteredLeads.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 px-4">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <Users className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-lg font-medium text-slate-700 mb-2">
+                    {t.inbox.noNewLeads}
+                  </h3>
+                  <p className="text-sm text-slate-500 text-center mb-4">
+                    {filter === 'new'
+                      ? t.inbox.checkFollowUp
+                      : t.patients.addFirstPatient}
+                  </p>
+                  {filter !== 'all' && (
+                    <Button variant="outline" onClick={() => setFilter('all')}>
+                      {t.inbox.allLeads}
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                filteredLeads.map((lead) => (
+                  <LeadCard key={lead.id} lead={lead} />
+                ))
               )}
             </div>
-          ) : (
-            filteredLeads.map((lead) => (
-              <div
-                key={lead.id}
-                onClick={() => router.push(`/pacientes?id=${lead.id}`)}
-                className={cn(
-                  'flex items-start gap-4 p-4 bg-white hover:bg-gray-50 cursor-pointer transition-colors',
-                  lead.status === 'new' && 'border-l-4 border-l-blue-500'
-                )}
-              >
-                {/* Avatar */}
-                <Avatar name={lead.name} size="lg" />
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-slate-800 truncate">
-                        {lead.name}
-                      </h3>
-                      {getChannelIcon(lead.source)}
-                    </div>
-                    {getStatusBadge(lead)}
-                  </div>
-
-                  {/* Treatment interest */}
-                  {lead.treatments.length > 0 && (
-                    <p className="text-sm text-slate-600 truncate mb-1">
-                      {lead.treatments.join(', ')}
-                    </p>
-                  )}
-
-                  {/* Meta info */}
-                  <div className="flex items-center gap-3 text-xs text-slate-500">
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      {formatTimeAgo(new Date(lead.createdAt))}
-                    </span>
-                    {lead.followUps.some((f) => !f.completed) && (
-                      <span className="flex items-center gap-1 text-primary-600">
-                        <Calendar className="w-3.5 h-3.5" />
-                        {formatRelativeDate(
-                          new Date(
-                            lead.followUps.find((f) => !f.completed)!.scheduledAt
-                          )
-                        )}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Quick Actions */}
-                  <div className="flex items-center gap-2 mt-3">
-                    <button
-                      onClick={(e) => handleCall(lead, e)}
-                      className="btn-action"
-                      title="Llamar"
-                    >
-                      <Phone className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={(e) => handleWhatsApp(lead, e)}
-                      className="btn-action"
-                      title="WhatsApp"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                    </button>
-                    {lead.email && (
-                      <button
-                        onClick={(e) => handleEmail(lead, e)}
-                        className="btn-action"
-                        title="Email"
-                      >
-                        <Mail className="w-4 h-4" />
-                      </button>
-                    )}
-                    <button
-                      onClick={(e) => handleSchedule(lead, e)}
-                      className="btn-action-primary"
-                      title={t.nav.scheduleAppointment}
-                    >
-                      <Calendar className="w-4 h-4" />
-                    </button>
-                    {lead.status === 'new' && (
-                      <button
-                        onClick={(e) => handleMarkContacted(lead, e)}
-                        className="flex items-center gap-1 px-3 py-1.5 bg-success-50 text-success-700 rounded-full text-xs font-medium hover:bg-success-100 transition-colors"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        {t.inbox.markAsContacted}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <ChevronRight className="w-5 h-5 text-slate-300 flex-shrink-0 mt-2" />
-              </div>
-            ))
           )}
         </div>
 
         {/* Spacer for bottom nav */}
-        <div className="h-20 lg:hidden" />
+        <div className="h-24 lg:hidden" />
       </div>
 
-      {/* Schedule Modal - Simple placeholder */}
+      {/* FAB for mobile */}
+      <div className="lg:hidden">
+        <InboxFAB />
+      </div>
+
+      {/* Schedule Modal */}
       <Modal
         isOpen={showScheduleModal}
         onClose={() => {

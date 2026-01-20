@@ -40,3 +40,7 @@ export { TimeSlotPicker } from './TimeSlotPicker'
 export { LeadScoreBadge, LeadScoreDetail } from './LeadScoreBadge'
 
 export { ThemeSwitcher } from './ThemeSwitcher'
+
+export { FloatingActionButton, PatientFAB, InboxFAB } from './FloatingActionButton'
+
+export { BulkActionsBar, SelectableItem } from './BulkActions'

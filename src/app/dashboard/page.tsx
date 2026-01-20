@@ -143,7 +143,7 @@ export default function DashboardPage() {
       change: stats.followUpsDue > 0
         ? (language === 'es' ? 'Pendientes' : 'Pending')
         : (language === 'es' ? 'Al día' : 'Up to date'),
-      colorKey: (stats.followUpsDue > 0 ? 'warning' : 'success') as const,
+      colorKey: stats.followUpsDue > 0 ? 'warning' : 'success',
       icon: Bell,
       href: '/calendar',
     },

@@ -44,3 +44,16 @@ export { ThemeSwitcher } from './ThemeSwitcher'
 export { FloatingActionButton, PatientFAB, InboxFAB } from './FloatingActionButton'
 
 export { BulkActionsBar, SelectableItem } from './BulkActions'
+
+export {
+  Skeleton,
+  SkeletonText,
+  SkeletonCard,
+  SkeletonListItem,
+  SkeletonChart,
+  SkeletonTable,
+  SkeletonAvatar,
+  DashboardSkeleton,
+  InboxSkeleton,
+  PatientDetailSkeleton,
+} from './Skeleton'

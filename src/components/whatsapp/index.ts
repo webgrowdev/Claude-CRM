@@ -1,1 +1,1 @@
-export { WhatsAppTemplates, getDefaultTemplates } from './WhatsAppTemplates'
+export { WhatsAppTemplates, getDefaultTemplates } from './WhatsAppTemplates' 

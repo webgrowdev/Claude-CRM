@@ -190,8 +190,14 @@ export function WhatsAppTemplates({
 
   const extractVariables = (content: string): string[] => {
     const matches = content.match(/\{\{(\w+)\}\}/g) || []
-    return [...new Set(matches.map(m => m.replace(/[{}]/g, '')))]
+
+    const unique = new Set(
+      matches.map((m) => m.replace(/[{}]/g, ''))
+    )
+
+    return Array.from(unique)
   }
+
 
   const handleOpenNew = () => {
     setSelectedTemplate(null)

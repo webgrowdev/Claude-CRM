@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
     baseUrl,
   })
 
-  // Error devuelto directamente por Google en el authorize
+  // Error directo desde Google en la pantalla de login/consent
   if (error) {
     console.error('Google OAuth error:', error, errorDescription)
     return NextResponse.redirect(
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     )
     console.log('Redirect URI:', redirectUri)
 
-    // Intercambiar code por tokens
+    // Intercambio de code por tokens
     const tokenResponse = await fetch(GOOGLE_TOKEN_URL, {
       method: 'POST',
       headers: {
@@ -66,6 +66,7 @@ export async function GET(request: NextRequest) {
 
     const tokenData = await tokenResponse.text()
     console.log('Token response status:', tokenResponse.status)
+    console.log('Token response body:', tokenData)
 
     if (!tokenResponse.ok) {
       console.error('Token exchange failed:', tokenData)
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest) {
     const tokens = JSON.parse(tokenData)
     console.log('Tokens received, fetching user info...')
 
-    // Obtener datos del usuario
+    // Obtener info de usuario
     const userInfoResponse = await fetch(GOOGLE_USERINFO_URL, {
       headers: {
         Authorization: `Bearer ${tokens.access_token}`,
@@ -99,7 +100,7 @@ export async function GET(request: NextRequest) {
     const userInfo = await userInfoResponse.json()
     console.log('User info received:', userInfo.email)
 
-    // HTML que guarda tokens en localStorage y redirige al settings
+    // HTML que guarda tokens en localStorage y redirige a settings
     const html = `
 <!DOCTYPE html>
 <html>
@@ -156,7 +157,6 @@ export async function GET(request: NextRequest) {
 
     localStorage.setItem('clinic_google_calendar_settings', JSON.stringify(settings));
 
-    // Pequeña demora para mostrar el mensaje de éxito
     setTimeout(() => {
       window.location.href = '${baseUrl}/settings/integrations?success=google_connected';
     }, 1000);

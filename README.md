@@ -109,6 +109,45 @@ Clinic helps small to mid-sized aesthetic clinics convert social media leads int
 
 > "Clinic organizes your leads, reminds you of follow-ups, and helps you close more sales from Instagram and WhatsApp."
 
+## Integrations
+
+### Google Calendar + Meet
+
+Automatically sync follow-ups and create Google Meet links for appointments.
+
+**Setup Guide:** See [`GOOGLE_OAUTH_SETUP.md`](./GOOGLE_OAUTH_SETUP.md)
+
+**Troubleshooting:** If you get "This app doesn't comply with Google's OAuth 2.0 policy" error, see [`GOOGLE_OAUTH_TESTING_MODE.md`](./GOOGLE_OAUTH_TESTING_MODE.md)
+
+### ManyChat
+
+Automatically receive leads from Instagram and WhatsApp.
+
+**Configuration:** See the Integrations page in the app.
+
+## Troubleshooting
+
+### Google Calendar Connection Issues
+
+**Error: "This app doesn't comply with Google's OAuth 2.0 policy"**
+
+This is the most common error when connecting Google Calendar. The solution is simple:
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials/consent)
+2. Navigate to: APIs & Services → OAuth consent screen
+3. Scroll to "Test users" section
+4. Click "ADD USERS"
+5. Add your Google email address
+6. Click "SAVE"
+7. Wait 1-2 minutes and try connecting again
+
+**For detailed step-by-step instructions, see:** [`GOOGLE_OAUTH_TESTING_MODE.md`](./GOOGLE_OAUTH_TESTING_MODE.md)
+
+**Other OAuth errors:**
+- redirect_uri_mismatch → Check [`GOOGLE_OAUTH_SETUP.md`](./GOOGLE_OAUTH_SETUP.md)
+- invalid_client → Verify your Client ID and Secret
+- access_denied → Add your email to Test Users
+
 ---
 
 *Project Version 1.0 | January 2026*

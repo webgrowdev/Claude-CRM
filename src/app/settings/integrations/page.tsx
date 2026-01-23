@@ -62,6 +62,7 @@ export default function IntegrationsPage() {
 
     if (error) {
       let errorMessage = ''
+      let isOAuthPolicyError = false
 
       // Parse details if it's a JSON error from Google
       if (details) {
@@ -75,25 +76,47 @@ export default function IntegrationsPage() {
               .trim()
 
             errorMessage = description
+
+            // Detect OAuth policy error (Testing mode user not in test users list)
+            if (description.includes("doesn't comply with Google's OAuth 2.0 policy") ||
+                description.includes("doesn't comply with one or more Google validation rules")) {
+              isOAuthPolicyError = true
+            }
           }
         } catch {
           // If not JSON, use the raw details
-          errorMessage = decodeURIComponent(details)
+          const decodedDetails = decodeURIComponent(details)
+          errorMessage = decodedDetails
+
+          // Check in raw details too
+          if (decodedDetails.includes("doesn't comply with Google's OAuth 2.0 policy") ||
+              decodedDetails.includes("doesn't comply with one or more Google validation rules")) {
+            isOAuthPolicyError = true
+          }
         }
       }
 
-      // Provide context based on error type
-      const errorMessages: Record<string, string> = {
-        google_auth_failed: errorMessage || 'Google rechazó la autenticación. Verifica la configuración de OAuth en Google Cloud Console.',
-        no_code: 'No se recibió código de autorización de Google. Intenta nuevamente.',
-        token_exchange_failed: errorMessage || 'Error al intercambiar el código por tokens. Verifica que las credenciales OAuth estén correctamente configuradas.',
-        callback_failed: errorMessage || 'Error en el proceso de autenticación.',
+      // Special message for OAuth policy error
+      if (isOAuthPolicyError) {
+        setNotification({
+          type: 'error',
+          message: '🔴 Tu email NO está en la lista de "Test Users" en Google Cloud Console. Este es el problema más común cuando la app está en modo Testing. Lee el archivo GOOGLE_OAUTH_TESTING_MODE.md para solucionarlo en 2 minutos.',
+        })
+      } else {
+        // Provide context based on error type
+        const errorMessages: Record<string, string> = {
+          google_auth_failed: errorMessage || 'Google rechazó la autenticación. Verifica la configuración de OAuth en Google Cloud Console.',
+          no_code: 'No se recibió código de autorización de Google. Intenta nuevamente.',
+          token_exchange_failed: errorMessage || 'Error al intercambiar el código por tokens. Verifica que las credenciales OAuth estén correctamente configuradas.',
+          callback_failed: errorMessage || 'Error en el proceso de autenticación.',
+        }
+
+        setNotification({
+          type: 'error',
+          message: errorMessages[error] || errorMessage || 'Error desconocido al conectar con Google Calendar',
+        })
       }
 
-      setNotification({
-        type: 'error',
-        message: errorMessages[error] || errorMessage || 'Error desconocido al conectar con Google Calendar',
-      })
       window.history.replaceState({}, '', '/settings/integrations')
     }
 
@@ -220,13 +243,36 @@ export default function IntegrationsPage() {
                 </p>
                 {notification.type === 'error' && (
                   <div className="mt-3 pt-3 border-t border-error-200">
-                    <p className="text-xs font-medium text-error-900 mb-2">Soluciones posibles:</p>
-                    <ul className="text-xs text-error-700 space-y-1 list-disc list-inside">
-                      <li>Verifica que las variables de entorno estén configuradas (ver .env.example)</li>
-                      <li>Asegúrate de que la URL de redirección esté registrada en Google Cloud Console</li>
-                      <li>Revisa que los scopes solicitados estén habilitados en tu proyecto</li>
-                      <li>Si el error persiste, verifica que tu aplicación esté en modo "Testing" o "Publicada"</li>
-                    </ul>
+                    <p className="text-xs font-medium text-error-900 mb-2">
+                      {notification.message.includes('Test Users') ? 'Solución (sigue estos pasos):' : 'Soluciones posibles:'}
+                    </p>
+                    {notification.message.includes('Test Users') ? (
+                      <ol className="text-xs text-error-700 space-y-1.5 list-decimal list-inside">
+                        <li className="font-medium">Ve a Google Cloud Console → APIs & Services → OAuth consent screen</li>
+                        <li>Desplázate hasta la sección "Test users"</li>
+                        <li>Haz clic en "ADD USERS"</li>
+                        <li>Ingresa tu email (el mismo que usas para iniciar sesión en Google)</li>
+                        <li>Haz clic en "SAVE"</li>
+                        <li>Espera 1-2 minutos e intenta conectar nuevamente</li>
+                        <li className="mt-2 pt-2 border-t border-error-200">
+                          <a
+                            href="https://console.cloud.google.com/apis/credentials/consent"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-error-800 hover:text-error-900 font-medium underline"
+                          >
+                            Ir directo a OAuth consent screen →
+                          </a>
+                        </li>
+                      </ol>
+                    ) : (
+                      <ul className="text-xs text-error-700 space-y-1 list-disc list-inside">
+                        <li>Verifica que las variables de entorno estén configuradas (ver .env.example)</li>
+                        <li>Asegúrate de que la URL de redirección esté registrada en Google Cloud Console</li>
+                        <li>Revisa que los scopes solicitados estén habilitados en tu proyecto</li>
+                        <li>Si el error persiste, verifica que tu aplicación esté en modo "Testing" o "Publicada"</li>
+                      </ul>
+                    )}
                   </div>
                 )}
               </div>

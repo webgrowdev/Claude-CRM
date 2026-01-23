@@ -47,6 +47,7 @@ export default function IntegrationsPage() {
   useEffect(() => {
     const success = searchParams.get('success')
     const error = searchParams.get('error')
+    const details = searchParams.get('details')
 
     if (success === 'google_connected') {
       setNotification({
@@ -60,22 +61,45 @@ export default function IntegrationsPage() {
     }
 
     if (error) {
-      const errorMessages: Record<string, string> = {
-        google_auth_failed: 'Error al autenticar con Google',
-        no_code: 'No se recibió código de autorización',
-        token_exchange_failed: 'Error al obtener el token de acceso',
-        callback_failed: 'Error en el proceso de autenticación',
+      let errorMessage = ''
+
+      // Parse details if it's a JSON error from Google
+      if (details) {
+        try {
+          const detailsObj = JSON.parse(decodeURIComponent(details))
+          if (detailsObj.error && detailsObj.error_description) {
+            // Extract clean error message from Google
+            const description = detailsObj.error_description
+              .replace(/&#39;/g, "'")
+              .replace(/&amp;/g, "&")
+              .trim()
+
+            errorMessage = description
+          }
+        } catch {
+          // If not JSON, use the raw details
+          errorMessage = decodeURIComponent(details)
+        }
       }
+
+      // Provide context based on error type
+      const errorMessages: Record<string, string> = {
+        google_auth_failed: errorMessage || 'Google rechazó la autenticación. Verifica la configuración de OAuth en Google Cloud Console.',
+        no_code: 'No se recibió código de autorización de Google. Intenta nuevamente.',
+        token_exchange_failed: errorMessage || 'Error al intercambiar el código por tokens. Verifica que las credenciales OAuth estén correctamente configuradas.',
+        callback_failed: errorMessage || 'Error en el proceso de autenticación.',
+      }
+
       setNotification({
         type: 'error',
-        message: errorMessages[error] || 'Error desconocido',
+        message: errorMessages[error] || errorMessage || 'Error desconocido al conectar con Google Calendar',
       })
       window.history.replaceState({}, '', '/settings/integrations')
     }
 
-    // Auto-dismiss notification after 5 seconds
+    // Auto-dismiss notification after 8 seconds (longer for detailed errors)
     if (success || error) {
-      setTimeout(() => setNotification(null), 5000)
+      setTimeout(() => setNotification(null), 8000)
     }
   }, [searchParams])
 
@@ -97,12 +121,21 @@ export default function IntegrationsPage() {
 
   const handleConnectGoogle = () => {
     try {
+      // Check if client ID is configured
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+      if (!clientId) {
+        setNotification({
+          type: 'error',
+          message: 'Google Calendar no está configurado. Debes configurar las variables de entorno primero. Revisa el archivo .env.example para ver las instrucciones.',
+        })
+        return
+      }
       connectGoogleCalendar() // This redirects to Google OAuth
     } catch (error) {
       console.error('Failed to connect Google Calendar:', error)
       setNotification({
         type: 'error',
-        message: 'No se pudo conectar con Google Calendar. Verifica que las credenciales estén configuradas.',
+        message: error instanceof Error ? error.message : 'No se pudo conectar con Google Calendar. Verifica que las credenciales estén configuradas.',
       })
     }
   }
@@ -167,24 +200,45 @@ export default function IntegrationsPage() {
         {/* Notification */}
         {notification && (
           <div
-            className={`mb-4 p-4 rounded-lg flex items-center gap-3 ${
+            className={`mb-4 p-4 rounded-lg ${
               notification.type === 'success'
-                ? 'bg-success-50 text-success-800'
-                : 'bg-error-50 text-error-800'
+                ? 'bg-success-50 border border-success-200'
+                : 'bg-error-50 border border-error-200'
             }`}
           >
-            {notification.type === 'success' ? (
-              <CheckCircle2 className="w-5 h-5 text-success-600" />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-error-600" />
-            )}
-            <span>{notification.message}</span>
-            <button
-              onClick={() => setNotification(null)}
-              className="ml-auto p-1 hover:bg-black/5 rounded"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-start gap-3">
+              {notification.type === 'success' ? (
+                <CheckCircle2 className="w-5 h-5 text-success-600 flex-shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-5 h-5 text-error-600 flex-shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className={`text-sm ${
+                  notification.type === 'success' ? 'text-success-800' : 'text-error-800'
+                }`}>
+                  {notification.message}
+                </p>
+                {notification.type === 'error' && (
+                  <div className="mt-3 pt-3 border-t border-error-200">
+                    <p className="text-xs font-medium text-error-900 mb-2">Soluciones posibles:</p>
+                    <ul className="text-xs text-error-700 space-y-1 list-disc list-inside">
+                      <li>Verifica que las variables de entorno estén configuradas (ver .env.example)</li>
+                      <li>Asegúrate de que la URL de redirección esté registrada en Google Cloud Console</li>
+                      <li>Revisa que los scopes solicitados estén habilitados en tu proyecto</li>
+                      <li>Si el error persiste, verifica que tu aplicación esté en modo "Testing" o "Publicada"</li>
+                    </ul>
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={() => setNotification(null)}
+                className={`p-1 hover:bg-black/5 rounded flex-shrink-0 ${
+                  notification.type === 'success' ? 'text-success-600' : 'text-error-600'
+                }`}
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         )}
 
@@ -436,6 +490,39 @@ export default function IntegrationsPage() {
               </div>
             </div>
           </Card>
+
+          {/* Configuration Help */}
+          {!googleSettings?.connected && (
+            <Card className="bg-blue-50 border-blue-200">
+              <div className="flex items-start gap-3">
+                <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <h3 className="font-semibold text-blue-900 mb-2">Configuración de Google Calendar</h3>
+                  <div className="text-sm text-blue-800 space-y-2">
+                    <p>Para conectar Google Calendar necesitas:</p>
+                    <ol className="list-decimal list-inside space-y-1 ml-2">
+                      <li>Crear un proyecto en Google Cloud Console</li>
+                      <li>Habilitar la API de Google Calendar</li>
+                      <li>Configurar OAuth 2.0 y obtener Client ID y Secret</li>
+                      <li>Registrar la URL de redirección: <code className="bg-blue-100 px-1 rounded text-xs">http://localhost:3000/api/auth/callback/google</code></li>
+                      <li>Configurar las variables de entorno (ver archivo .env.example)</li>
+                    </ol>
+                    <p className="mt-3 pt-3 border-t border-blue-200">
+                      <a
+                        href="https://console.cloud.google.com/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-700 hover:text-blue-800 font-medium inline-flex items-center gap-1 hover:underline"
+                      >
+                        Ir a Google Cloud Console
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          )}
         </div>
       </PageContainer>
 

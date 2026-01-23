@@ -2,9 +2,17 @@
 
 Esta guía te ayudará a configurar la integración con Google Calendar para el CRM.
 
-## Problema Común: "This app doesn't comply with Google's OAuth 2.0 policy"
+## ⚠️ ERROR COMÚN: "This app doesn't comply with Google's OAuth 2.0 policy"
 
-Si ves este error al intentar conectar Google Calendar, significa que tu aplicación OAuth no está correctamente configurada en Google Cloud Console. Sigue estos pasos para solucionarlo:
+### 🔴 Si YA configuraste todo pero aún ves este error:
+
+**➡️ LEE ESTE ARCHIVO: [`GOOGLE_OAUTH_TESTING_MODE.md`](./GOOGLE_OAUTH_TESTING_MODE.md)**
+
+El 99% de las veces este error significa que **tu email NO está en la lista de "Test Users"** en Google Cloud Console.
+
+### 🟢 Si es tu primera vez configurando:
+
+Continúa leyendo esta guía paso a paso.
 
 ---
 

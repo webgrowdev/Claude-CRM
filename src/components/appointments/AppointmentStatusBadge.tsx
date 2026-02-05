@@ -11,6 +11,7 @@ interface AppointmentStatusBadgeProps {
   totalSessions?: number
   showPhase?: boolean
   size?: 'sm' | 'md' | 'lg'
+  language?: 'es' | 'en'
 }
 
 export function AppointmentStatusBadge({
@@ -20,42 +21,52 @@ export function AppointmentStatusBadge({
   totalSessions,
   showPhase = false,
   size = 'md',
+  language = 'es',
 }: AppointmentStatusBadgeProps) {
   const getStatusConfig = (status: AppointmentLevelStatus) => {
+    const labels = {
+      scheduled: language === 'es' ? 'Agendada' : 'Scheduled',
+      confirmed: language === 'es' ? 'Confirmada' : 'Confirmed',
+      in_progress: language === 'es' ? 'En Curso' : 'In Progress',
+      completed: language === 'es' ? 'Completada' : 'Completed',
+      noshow: language === 'es' ? 'No Asistió' : 'No Show',
+      cancelled: language === 'es' ? 'Cancelada' : 'Cancelled',
+    }
+
     switch (status) {
       case 'scheduled':
         return {
-          label: 'Agendada',
+          label: labels.scheduled,
           color: 'blue',
           icon: Calendar,
         }
       case 'confirmed':
         return {
-          label: 'Confirmada',
+          label: labels.confirmed,
           color: 'green',
           icon: CheckCircle2,
         }
       case 'in_progress':
         return {
-          label: 'En Curso',
+          label: labels.in_progress,
           color: 'purple',
           icon: PlayCircle,
         }
       case 'completed':
         return {
-          label: 'Completada',
+          label: labels.completed,
           color: 'green',
           icon: CheckCircle2,
         }
       case 'noshow':
         return {
-          label: 'No Asistió',
+          label: labels.noshow,
           color: 'red',
           icon: XCircle,
         }
       case 'cancelled':
         return {
-          label: 'Cancelada',
+          label: labels.cancelled,
           color: 'gray',
           icon: XCircle,
         }
@@ -63,17 +74,25 @@ export function AppointmentStatusBadge({
   }
 
   const getPhaseConfig = (phase: TreatmentPhase) => {
+    const labels = {
+      consultation: language === 'es' ? 'Consulta' : 'Consultation',
+      treatment: language === 'es' ? 'Tratamiento' : 'Treatment',
+      recovery: language === 'es' ? 'Recuperación' : 'Recovery',
+      completed: language === 'es' ? 'Finalizado' : 'Completed',
+      follow_up: language === 'es' ? 'Seguimiento' : 'Follow-up',
+    }
+
     switch (phase) {
       case 'consultation':
-        return { label: 'Consulta', color: 'blue' }
+        return { label: labels.consultation, color: 'blue' }
       case 'treatment':
-        return { label: 'Tratamiento', color: 'purple' }
+        return { label: labels.treatment, color: 'purple' }
       case 'recovery':
-        return { label: 'Recuperación', color: 'orange' }
+        return { label: labels.recovery, color: 'orange' }
       case 'completed':
-        return { label: 'Finalizado', color: 'green' }
+        return { label: labels.completed, color: 'green' }
       case 'follow_up':
-        return { label: 'Seguimiento', color: 'indigo' }
+        return { label: labels.follow_up, color: 'indigo' }
     }
   }
 
@@ -95,7 +114,7 @@ export function AppointmentStatusBadge({
 
       {sessionNumber && totalSessions && (
         <Badge variant="gray" size={size}>
-          Sesión {sessionNumber}/{totalSessions}
+          {language === 'es' ? 'Sesión' : 'Session'} {sessionNumber}/{totalSessions}
         </Badge>
       )}
 

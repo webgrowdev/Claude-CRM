@@ -257,7 +257,7 @@ interface AppContextType {
   isCalendarConnected: () => boolean
   // Appointment helpers
   getPatientCurrentStatus: (leadId: string) => 'active' | 'inactive' | 'scheduled' | 'completed'
-  getAvailableSlots: (date: Date, duration?: number) => { time: string; available: boolean }[]
+  getAvailableSlots: (date: Date, durationMinutes?: number) => { time: string; available: boolean }[]
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -507,7 +507,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   // Helper: Get available time slots for a given date
-  const getAvailableSlots = (date: Date, duration: number = 30) => {
+  const getAvailableSlots = (date: Date, durationMinutes: number = 30) => {
     const slots: { time: string; available: boolean }[] = []
     const workingHours = state.settings.workingHours || { start: '09:00', end: '18:00', days: [1, 2, 3, 4, 5] }
 
@@ -549,13 +549,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
       // Check if slot is occupied
       const isOccupied = appointmentsOnDate.some((apptDate) => {
         const diff = Math.abs(slotDate.getTime() - apptDate.getTime()) / (1000 * 60)
-        return diff < duration
+        return diff < durationMinutes
       })
 
       slots.push({ time: timeStr, available: !isOccupied })
 
       // Move to next slot
-      currentMin += duration
+      currentMin += durationMinutes
       if (currentMin >= 60) {
         currentHour++
         currentMin = 0

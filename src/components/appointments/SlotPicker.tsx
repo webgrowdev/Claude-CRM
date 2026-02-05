@@ -20,6 +20,7 @@ interface SlotPickerProps {
   selectedSlot?: TimeSlot
   workingHours?: { start: string; end: string }
   slotDuration?: number // minutes
+  language?: 'es' | 'en'
 }
 
 export function SlotPicker({
@@ -29,7 +30,18 @@ export function SlotPicker({
   selectedSlot,
   workingHours = { start: '09:00', end: '18:00' },
   slotDuration = 30,
+  language = 'es',
 }: SlotPickerProps) {
+  const t = {
+    availableSlots: language === 'es' ? 'Horarios Disponibles' : 'Available Slots',
+    available: language === 'es' ? 'Disponible' : 'Available',
+    occupied: language === 'es' ? 'Ocupado' : 'Occupied',
+    selectedTime: language === 'es' ? 'Hora seleccionada' : 'Selected time',
+    morning: language === 'es' ? 'Mañana' : 'Morning',
+    afternoon: language === 'es' ? 'Tarde' : 'Afternoon',
+    evening: language === 'es' ? 'Noche' : 'Evening',
+  }
+
   // Generate all possible time slots for the day
   const generateTimeSlots = (): TimeSlot[] => {
     const [startHour, startMinute] = workingHours.start.split(':').map(Number)
@@ -124,30 +136,30 @@ export function SlotPicker({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-gray-900">
-          Horarios Disponibles - {format(selectedDate, 'dd/MM/yyyy')}
+          {t.availableSlots} - {format(selectedDate, 'dd/MM/yyyy')}
         </h3>
         <div className="flex items-center gap-4 text-xs text-gray-500">
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 bg-blue-100 rounded" />
-            <span>Disponible</span>
+            <span>{t.available}</span>
           </div>
           <div className="flex items-center gap-1">
             <div className="w-3 h-3 bg-gray-100 rounded" />
-            <span>Ocupado</span>
+            <span>{t.occupied}</span>
           </div>
         </div>
       </div>
 
       <div className="space-y-4 max-h-96 overflow-y-auto">
-        <SlotGroup title="Mañana" slots={morningSlots} />
-        <SlotGroup title="Tarde" slots={afternoonSlots} />
-        <SlotGroup title="Noche" slots={eveningSlots} />
+        <SlotGroup title={t.morning} slots={morningSlots} />
+        <SlotGroup title={t.afternoon} slots={afternoonSlots} />
+        <SlotGroup title={t.evening} slots={eveningSlots} />
       </div>
 
       {selectedSlot && (
         <div className="pt-4 border-t">
           <p className="text-sm text-gray-600">
-            Hora seleccionada: <span className="font-semibold text-gray-900">{selectedSlot.time}</span>
+            {t.selectedTime}: <span className="font-semibold text-gray-900">{selectedSlot.time}</span>
           </p>
         </div>
       )}

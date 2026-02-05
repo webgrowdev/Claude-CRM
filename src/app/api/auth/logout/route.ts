@@ -1,10 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 
-export async function POST(_request: NextRequest) {
+export async function POST() {
   try {
     // Sign out from Supabase Auth
-    await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut()
+    
+    if (error) {
+      console.error('Logout error:', error)
+      return NextResponse.json({
+        success: false,
+        error: 'Error al cerrar sesión',
+      }, { status: 500 })
+    }
     
     return NextResponse.json({
       success: true,
@@ -13,8 +21,8 @@ export async function POST(_request: NextRequest) {
   } catch (error) {
     console.error('Logout error:', error)
     return NextResponse.json({
-      success: true,
-      message: 'Sesión cerrada correctamente',
-    })
+      success: false,
+      error: 'Error al cerrar sesión',
+    }, { status: 500 })
   }
 }

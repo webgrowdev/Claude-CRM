@@ -116,7 +116,8 @@ export async function POST(request: NextRequest) {
         resource_id: typedProfile.id,
         ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
         user_agent: request.headers.get('user-agent'),
-      })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any)
     }
 
     return NextResponse.json({

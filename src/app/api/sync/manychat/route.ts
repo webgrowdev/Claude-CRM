@@ -8,6 +8,13 @@ import { ManyChatSubscriber } from '@/types/manychat'
 // Manual synchronization of all ManyChat subscribers
 export const POST = requireAuth(async (request: NextRequest, user) => {
   try {
+    if (!user.clinicId) {
+      return NextResponse.json(
+        { error: 'Clinic ID not found in user session' },
+        { status: 400 }
+      )
+    }
+
     const { page = 1, limit = 100 } = await request.json().catch(() => ({}))
 
     // Get subscribers from ManyChat
@@ -143,6 +150,13 @@ async function syncSubscriber(
 // Get sync status and history
 export const GET = requireAuth(async (request: NextRequest, user) => {
   try {
+    if (!user.clinicId) {
+      return NextResponse.json(
+        { error: 'Clinic ID not found in user session' },
+        { status: 400 }
+      )
+    }
+
     // Get last sync time
     const { data: settings } = await supabaseAdmin
       .from('manychat_settings')

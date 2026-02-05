@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-import { generateToken, verifyPassword } from '@/lib/auth'
+import { generateToken } from '@/lib/auth'
+import { Database } from '@/types/database'
 
 export async function POST(request: NextRequest) {
   try {
@@ -49,58 +50,79 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Production mode: Use Supabase
-    // Find user by email
-    const { data: user, error } = await supabase
-      .from('users')
+    // Production mode: Use Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: email.toLowerCase(),
+      password,
+    })
+
+    if (authError || !authData.session) {
+      return NextResponse.json(
+        { error: 'Credenciales inválidas' },
+        { status: 401 }
+      )
+    }
+
+    // Get user profile from profiles table
+    type ProfileRow = Database['public']['Tables']['profiles']['Row']
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
       .select('*')
-      .eq('email', email.toLowerCase())
+      .eq('id', authData.user.id)
       .eq('is_active', true)
       .single()
 
-    if (error || !user) {
+    if (profileError || !profile) {
       return NextResponse.json(
-        { error: 'Credenciales inválidas' },
-        { status: 401 }
+        { error: 'Perfil de usuario no encontrado' },
+        { status: 404 }
       )
     }
 
-    // Verify password
-    const isValidPassword = await verifyPassword(password, user.password_hash)
-    
-    if (!isValidPassword) {
-      return NextResponse.json(
-        { error: 'Credenciales inválidas' },
-        { status: 401 }
-      )
-    }
+    // Type assertion for profile
+    const typedProfile = profile as ProfileRow
 
-    // Generate JWT token
+    // Generate JWT token for backwards compatibility with existing AuthContext
     const token = await generateToken({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-      clinicId: user.clinic_id,
+      userId: typedProfile.id,
+      email: authData.user.email || '',
+      role: typedProfile.role,
+      clinicId: typedProfile.clinic_id || '',
     })
 
-    // Remove password from response
-    const { password_hash, ...userWithoutPassword } = user
+    // Build user object
+    const userResponse = {
+      id: typedProfile.id,
+      email: authData.user.email,
+      name: typedProfile.name,
+      role: typedProfile.role,
+      clinic_id: typedProfile.clinic_id,
+      phone: typedProfile.phone,
+      is_active: typedProfile.is_active,
+      avatar_url: typedProfile.avatar_url,
+      specialty: typedProfile.specialty,
+      color: typedProfile.color,
+      created_at: typedProfile.created_at,
+      updated_at: typedProfile.updated_at,
+    }
 
     // Log activity
-    await supabase.from('activity_logs').insert({
-      clinic_id: user.clinic_id,
-      user_id: user.id,
-      action_type: 'view',
-      resource_type: 'user',
-      resource_id: user.id,
-      ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
-      user_agent: request.headers.get('user-agent'),
-    })
+    if (typedProfile.clinic_id) {
+      await supabase.from('activity_logs').insert({
+        clinic_id: typedProfile.clinic_id,
+        user_id: typedProfile.id,
+        action_type: 'view',
+        resource_type: 'user',
+        resource_id: typedProfile.id,
+        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+        user_agent: request.headers.get('user-agent'),
+      } as any)
+    }
 
     return NextResponse.json({
       success: true,
       token,
-      user: userWithoutPassword,
+      user: userResponse,
     })
   } catch (error) {
     console.error('Login error:', error)

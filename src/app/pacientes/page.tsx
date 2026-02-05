@@ -285,6 +285,7 @@ export default function PacientesPage() {
       completed?: boolean
       meetLink?: string
       followUpType?: string
+      appointmentStatus?: string
     }> = []
 
     selectedPatient.notes.forEach(note => {
@@ -311,6 +312,7 @@ export default function PacientesPage() {
         completed: fu.completed,
         meetLink: fu.meetLink,
         followUpType: fu.type,
+        appointmentStatus: fu.appointmentStatus,
       })
     })
 
@@ -512,14 +514,10 @@ export default function PacientesPage() {
                   const appointmentCounts = getPatientAppointmentCounts(patient.id)
                   const isSelected = selectedPatient?.id === patient.id
 
-                  // Define status info based on derived status
-                  const statusInfo = {
-                    new: { label: language === 'es' ? 'Nuevo' : 'New', color: 'text-primary-600', bg: 'bg-primary-100' },
-                    scheduled: { label: language === 'es' ? 'Agendado' : 'Scheduled', color: 'text-purple-600', bg: 'bg-purple-100' },
-                    active: { label: language === 'es' ? 'Activo' : 'Active', color: 'text-green-600', bg: 'bg-green-100' },
-                    inactive: { label: language === 'es' ? 'Inactivo' : 'Inactive', color: 'text-slate-600', bg: 'bg-slate-100' },
-                    lost: { label: language === 'es' ? 'Perdido' : 'Lost', color: 'text-red-600', bg: 'bg-red-100' },
-                  }[derivedStatus]
+                  // Get appointments for status badges
+                  const appointments = patient.followUps.filter(f => 
+                    f.type === 'appointment' || f.type === 'meeting'
+                  )
 
                   return (
                     <button
@@ -535,15 +533,42 @@ export default function PacientesPage() {
                       <div className="flex items-start gap-3">
                         <Avatar name={patient.name} size="md" />
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-semibold text-slate-900 truncate">{patient.name}</p>
                             <LeadScoreBadge score={getPatientScore(patient).total} size="sm" showLabel={false} />
-                            <span className={cn(
-                              'px-2 py-0.5 rounded-full text-xs font-medium',
-                              statusInfo.bg, statusInfo.color
-                            )}>
-                              {statusInfo.label}
-                            </span>
+                            
+                            {/* Show appointment status badges instead of global status */}
+                            {appointmentCounts.total > 0 ? (
+                              <div className="flex items-center gap-1 flex-wrap">
+                                {appointmentCounts.pending > 0 && (
+                                  <Badge variant="warning" size="sm">
+                                    📅 {appointmentCounts.pending}
+                                  </Badge>
+                                )}
+                                {appointmentCounts.confirmed > 0 && (
+                                  <Badge variant="success" size="sm">
+                                    ✅ {appointmentCounts.confirmed}
+                                  </Badge>
+                                )}
+                                {appointmentCounts.completed > 0 && (
+                                  <Badge variant="default" size="sm">
+                                    ✓ {appointmentCounts.completed}
+                                  </Badge>
+                                )}
+                                {appointmentCounts.noShow > 0 && (
+                                  <Badge variant="error" size="sm">
+                                    ❌ {appointmentCounts.noShow}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : (
+                              <span className={cn(
+                                'px-2 py-0.5 rounded-full text-xs font-medium',
+                                'bg-primary-100 text-primary-600'
+                              )}>
+                                {language === 'es' ? 'Nuevo' : 'New'}
+                              </span>
+                            )}
                           </div>
 
                           <div className="flex items-center gap-2 mt-1">
@@ -822,7 +847,29 @@ export default function PacientesPage() {
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-slate-800">{item.content}</p>
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm text-slate-800">{item.content}</p>
+                              {/* Show appointment status badge for appointments/meetings */}
+                              {item.type === 'followup' && (item.followUpType === 'appointment' || item.followUpType === 'meeting') && item.appointmentStatus && (
+                                <Badge 
+                                  variant={
+                                    item.appointmentStatus === 'confirmed' ? 'success' :
+                                    item.appointmentStatus === 'completed' ? 'default' :
+                                    item.appointmentStatus === 'no-show' ? 'error' :
+                                    item.appointmentStatus === 'cancelled' ? 'secondary' :
+                                    'warning'
+                                  }
+                                  size="sm"
+                                >
+                                  {item.appointmentStatus === 'pending' ? '📅 Pendiente' :
+                                   item.appointmentStatus === 'confirmed' ? '✅ Confirmada' :
+                                   item.appointmentStatus === 'completed' ? '✓ Completada' :
+                                   item.appointmentStatus === 'no-show' ? '❌ No asistió' :
+                                   item.appointmentStatus === 'cancelled' ? '🚫 Cancelada' :
+                                   item.appointmentStatus}
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-xs text-slate-500 mt-1">
                               {item.type === 'followup'
                                 ? (item.completed ? `${t.followUp.completed} ` : `${t.followUp.scheduledFor} `) +

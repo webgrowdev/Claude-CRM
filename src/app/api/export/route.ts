@@ -77,7 +77,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
       await supabase.from('activity_logs').insert({
         clinic_id: user.clinicId,
         user_id: user.userId,
-        action_type: 'view', // or 'export'
+        action_type: 'view', // Note: Could be 'export' if added to allowed action types
         resource_type: type as any,
         ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
         user_agent: request.headers.get('user-agent'),

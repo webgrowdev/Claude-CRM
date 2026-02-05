@@ -358,7 +358,7 @@ export default function ActivityLogPage() {
                       {getResourceText(log.resource)}
                       {log.resourceName && (
                         <span className="font-medium text-slate-800">
-                          {' "' + log.resourceName + '"'}
+                          {` "${log.resourceName}"`}
                         </span>
                       )}
                     </div>

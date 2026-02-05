@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react'
 import { Lead, LeadStatus, Treatment, User, Notification, Note, FollowUp, Settings, Appointment } from '@/types'
 import { initialLeads, treatments as initialTreatments, currentUser, notifications as initialNotifications } from '@/data/mockData'
 import { generateId } from '@/lib/utils'
@@ -636,7 +636,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   // ManyChat Integration Functions
-  const syncManyChatData = async () => {
+  const syncManyChatData = useCallback(async () => {
     try {
       const response = await fetch('/api/sync/manychat', {
         method: 'POST',
@@ -658,9 +658,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       console.error('Error syncing ManyChat:', error)
       return null
     }
-  }
+  }, [])
 
-  const isManyChatConnected = () => {
+  const isManyChatConnected = useCallback(() => {
     try {
       const stored = localStorage.getItem('manychat_settings')
       if (stored) {
@@ -671,7 +671,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return false
     }
     return false
-  }
+  }, [])
 
   // Auto-sync ManyChat data on interval (if enabled)
   useEffect(() => {
@@ -704,7 +704,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     checkAutoSync()
     const interval = setInterval(checkAutoSync, 60 * 60 * 1000)
     return () => clearInterval(interval)
-  }, [])
+  }, [syncManyChatData])
 
   const value: AppContextType = {
     state,

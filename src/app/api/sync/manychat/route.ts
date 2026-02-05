@@ -4,6 +4,20 @@ import { requireAuth } from '@/lib/middleware'
 import { getSubscribers } from '@/lib/manychat'
 import { ManyChatSubscriber } from '@/types/manychat'
 
+// Type guard to validate source field
+function isValidSource(source: string | undefined): source is 'instagram' | 'whatsapp' | 'phone' | 'website' | 'referral' | 'other' {
+  if (!source) return false
+  return ['instagram', 'whatsapp', 'phone', 'website', 'referral', 'other'].includes(source)
+}
+
+// Convert ManyChat source to CRM source
+function convertSource(source: string | undefined): 'instagram' | 'whatsapp' | 'phone' | 'website' | 'referral' | 'other' {
+  if (isValidSource(source)) {
+    return source
+  }
+  return 'other'
+}
+
 // POST /api/sync/manychat
 // Manual synchronization of all ManyChat subscribers
 export const POST = requireAuth(async (request: NextRequest, user) => {
@@ -111,7 +125,7 @@ async function syncSubscriber(
     name: subscriber.name || `${subscriber.first_name} ${subscriber.last_name}`.trim(),
     phone: subscriber.phone || '',
     email: subscriber.email,
-    source: (subscriber.source as any) || 'other',
+    source: convertSource(subscriber.source),
     manychat_subscriber_id: subscriber.subscriber_id,
     manychat_tags: subscriber.tags || [],
     manychat_custom_fields: subscriber.custom_fields || {},

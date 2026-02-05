@@ -3,6 +3,20 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { verifyWebhookRequest } from '@/lib/manychat-verify'
 import { ManyChatWebhookPayload } from '@/types/manychat'
 
+// Type guard to validate source field
+function isValidSource(source: string | undefined): source is 'instagram' | 'whatsapp' | 'phone' | 'website' | 'referral' | 'other' {
+  if (!source) return false
+  return ['instagram', 'whatsapp', 'phone', 'website', 'referral', 'other'].includes(source)
+}
+
+// Convert ManyChat source to CRM source
+function convertSource(source: string | undefined): 'instagram' | 'whatsapp' | 'phone' | 'website' | 'referral' | 'other' {
+  if (isValidSource(source)) {
+    return source
+  }
+  return 'other'
+}
+
 // POST /api/webhooks/manychat
 // Receives webhook data from ManyChat in real-time
 export async function POST(request: NextRequest) {
@@ -72,8 +86,8 @@ export async function POST(request: NextRequest) {
       name: `${payload.first_name} ${payload.last_name || ''}`.trim(),
       phone: payload.phone || '',
       email: payload.email,
-      source: (payload.source as any) || 'other',
-      status: 'new',
+      source: convertSource(payload.source),
+      status: 'new' as const,
       manychat_subscriber_id: payload.subscriber_id,
       manychat_tags: payload.tags || [],
       manychat_custom_fields: payload.custom_fields || {},

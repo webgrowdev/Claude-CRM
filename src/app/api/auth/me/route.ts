@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
+import { Database } from '@/types/database'
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,28 +23,46 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Get user from database
+    // Get user profile from database
     const { supabase } = await import('@/lib/supabase')
-    const { data: user, error } = await supabase
-      .from('users')
+    type ProfileRow = Database['public']['Tables']['profiles']['Row']
+    const { data: profile, error } = await supabase
+      .from('profiles')
       .select('*')
       .eq('id', payload.userId)
       .eq('is_active', true)
       .single()
 
-    if (error || !user) {
+    if (error || !profile) {
       return NextResponse.json(
         { error: 'Usuario no encontrado' },
         { status: 404 }
       )
     }
 
-    // Remove password from response
-    const { password_hash, ...userWithoutPassword } = user
+    const typedProfile = profile as ProfileRow
+
+    // Get email from Supabase Auth
+    const { data: { user: authUser } } = await supabase.auth.getUser()
+
+    const userResponse = {
+      id: typedProfile.id,
+      email: authUser?.email || '',
+      name: typedProfile.name,
+      role: typedProfile.role,
+      clinic_id: typedProfile.clinic_id,
+      phone: typedProfile.phone,
+      is_active: typedProfile.is_active,
+      avatar_url: typedProfile.avatar_url,
+      specialty: typedProfile.specialty,
+      color: typedProfile.color,
+      created_at: typedProfile.created_at,
+      updated_at: typedProfile.updated_at,
+    }
 
     return NextResponse.json({
       success: true,
-      user: userWithoutPassword,
+      user: userResponse,
     })
   } catch (error) {
     console.error('Auth check error:', error)

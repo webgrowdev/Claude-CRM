@@ -36,7 +36,7 @@ export default function LoginPage() {
       } else {
         setError(result.error || 'Error al iniciar sesión')
       }
-    } catch (err) {
+    } catch {
       setError('Error de conexión. Por favor intenta de nuevo.')
     } finally {
       setLoading(false)

@@ -268,6 +268,9 @@ interface AppContextType {
     cancelled: number
     total: number
   }
+  // ManyChat integration
+  syncManyChatData: () => Promise<any>
+  isManyChatConnected: () => boolean
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -632,6 +635,77 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return 'inactive'
   }
 
+  // ManyChat Integration Functions
+  const syncManyChatData = async () => {
+    try {
+      const response = await fetch('/api/sync/manychat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page: 1, limit: 100 }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // Reload leads after sync
+        // In production, this would refetch from the API
+        console.log('ManyChat sync completed:', data.results)
+        return data.results
+      } else {
+        console.error('ManyChat sync failed')
+        return null
+      }
+    } catch (error) {
+      console.error('Error syncing ManyChat:', error)
+      return null
+    }
+  }
+
+  const isManyChatConnected = () => {
+    try {
+      const stored = localStorage.getItem('manychat_settings')
+      if (stored) {
+        const settings = JSON.parse(stored)
+        return settings.connected === true
+      }
+    } catch {
+      return false
+    }
+    return false
+  }
+
+  // Auto-sync ManyChat data on interval (if enabled)
+  useEffect(() => {
+    const checkAutoSync = () => {
+      try {
+        const stored = localStorage.getItem('manychat_settings')
+        if (stored) {
+          const settings = JSON.parse(stored)
+          if (settings.connected && settings.auto_sync_enabled) {
+            const intervalHours = settings.sync_interval_hours || 24
+            const lastSync = settings.last_sync_at ? new Date(settings.last_sync_at) : null
+            
+            if (!lastSync) {
+              // Never synced before, sync now
+              syncManyChatData()
+            } else {
+              const hoursSinceLastSync = (Date.now() - lastSync.getTime()) / (1000 * 60 * 60)
+              if (hoursSinceLastSync >= intervalHours) {
+                syncManyChatData()
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking auto-sync:', error)
+      }
+    }
+
+    // Check on mount and every hour
+    checkAutoSync()
+    const interval = setInterval(checkAutoSync, 60 * 60 * 1000)
+    return () => clearInterval(interval)
+  }, [])
+
   const value: AppContextType = {
     state,
     dispatch,
@@ -659,6 +733,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getAvailableSlots,
     getDerivedPatientStatus,
     getPatientAppointmentCounts,
+    syncManyChatData,
+    isManyChatConnected,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

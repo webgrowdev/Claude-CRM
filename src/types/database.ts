@@ -123,6 +123,12 @@ export interface Database {
           value: number
           total_paid: number
           total_pending: number
+          // ManyChat fields
+          manychat_subscriber_id: string | null
+          manychat_tags: string[] | null
+          manychat_custom_fields: Json | null
+          manychat_subscription_status: string | null
+          manychat_last_message_date: string | null
           created_at: string
           updated_at: string
           closed_at: string | null
@@ -150,6 +156,12 @@ export interface Database {
           value?: number
           total_paid?: number
           total_pending?: number
+          // ManyChat fields
+          manychat_subscriber_id?: string | null
+          manychat_tags?: string[] | null
+          manychat_custom_fields?: Json | null
+          manychat_subscription_status?: string | null
+          manychat_last_message_date?: string | null
           created_at?: string
           updated_at?: string
           closed_at?: string | null
@@ -177,6 +189,12 @@ export interface Database {
           value?: number
           total_paid?: number
           total_pending?: number
+          // ManyChat fields
+          manychat_subscriber_id?: string | null
+          manychat_tags?: string[] | null
+          manychat_custom_fields?: Json | null
+          manychat_subscription_status?: string | null
+          manychat_last_message_date?: string | null
           created_at?: string
           updated_at?: string
           closed_at?: string | null
@@ -340,9 +358,10 @@ export interface Database {
           id: string
           clinic_id: string
           user_id: string | null
-          action_type: 'create' | 'update' | 'delete' | 'view'
+          action_type: 'create' | 'update' | 'delete' | 'view' | 'sync'
           resource_type: 'patient' | 'appointment' | 'treatment' | 'user' | 'clinic'
           resource_id: string | null
+          description: string | null
           changes: Json | null
           ip_address: string | null
           user_agent: string | null
@@ -352,9 +371,10 @@ export interface Database {
           id?: string
           clinic_id: string
           user_id?: string | null
-          action_type: 'create' | 'update' | 'delete' | 'view'
+          action_type: 'create' | 'update' | 'delete' | 'view' | 'sync'
           resource_type: 'patient' | 'appointment' | 'treatment' | 'user' | 'clinic'
           resource_id?: string | null
+          description?: string | null
           changes?: Json | null
           ip_address?: string | null
           user_agent?: string | null
@@ -364,12 +384,145 @@ export interface Database {
           id?: string
           clinic_id?: string
           user_id?: string | null
-          action_type?: 'create' | 'update' | 'delete' | 'view'
+          action_type?: 'create' | 'update' | 'delete' | 'view' | 'sync'
           resource_type?: 'patient' | 'appointment' | 'treatment' | 'user' | 'clinic'
           resource_id?: string | null
+          description?: string | null
           changes?: Json | null
           ip_address?: string | null
           user_agent?: string | null
+          created_at?: string
+        }
+      }
+      manychat_settings: {
+        Row: {
+          id: string
+          clinic_id: string
+          connected: boolean
+          api_key: string | null
+          webhook_secret: string | null
+          channel_id: string | null
+          auto_create_patients: boolean
+          auto_sync_enabled: boolean
+          sync_interval_hours: number
+          last_sync_at: string | null
+          webhook_url: string | null
+          default_assignee: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          connected?: boolean
+          api_key?: string | null
+          webhook_secret?: string | null
+          channel_id?: string | null
+          auto_create_patients?: boolean
+          auto_sync_enabled?: boolean
+          sync_interval_hours?: number
+          last_sync_at?: string | null
+          webhook_url?: string | null
+          default_assignee?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          connected?: boolean
+          api_key?: string | null
+          webhook_secret?: string | null
+          channel_id?: string | null
+          auto_create_patients?: boolean
+          auto_sync_enabled?: boolean
+          sync_interval_hours?: number
+          last_sync_at?: string | null
+          webhook_url?: string | null
+          default_assignee?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      manychat_webhook_logs: {
+        Row: {
+          id: string
+          clinic_id: string
+          subscriber_id: string
+          event_type: string
+          payload: Json
+          processed: boolean
+          patient_id: string | null
+          error: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          subscriber_id: string
+          event_type: string
+          payload: Json
+          processed?: boolean
+          patient_id?: string | null
+          error?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          subscriber_id?: string
+          event_type?: string
+          payload?: Json
+          processed?: boolean
+          patient_id?: string | null
+          error?: string | null
+          created_at?: string
+        }
+      }
+      manychat_sync_history: {
+        Row: {
+          id: string
+          clinic_id: string
+          user_id: string | null
+          sync_type: string
+          total_count: number
+          created_count: number
+          updated_count: number
+          failed_count: number
+          errors: Json | null
+          started_at: string
+          completed_at: string | null
+          status: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          user_id?: string | null
+          sync_type: string
+          total_count?: number
+          created_count?: number
+          updated_count?: number
+          failed_count?: number
+          errors?: Json | null
+          started_at?: string
+          completed_at?: string | null
+          status?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          user_id?: string | null
+          sync_type?: string
+          total_count?: number
+          created_count?: number
+          updated_count?: number
+          failed_count?: number
+          errors?: Json | null
+          started_at?: string
+          completed_at?: string | null
+          status?: string
           created_at?: string
         }
       }

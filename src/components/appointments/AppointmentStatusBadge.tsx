@@ -10,7 +10,7 @@ interface AppointmentStatusBadgeProps {
   sessionNumber?: number
   totalSessions?: number
   showPhase?: boolean
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md'
   language?: 'es' | 'en'
 }
 
@@ -37,37 +37,37 @@ export function AppointmentStatusBadge({
       case 'scheduled':
         return {
           label: labels.scheduled,
-          color: 'blue',
+          color: 'primary' as const,
           icon: Calendar,
         }
       case 'confirmed':
         return {
           label: labels.confirmed,
-          color: 'green',
+          color: 'success' as const,
           icon: CheckCircle2,
         }
       case 'in_progress':
         return {
           label: labels.in_progress,
-          color: 'purple',
+          color: 'secondary' as const,
           icon: PlayCircle,
         }
       case 'completed':
         return {
           label: labels.completed,
-          color: 'green',
+          color: 'success' as const,
           icon: CheckCircle2,
         }
       case 'noshow':
         return {
           label: labels.noshow,
-          color: 'red',
+          color: 'error' as const,
           icon: XCircle,
         }
       case 'cancelled':
         return {
           label: labels.cancelled,
-          color: 'gray',
+          color: 'outline' as const,
           icon: XCircle,
         }
     }
@@ -84,42 +84,36 @@ export function AppointmentStatusBadge({
 
     switch (phase) {
       case 'consultation':
-        return { label: labels.consultation, color: 'blue' }
+        return { label: labels.consultation, color: 'primary' as const }
       case 'treatment':
-        return { label: labels.treatment, color: 'purple' }
+        return { label: labels.treatment, color: 'secondary' as const }
       case 'recovery':
-        return { label: labels.recovery, color: 'orange' }
+        return { label: labels.recovery, color: 'warning' as const }
       case 'completed':
-        return { label: labels.completed, color: 'green' }
+        return { label: labels.completed, color: 'success' as const }
       case 'follow_up':
-        return { label: labels.follow_up, color: 'indigo' }
+        return { label: labels.follow_up, color: 'primary' as const }
     }
   }
 
   const config = getStatusConfig(status)
   const Icon = config.icon
 
-  const sizeClasses = {
-    sm: 'text-xs',
-    md: 'text-sm',
-    lg: 'text-base',
-  }
-
   return (
     <div className="flex items-center gap-2 flex-wrap">
-      <Badge variant={config.color as any} size={size}>
+      <Badge variant={config.color} size={size}>
         <Icon className="w-3 h-3 mr-1" />
         {config.label}
       </Badge>
 
       {sessionNumber && totalSessions && (
-        <Badge variant="gray" size={size}>
+        <Badge variant="outline" size={size}>
           {language === 'es' ? 'Sesión' : 'Session'} {sessionNumber}/{totalSessions}
         </Badge>
       )}
 
       {showPhase && phase && (
-        <Badge variant={getPhaseConfig(phase).color as any} size={size}>
+        <Badge variant={getPhaseConfig(phase).color} size={size}>
           {getPhaseConfig(phase).label}
         </Badge>
       )}

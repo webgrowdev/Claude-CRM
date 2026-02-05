@@ -5,6 +5,14 @@ import { requireAuth } from '@/lib/middleware'
 // GET /api/activity-logs - List activity logs
 export const GET = requireAuth(async (request: NextRequest, user) => {
   try {
+    // Verify clinicId exists
+    if (!user.clinicId) {
+      return NextResponse.json(
+        { error: 'No clinic ID found' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('user_id')
     const actionType = searchParams.get('action_type')
@@ -95,6 +103,14 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
 // POST /api/activity-logs - Create activity log (manual)
 export const POST = requireAuth(async (request: NextRequest, user) => {
   try {
+    // Verify clinicId exists
+    if (!user.clinicId) {
+      return NextResponse.json(
+        { error: 'No clinic ID found' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
 
     // Validate required fields

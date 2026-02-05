@@ -1,34 +1,58 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react'
 import { Button, Input } from '@/components/ui'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login, isAuthenticated, isLoading } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      router.push('/dashboard')
+    }
+  }, [isAuthenticated, isLoading, router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
 
-    // Simulate login - in production, this would be an API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // Demo login - accept any email/password
-    if (email && password.length >= 4) {
-      localStorage.setItem('clinic_logged_in', 'true')
-      router.push('/inbox')
-    } else {
-      setError('Por favor ingresa un email y contraseña válidos')
+    try {
+      const result = await login(email, password, rememberMe)
+      
+      if (result.success) {
+        router.push('/dashboard')
+      } else {
+        setError(result.error || 'Error al iniciar sesión')
+      }
+    } catch (err) {
+      setError('Error de conexión. Por favor intenta de nuevo.')
+    } finally {
       setLoading(false)
     }
+  }
+
+  // Show loading while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-500">Verificando sesión...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -92,6 +116,18 @@ export default function LoginPage() {
             <p className="text-sm text-error-500 text-center">{error}</p>
           )}
 
+          <div className="flex items-center">
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 text-primary-600 rounded focus:ring-primary-500"
+              />
+              <span className="text-sm text-slate-600">Recuérdame</span>
+            </label>
+          </div>
+
           <div className="pt-2">
             <Button type="submit" fullWidth loading={loading}>
               Iniciar Sesión
@@ -120,8 +156,11 @@ export default function LoginPage() {
       {/* Demo hint */}
       <div className="px-6 pb-6">
         <div className="bg-primary-50 rounded-lg p-3 text-center">
-          <p className="text-xs text-primary-700">
-            <strong>Demo:</strong> Usa cualquier email y contraseña (min. 4 caracteres)
+          <p className="text-xs text-primary-700 mb-1">
+            <strong>Demo:</strong> Para conectar con base de datos real
+          </p>
+          <p className="text-xs text-primary-600">
+            Configura Supabase en .env.local (ver SETUP_GUIDE.md)
           </p>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { AppProvider } from '@/contexts/AppContext'
+import { AuthProvider } from '@/contexts/AuthContext'
 import { LanguageProvider } from '@/i18n'
 import './globals.css'
 
@@ -50,9 +51,11 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen">
         <LanguageProvider>
-          <AppProvider>
-            {children}
-          </AppProvider>
+          <AuthProvider>
+            <AppProvider>
+              {children}
+            </AppProvider>
+          </AuthProvider>
         </LanguageProvider>
       </body>
     </html>

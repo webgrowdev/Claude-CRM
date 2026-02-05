@@ -101,13 +101,14 @@ export interface Note {
 // FOLLOW-UP TYPES
 // =============================================
 
-// Attendance status for in-person appointments
+// Attendance status for in-person appointments (deprecated - use AppointmentStatus)
 export type AttendanceStatus = 'pending' | 'attended' | 'noshow' | 'cancelled' | 'rescheduled'
 
-// Appointment-level status (part of appointment-centric model)
-// This is the NEW appointment-centric model where each appointment has its own status
+// Appointment status type - used for both FollowUp and Appointment
 export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'no-show' | 'cancelled'
-export type AppointmentLevelStatus = AppointmentStatus // Alias for compatibility
+
+// Alias for compatibility
+export type AppointmentLevelStatus = AppointmentStatus
 
 // Treatment phase tracking
 export type TreatmentPhase = 'consultation' | 'treatment' | 'recovery' | 'completed' | 'follow_up'
@@ -156,7 +157,7 @@ export interface FollowUp {
 // APPOINTMENT TYPES
 // =============================================
 
-export type AppointmentStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'noshow' | 'cancelled' | 'rescheduled'
+// AppointmentStatus is defined above in FOLLOW-UP TYPES section
 
 export interface Appointment {
   id: string

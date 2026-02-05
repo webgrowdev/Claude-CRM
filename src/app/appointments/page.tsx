@@ -554,20 +554,20 @@ export default function AppointmentsPage() {
                             <div className="flex flex-col items-center">
                               <div className={cn(
                                 'w-14 h-14 rounded-xl flex flex-col items-center justify-center',
-                                status === 'attended' ? 'bg-green-100' :
-                                status === 'noshow' ? 'bg-red-100' :
+                                status === 'completed' ? 'bg-green-100' :
+                                status === 'no-show' ? 'bg-red-100' :
                                 'bg-slate-100'
                               )}>
                                 <Clock className={cn(
                                   'w-4 h-4',
-                                  status === 'attended' ? 'text-green-600' :
-                                  status === 'noshow' ? 'text-red-600' :
+                                  status === 'completed' ? 'text-green-600' :
+                                  status === 'no-show' ? 'text-red-600' :
                                   'text-slate-500'
                                 )} />
                                 <span className={cn(
                                   'text-sm font-bold',
-                                  status === 'attended' ? 'text-green-700' :
-                                  status === 'noshow' ? 'text-red-700' :
+                                  status === 'completed' ? 'text-green-700' :
+                                  status === 'no-show' ? 'text-red-700' :
                                   'text-slate-700'
                                 )}>
                                   {format(new Date(followUp.scheduledAt), 'HH:mm')}
@@ -618,7 +618,7 @@ export default function AppointmentsPage() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      handleQuickCheckIn({ lead, followUp }, 'attended')
+                                      handleQuickCheckIn({ lead, followUp }, 'completed')
                                     }}
                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition-colors"
                                   >
@@ -628,7 +628,7 @@ export default function AppointmentsPage() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      handleQuickCheckIn({ lead, followUp }, 'noshow')
+                                      handleQuickCheckIn({ lead, followUp }, 'no-show')
                                     }}
                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
                                   >

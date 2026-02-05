@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import { Search, User, Phone, Calendar, Clock, X } from 'lucide-react'
-import { Modal, Input, Button, Avatar, Badge, Select, TimeSlotPicker } from '@/components/ui'
+import { Modal, Input, Button, Avatar, Badge, Select } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { Lead, Treatment, AppointmentStatus } from '@/types'
 import { cn } from '@/lib/utils'
@@ -143,7 +143,7 @@ export function PatientSearchModal({ isOpen, onClose, language = 'es' }: Patient
                         <h3 className="font-semibold text-slate-800">{patient.name}</h3>
                         <Badge
                           variant={
-                            derivedStatus === 'scheduled' ? 'purple' :
+                            derivedStatus === 'scheduled' ? 'primary' :
                             derivedStatus === 'active' ? 'success' :
                             derivedStatus === 'new' ? 'primary' :
                             derivedStatus === 'lost' ? 'error' : 'default'
@@ -212,11 +212,11 @@ export function PatientSearchModal({ isOpen, onClose, language = 'es' }: Patient
             <label className="block text-sm font-medium text-slate-700 mb-2">
               {language === 'es' ? 'Hora' : 'Time'}
             </label>
-            <TimeSlotPicker
-              date={appointmentDate}
-              selectedTime={appointmentTime}
-              onTimeSelect={setAppointmentTime}
-              duration={state.treatments.find((t) => t.id === treatmentId)?.duration || 30}
+            <input
+              type="time"
+              value={appointmentTime}
+              onChange={(e) => setAppointmentTime(e.target.value)}
+              className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
 
@@ -227,7 +227,7 @@ export function PatientSearchModal({ isOpen, onClose, language = 'es' }: Patient
             </label>
             <Select
               value={treatmentId}
-              onChange={(e) => setTreatmentId(e.target.value)}
+              onChange={setTreatmentId}
               options={[
                 { value: '', label: language === 'es' ? 'Seleccionar tratamiento' : 'Select treatment' },
                 ...state.treatments

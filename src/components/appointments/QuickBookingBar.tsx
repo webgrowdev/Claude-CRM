@@ -119,7 +119,7 @@ export function QuickBookingBar({ onBookingComplete, language = 'es' }: QuickBoo
         scheduledAt: appointmentDate,
         duration: 30,
         notes: `Reserva rápida - ${selectedType}`,
-        appointmentStatus: 'scheduled',
+        appointmentStatus: 'pending',
         treatmentPhase: selectedType === 'appointment' ? 'consultation' : undefined,
       }
 

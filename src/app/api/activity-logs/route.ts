@@ -57,7 +57,7 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
 
     // Get user names for logs
     if (logs && logs.length > 0) {
-      const userIds = [...new Set(logs.map(log => log.user_id).filter(Boolean))]
+      const userIds = Array.from(new Set(logs.map(log => log.user_id).filter(Boolean)))
       const { data: users } = await supabase
         .from('users')
         .select('id, name')

@@ -10,6 +10,7 @@ export interface JWTPayload {
   email: string
   role: string
   clinicId?: string
+  [key: string]: unknown // Index signature for jose compatibility
 }
 
 // Generate JWT token

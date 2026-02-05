@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { generateToken, verifyPassword } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
@@ -14,6 +14,42 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Demo mode: If Supabase is not configured, use demo credentials
+    if (!isSupabaseConfigured()) {
+      // Demo user
+      if (email.toLowerCase() === 'admin@glowclinic.com' && password === 'admin123') {
+        const demoUser = {
+          id: 'demo-user-id',
+          email: 'admin@glowclinic.com',
+          name: 'Demo Admin',
+          role: 'owner',
+          clinic_id: 'demo-clinic-id',
+          phone: '+52 55 1234 5678',
+          is_active: true,
+        }
+
+        const token = await generateToken({
+          userId: demoUser.id,
+          email: demoUser.email,
+          role: demoUser.role,
+          clinicId: demoUser.clinic_id,
+        })
+
+        return NextResponse.json({
+          success: true,
+          token,
+          user: demoUser,
+          demo: true,
+        })
+      } else {
+        return NextResponse.json(
+          { error: 'Credenciales inválidas. Usa admin@glowclinic.com / admin123 en modo demo' },
+          { status: 401 }
+        )
+      }
+    }
+
+    // Production mode: Use Supabase
     // Find user by email
     const { data: user, error } = await supabase
       .from('users')

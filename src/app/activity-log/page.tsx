@@ -336,7 +336,7 @@ export default function ActivityLogPage() {
           </div>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredLogs.map(log => (
             <Card key={log.id} className="hover:shadow-md transition-shadow">
               <div className="flex items-start justify-between">
@@ -348,17 +348,17 @@ export default function ActivityLogPage() {
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center space-x-2 mb-1">
+                    <div className="flex items-center space-x-2 mb-1 flex-wrap">
                       <span className="font-medium text-slate-800">{log.userName}</span>
                       <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getActionColor(log.action)}`}>
                         {getActionText(log.action)}
                       </span>
-                      <span className="text-slate-600">
-                        {getResourceText(log.resource)}
-                      </span>
+                    </div>
+                    <div className="text-slate-600 text-sm mb-2">
+                      {getResourceText(log.resource)}
                       {log.resourceName && (
                         <span className="font-medium text-slate-800">
-                          "{log.resourceName}"
+                          {` "${log.resourceName}"`}
                         </span>
                       )}
                     </div>

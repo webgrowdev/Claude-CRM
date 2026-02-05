@@ -6,6 +6,14 @@ import { hashPassword } from '@/lib/auth'
 // GET /api/doctors - List all doctors
 export const GET = requireAuth(async (request: NextRequest, user) => {
   try {
+    // Verify clinicId exists
+    if (!user.clinicId) {
+      return NextResponse.json(
+        { error: 'No clinic ID found' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const active = searchParams.get('active')
 
@@ -55,6 +63,14 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
 // POST /api/doctors - Create new doctor
 export const POST = requireAuth(async (request: NextRequest, user) => {
   try {
+    // Verify clinicId exists
+    if (!user.clinicId) {
+      return NextResponse.json(
+        { error: 'No clinic ID found' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     
     // Validate required fields
@@ -162,6 +178,14 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
 // PUT /api/doctors/:id - Update doctor
 export const PUT = requireAuth(async (request: NextRequest, user) => {
   try {
+    // Verify clinicId exists
+    if (!user.clinicId) {
+      return NextResponse.json(
+        { error: 'No clinic ID found' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 
@@ -240,6 +264,14 @@ export const PUT = requireAuth(async (request: NextRequest, user) => {
 // DELETE /api/doctors/:id - Delete/Deactivate doctor
 export const DELETE = requireAuth(async (request: NextRequest, user) => {
   try {
+    // Verify clinicId exists
+    if (!user.clinicId) {
+      return NextResponse.json(
+        { error: 'No clinic ID found' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
 

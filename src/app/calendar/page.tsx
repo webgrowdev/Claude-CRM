@@ -36,6 +36,7 @@ import {
 } from 'lucide-react'
 import { AppShell } from '@/components/layout'
 import { Card, Avatar, Button, Badge, Modal } from '@/components/ui'
+import { ScheduleFollowUpModal } from '@/components/calendar'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n'
 import { cn, formatRelativeDate } from '@/lib/utils'
@@ -59,6 +60,7 @@ export default function CalendarPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('day')
   const [showActionModal, setShowActionModal] = useState(false)
   const [selectedFollowUp, setSelectedFollowUp] = useState<FollowUpWithLead | null>(null)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
 
   const allFollowUps = useMemo(
     () => getUpcomingFollowUps(),
@@ -188,7 +190,7 @@ export default function CalendarPage() {
             <Button
               variant="primary"
               size="sm"
-              onClick={() => router.push('/pacientes?action=schedule')}
+              onClick={() => setShowScheduleModal(true)}
             >
               <Plus className="w-4 h-4 mr-1" />
               {t.followUp.title}
@@ -357,7 +359,7 @@ export default function CalendarPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => router.push('/pacientes?action=schedule')}
+                    onClick={() => setShowScheduleModal(true)}
                   >
                     <Plus className="w-4 h-4 mr-1" />
                     {t.followUp.schedule}
@@ -593,6 +595,13 @@ export default function CalendarPage() {
           </div>
         )}
       </Modal>
+
+      {/* Schedule Follow-up Modal */}
+      <ScheduleFollowUpModal
+        isOpen={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        language={language}
+      />
     </AppShell>
   )
 }

@@ -63,6 +63,13 @@ export function AppointmentStatusBadge({
           color: 'outline' as const,
           icon: XCircle,
         }
+      default:
+        // Fallback for unexpected status
+        return {
+          label: status,
+          color: 'default' as const,
+          icon: Clock,
+        }
     }
   }
 
@@ -90,8 +97,6 @@ export function AppointmentStatusBadge({
   }
 
   const config = getStatusConfig(status)
-  if (!config) return null
-  
   const Icon = config.icon
 
   return (

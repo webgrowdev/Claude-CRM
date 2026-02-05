@@ -77,7 +77,7 @@ export function PatientSearchModal({ isOpen, onClose, language = 'es' }: Patient
           treatmentId,
           treatmentName: treatment?.name,
           notes: appointmentNotes,
-          appointmentStatus: 'pending' as AppointmentStatus,
+          appointmentStatus: 'pending',
           assignedTo: state.user.id,
         },
         true // Sync with calendar

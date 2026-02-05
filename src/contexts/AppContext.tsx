@@ -619,6 +619,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (recentCompleted.length > 0) return 'active'
 
     // Only no-show or cancelled appointments = Lost
+    // Logic: A patient is lost if they have cancellations/no-shows AND no completed appointments
+    // If they have completed appointments, they're considered active (recently) or inactive (long ago)
     if (counts.noShow > 0 || counts.cancelled > 0) {
       const hasCompleted = counts.completed > 0
       if (!hasCompleted) return 'lost'

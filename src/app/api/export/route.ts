@@ -5,6 +5,14 @@ import { requireAuth } from '@/lib/middleware'
 // POST /api/export - Export data to CSV/Excel
 export const POST = requireAuth(async (request: NextRequest, user) => {
   try {
+    // Verify clinicId exists
+    if (!user.clinicId) {
+      return NextResponse.json(
+        { error: 'No clinic ID found' },
+        { status: 401 }
+      )
+    }
+
     const body = await request.json()
     const { type, format = 'csv', dateRange, includeFields } = body
 

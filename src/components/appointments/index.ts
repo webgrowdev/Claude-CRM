@@ -1,4 +1,5 @@
 export { QuickBookingBar } from './QuickBookingBar'
 export { AppointmentStatusBadge } from './AppointmentStatusBadge'
 export { SlotPicker } from './SlotPicker'
+export { PatientSearchModal } from './PatientSearchModal'
 export type { TimeSlot } from './SlotPicker'

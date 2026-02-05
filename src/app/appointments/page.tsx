@@ -40,11 +40,11 @@ import {
 } from 'lucide-react'
 import { AppShell } from '@/components/layout'
 import { Card, Avatar, Button, Badge, Modal, TimeSlotPicker } from '@/components/ui'
-import { QuickBookingBar, AppointmentStatusBadge } from '@/components/appointments'
+import { QuickBookingBar, AppointmentStatusBadge, PatientSearchModal } from '@/components/appointments'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { FollowUp, Lead, AttendanceStatus } from '@/types'
+import { FollowUp, Lead, AttendanceStatus, AppointmentStatus } from '@/types'
 
 interface AppointmentWithLead {
   lead: Lead
@@ -62,6 +62,7 @@ export default function AppointmentsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showAttendanceModal, setShowAttendanceModal] = useState(false)
   const [showRescheduleModal, setShowRescheduleModal] = useState(false)
+  const [showPatientSearchModal, setShowPatientSearchModal] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithLead | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'attended' | 'noshow'>('all')
   const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null)
@@ -109,10 +110,13 @@ export default function AppointmentsPage() {
       )
     }
 
-    // Filter by attendance status
+    // Filter by appointment status
     if (filterStatus !== 'all') {
       filtered = filtered.filter(({ followUp }) => {
-        const status = followUp.attendanceStatus || 'pending'
+        const status = followUp.appointmentStatus || 'pending'
+        // Map old filter values to new status
+        if (filterStatus === 'attended') return status === 'completed'
+        if (filterStatus === 'noshow') return status === 'no-show'
         return status === filterStatus
       })
     }
@@ -137,10 +141,10 @@ export default function AppointmentsPage() {
 
   const todayStats = useMemo(() => {
     const total = todayAppointments.length
-    const attended = todayAppointments.filter(a => a.followUp.attendanceStatus === 'attended').length
-    const noshow = todayAppointments.filter(a => a.followUp.attendanceStatus === 'noshow').length
-    const pending = total - attended - noshow
-    return { total, attended, noshow, pending }
+    const completed = todayAppointments.filter(a => a.followUp.appointmentStatus === 'completed').length
+    const noshow = todayAppointments.filter(a => a.followUp.appointmentStatus === 'no-show').length
+    const pending = todayAppointments.filter(a => !a.followUp.appointmentStatus || a.followUp.appointmentStatus === 'pending' || a.followUp.appointmentStatus === 'confirmed').length
+    return { total, attended: completed, noshow, pending }
   }, [todayAppointments])
 
   // Days with appointments
@@ -150,9 +154,9 @@ export default function AppointmentsPage() {
       const key = format(new Date(followUp.scheduledAt), 'yyyy-MM-dd')
       const current = days.get(key) || { total: 0, pending: 0, attended: 0, noshow: 0 }
       current.total++
-      const status = followUp.attendanceStatus || 'pending'
-      if (status === 'attended') current.attended++
-      else if (status === 'noshow') current.noshow++
+      const status = followUp.appointmentStatus || 'pending'
+      if (status === 'completed') current.attended++
+      else if (status === 'no-show') current.noshow++
       else current.pending++
       days.set(key, current)
     })
@@ -169,14 +173,14 @@ export default function AppointmentsPage() {
   }, [currentMonth, locale])
 
   // Quick check-in
-  const handleQuickCheckIn = (item: AppointmentWithLead, status: AttendanceStatus) => {
+  const handleQuickCheckIn = (item: AppointmentWithLead, status: AppointmentStatus) => {
     const { lead, followUp } = item
     const updatedFollowUp: FollowUp = {
       ...followUp,
-      attendanceStatus: status,
+      appointmentStatus: status,
       attendanceMarkedAt: new Date(),
-      completed: status === 'attended',
-      completedAt: status === 'attended' ? new Date() : undefined,
+      completed: status === 'completed',
+      completedAt: status === 'completed' ? new Date() : undefined,
     }
 
     const updatedLead: Lead = {
@@ -189,17 +193,8 @@ export default function AppointmentsPage() {
     dispatch({ type: 'UPDATE_LEAD', payload: updatedLead })
   }
 
-  const handleMarkAttendance = (status: AttendanceStatus) => {
+  const handleMarkAttendance = (status: AppointmentStatus) => {
     if (!selectedAppointment) return
-
-    // If rescheduling, open the reschedule modal instead
-    if (status === 'rescheduled') {
-      setShowAttendanceModal(false)
-      setRescheduleDate(null)
-      setRescheduleTime(null)
-      setShowRescheduleModal(true)
-      return
-    }
 
     handleQuickCheckIn(selectedAppointment, status)
     setShowAttendanceModal(false)
@@ -217,7 +212,7 @@ export default function AppointmentsPage() {
     const updatedFollowUp: FollowUp = {
       ...followUp,
       scheduledAt: newDate,
-      attendanceStatus: 'pending',
+      appointmentStatus: 'pending',
       attendanceMarkedAt: undefined,
       completed: false,
       completedAt: undefined,
@@ -242,31 +237,31 @@ export default function AppointmentsPage() {
     setShowAttendanceModal(true)
   }
 
-  const getStatusColor = (status?: AttendanceStatus) => {
+  const getStatusColor = (status?: AppointmentStatus) => {
     switch (status) {
-      case 'attended':
+      case 'completed':
         return 'bg-green-500'
-      case 'noshow':
+      case 'no-show':
         return 'bg-red-500'
       case 'cancelled':
         return 'bg-slate-400'
-      case 'rescheduled':
-        return 'bg-amber-500'
+      case 'confirmed':
+        return 'bg-blue-600'
       default:
         return 'bg-blue-500'
     }
   }
 
-  const getStatusBadge = (status?: AttendanceStatus) => {
+  const getStatusBadge = (status?: AppointmentStatus) => {
     switch (status) {
-      case 'attended':
+      case 'completed':
         return <Badge variant="success" size="sm">{t.appointments.attended}</Badge>
-      case 'noshow':
+      case 'no-show':
         return <Badge variant="error" size="sm">{t.appointments.noshow}</Badge>
       case 'cancelled':
         return <Badge variant="outline" size="sm">{t.appointments.cancelled}</Badge>
-      case 'rescheduled':
-        return <Badge variant="warning" size="sm">{t.appointments.rescheduled}</Badge>
+      case 'confirmed':
+        return <Badge variant="primary" size="sm">{language === 'es' ? 'Confirmada' : 'Confirmed'}</Badge>
       default:
         return <Badge variant="default" size="sm">{t.appointments.pending}</Badge>
     }
@@ -298,7 +293,7 @@ export default function AppointmentsPage() {
                 </p>
               </div>
               <button
-                onClick={() => router.push('/pacientes?action=new')}
+                onClick={() => setShowPatientSearchModal(true)}
                 className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary-500/25"
               >
                 <Plus className="w-5 h-5" />
@@ -534,8 +529,8 @@ export default function AppointmentsPage() {
                 <div className="space-y-3">
                   {selectedDateAppointments.map(({ lead, followUp }) => {
                     const isPast = isBefore(new Date(followUp.scheduledAt), new Date())
-                    const needsAttention = isPast && !followUp.attendanceStatus
-                    const status = followUp.attendanceStatus || 'pending'
+                    const needsAttention = isPast && !followUp.appointmentStatus
+                    const status = followUp.appointmentStatus || 'pending'
 
                     return (
                       <div
@@ -550,7 +545,7 @@ export default function AppointmentsPage() {
                         {/* Time indicator */}
                         <div className={cn(
                           'h-1',
-                          getStatusColor(followUp.attendanceStatus)
+                          getStatusColor(followUp.appointmentStatus)
                         )} />
 
                         <div className="p-4">
@@ -559,20 +554,20 @@ export default function AppointmentsPage() {
                             <div className="flex flex-col items-center">
                               <div className={cn(
                                 'w-14 h-14 rounded-xl flex flex-col items-center justify-center',
-                                status === 'attended' ? 'bg-green-100' :
-                                status === 'noshow' ? 'bg-red-100' :
+                                status === 'completed' ? 'bg-green-100' :
+                                status === 'no-show' ? 'bg-red-100' :
                                 'bg-slate-100'
                               )}>
                                 <Clock className={cn(
                                   'w-4 h-4',
-                                  status === 'attended' ? 'text-green-600' :
-                                  status === 'noshow' ? 'text-red-600' :
+                                  status === 'completed' ? 'text-green-600' :
+                                  status === 'no-show' ? 'text-red-600' :
                                   'text-slate-500'
                                 )} />
                                 <span className={cn(
                                   'text-sm font-bold',
-                                  status === 'attended' ? 'text-green-700' :
-                                  status === 'noshow' ? 'text-red-700' :
+                                  status === 'completed' ? 'text-green-700' :
+                                  status === 'no-show' ? 'text-red-700' :
                                   'text-slate-700'
                                 )}>
                                   {format(new Date(followUp.scheduledAt), 'HH:mm')}
@@ -597,16 +592,7 @@ export default function AppointmentsPage() {
                                   )}
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  {getStatusBadge(followUp.attendanceStatus)}
-                                  {followUp.appointmentStatus && (
-                                    <AppointmentStatusBadge
-                                      status={followUp.appointmentStatus}
-                                      phase={followUp.treatmentPhase}
-                                      sessionNumber={followUp.sessionNumber}
-                                      totalSessions={followUp.totalSessions}
-                                      size="sm"
-                                    />
-                                  )}
+                                  {getStatusBadge(followUp.appointmentStatus)}
                                 </div>
                               </div>
 
@@ -632,7 +618,7 @@ export default function AppointmentsPage() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      handleQuickCheckIn({ lead, followUp }, 'attended')
+                                      handleQuickCheckIn({ lead, followUp }, 'completed')
                                     }}
                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition-colors"
                                   >
@@ -642,7 +628,7 @@ export default function AppointmentsPage() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      handleQuickCheckIn({ lead, followUp }, 'noshow')
+                                      handleQuickCheckIn({ lead, followUp }, 'no-show')
                                     }}
                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
                                   >
@@ -733,7 +719,7 @@ export default function AppointmentsPage() {
             {/* Current Status */}
             <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl">
               <span className="text-sm text-slate-600">{t.appointments.currentStatus}:</span>
-              {getStatusBadge(selectedAppointment.followUp.attendanceStatus)}
+              {getStatusBadge(selectedAppointment.followUp.appointmentStatus)}
             </div>
 
             {/* Action Buttons */}
@@ -741,7 +727,7 @@ export default function AppointmentsPage() {
               <Button
                 fullWidth
                 variant="outline"
-                onClick={() => handleMarkAttendance('attended')}
+                onClick={() => handleMarkAttendance('completed')}
                 className="justify-start bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
                 icon={<CheckCircle2 className="w-5 h-5" />}
               >
@@ -751,7 +737,7 @@ export default function AppointmentsPage() {
               <Button
                 fullWidth
                 variant="outline"
-                onClick={() => handleMarkAttendance('noshow')}
+                onClick={() => handleMarkAttendance('no-show')}
                 className="justify-start bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
                 icon={<XCircle className="w-5 h-5" />}
               >
@@ -761,7 +747,22 @@ export default function AppointmentsPage() {
               <Button
                 fullWidth
                 variant="outline"
-                onClick={() => handleMarkAttendance('rescheduled')}
+                onClick={() => handleMarkAttendance('confirmed')}
+                className="justify-start"
+                icon={<UserCheck className="w-5 h-5" />}
+              >
+                {language === 'es' ? 'Marcar como Confirmada' : 'Mark as Confirmed'}
+              </Button>
+
+              <Button
+                fullWidth
+                variant="outline"
+                onClick={() => {
+                  setShowAttendanceModal(false)
+                  setRescheduleDate(null)
+                  setRescheduleTime(null)
+                  setShowRescheduleModal(true)
+                }}
                 className="justify-start"
                 icon={<RotateCcw className="w-5 h-5" />}
               >
@@ -868,6 +869,13 @@ export default function AppointmentsPage() {
           </div>
         )}
       </Modal>
+
+      {/* Patient Search Modal */}
+      <PatientSearchModal
+        isOpen={showPatientSearchModal}
+        onClose={() => setShowPatientSearchModal(false)}
+        language={language}
+      />
     </AppShell>
   )
 }

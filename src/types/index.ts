@@ -14,6 +14,7 @@ export type FunnelStatus =
   | 'noshow'        // No asistió - Faltó a la cita
 
 // Legacy support - maps to new statuses
+// @deprecated Use appointment-based status model instead. Patient status should be derived from their appointments.
 export type LeadStatus = 'new' | 'contacted' | 'scheduled' | 'closed' | 'lost'
 
 // Lead Source Types
@@ -51,6 +52,7 @@ export interface Lead {
   identificationNumber?: string // DNI, passport, or other ID
   identificationType?: 'dni' | 'passport' | 'other' // Type of ID document
   source: LeadSource
+  /** @deprecated Use appointment-based status model instead. Patient status should be derived from their appointments. */
   status: LeadStatus
   funnelStatus?: FunnelStatus // New expanded status
   treatments: string[]
@@ -99,11 +101,14 @@ export interface Note {
 // FOLLOW-UP TYPES
 // =============================================
 
-// Attendance status for in-person appointments
+// Attendance status for in-person appointments (deprecated - use AppointmentStatus)
 export type AttendanceStatus = 'pending' | 'attended' | 'noshow' | 'cancelled' | 'rescheduled'
 
-// Appointment-level status (part of appointment-centric model)
-export type AppointmentLevelStatus = 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'noshow' | 'cancelled'
+// Appointment status type - used for both FollowUp and Appointment
+export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'no-show' | 'cancelled'
+
+// Alias for compatibility
+export type AppointmentLevelStatus = AppointmentStatus
 
 // Treatment phase tracking
 export type TreatmentPhase = 'consultation' | 'treatment' | 'recovery' | 'completed' | 'follow_up'
@@ -135,12 +140,13 @@ export interface FollowUp {
   assignedTo?: string
   reminderSent?: boolean
   confirmedByPatient?: boolean
-  // Attendance tracking for appointments
+  // Attendance tracking for appointments (deprecated - use appointmentStatus)
+  /** @deprecated Use appointmentStatus instead */
   attendanceStatus?: AttendanceStatus
   attendanceMarkedAt?: Date
   attendanceMarkedBy?: string
-  // NEW: Appointment-centric status model
-  appointmentStatus?: AppointmentLevelStatus
+  // NEW: Appointment-centric status model - each appointment has its own status
+  appointmentStatus?: AppointmentStatus
   treatmentPhase?: TreatmentPhase
   treatmentOutcome?: TreatmentOutcome
   sessionNumber?: number // e.g., 1 of 3
@@ -151,7 +157,7 @@ export interface FollowUp {
 // APPOINTMENT TYPES
 // =============================================
 
-export type AppointmentStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'noshow' | 'cancelled' | 'rescheduled'
+// AppointmentStatus is defined above in FOLLOW-UP TYPES section
 
 export interface Appointment {
   id: string

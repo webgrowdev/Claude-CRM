@@ -1,11 +1,11 @@
 'use client'
 
 import { Badge } from '@/components/ui'
-import { AppointmentLevelStatus, TreatmentPhase } from '@/types'
+import { AppointmentStatus, TreatmentPhase } from '@/types'
 import { CheckCircle2, Clock, AlertTriangle, XCircle, PlayCircle, Calendar } from 'lucide-react'
 
 interface AppointmentStatusBadgeProps {
-  status: AppointmentLevelStatus
+  status: AppointmentStatus
   phase?: TreatmentPhase
   sessionNumber?: number
   totalSessions?: number
@@ -23,20 +23,19 @@ export function AppointmentStatusBadge({
   size = 'md',
   language = 'es',
 }: AppointmentStatusBadgeProps) {
-  const getStatusConfig = (status: AppointmentLevelStatus) => {
+  const getStatusConfig = (status: AppointmentStatus) => {
     const labels = {
-      scheduled: language === 'es' ? 'Agendada' : 'Scheduled',
+      pending: language === 'es' ? 'Pendiente' : 'Pending',
       confirmed: language === 'es' ? 'Confirmada' : 'Confirmed',
-      in_progress: language === 'es' ? 'En Curso' : 'In Progress',
       completed: language === 'es' ? 'Completada' : 'Completed',
-      noshow: language === 'es' ? 'No Asistió' : 'No Show',
+      'no-show': language === 'es' ? 'No Asistió' : 'No Show',
       cancelled: language === 'es' ? 'Cancelada' : 'Cancelled',
     }
 
     switch (status) {
-      case 'scheduled':
+      case 'pending':
         return {
-          label: labels.scheduled,
+          label: labels.pending,
           color: 'primary' as const,
           icon: Calendar,
         }
@@ -46,21 +45,15 @@ export function AppointmentStatusBadge({
           color: 'success' as const,
           icon: CheckCircle2,
         }
-      case 'in_progress':
-        return {
-          label: labels.in_progress,
-          color: 'secondary' as const,
-          icon: PlayCircle,
-        }
       case 'completed':
         return {
           label: labels.completed,
           color: 'success' as const,
           icon: CheckCircle2,
         }
-      case 'noshow':
+      case 'no-show':
         return {
-          label: labels.noshow,
+          label: labels['no-show'],
           color: 'error' as const,
           icon: XCircle,
         }
@@ -69,6 +62,13 @@ export function AppointmentStatusBadge({
           label: labels.cancelled,
           color: 'outline' as const,
           icon: XCircle,
+        }
+      default:
+        // Fallback for unexpected status
+        return {
+          label: status,
+          color: 'default' as const,
+          icon: Clock,
         }
     }
   }

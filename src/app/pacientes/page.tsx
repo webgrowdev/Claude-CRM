@@ -30,6 +30,7 @@ import {
   Syringe,
   CreditCard,
   Settings,
+  UserX,
 } from 'lucide-react'
 import { AppShell } from '@/components/layout'
 import { Input, Card, Avatar, Badge, Modal, Button, Select, TextArea, TimeSlotPicker, LeadScoreBadge, LeadScoreDetail } from '@/components/ui'
@@ -76,14 +77,14 @@ const sourceColors: Record<LeadSource, string> = {
 
 export default function PacientesPage() {
   const searchParams = useSearchParams()
-  const { state, addLead, updateLeadStatus, addNote, addFollowUp, deleteLead, isCalendarConnected } = useApp()
+  const { state, addLead, updateLeadStatus, addNote, addFollowUp, deleteLead, isCalendarConnected, getDerivedPatientStatus, getPatientAppointmentCounts } = useApp()
   const { t, language } = useLanguage()
 
   // Get translated status options
   const statusOptions = useMemo(() => getStatusOptions(t), [t])
 
   const [searchQuery, setSearchQuery] = useState('')
-  const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'scheduled' | 'completed' | 'in-treatment' | 'lost'>('all')
   const [selectedPatient, setSelectedPatient] = useState<Lead | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showFollowUpModal, setShowFollowUpModal] = useState(false)
@@ -157,7 +158,27 @@ export default function PacientesPage() {
     let patients = [...state.leads]
 
     if (statusFilter !== 'all') {
-      patients = patients.filter(p => p.status === statusFilter)
+      patients = patients.filter(p => {
+        const counts = getPatientAppointmentCounts(p.id)
+        const derivedStatus = getDerivedPatientStatus(p.id)
+        
+        switch (statusFilter) {
+          case 'scheduled':
+            // Has pending or confirmed appointments
+            return counts.pending > 0 || counts.confirmed > 0
+          case 'completed':
+            // Has completed appointments
+            return counts.completed > 0
+          case 'in-treatment':
+            // Has recent completed appointments + pending/confirmed ones
+            return derivedStatus === 'active' || derivedStatus === 'scheduled'
+          case 'lost':
+            // Only no-show or cancelled appointments, or derived as lost
+            return derivedStatus === 'lost'
+          default:
+            return true
+        }
+      })
     }
 
     if (searchQuery) {
@@ -173,7 +194,7 @@ export default function PacientesPage() {
     return patients.sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
-  }, [state.leads, statusFilter, searchQuery])
+  }, [state.leads, statusFilter, searchQuery, getDerivedPatientStatus, getPatientAppointmentCounts])
 
   const handleAddPatient = () => {
     if (!newPatient.name || !newPatient.phone) return
@@ -297,14 +318,36 @@ export default function PacientesPage() {
   }, [selectedPatient, t])
 
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: state.leads.length }
-    statusOptions.forEach(s => {
-      counts[s.value] = state.leads.filter(l => l.status === s.value).length
+    const counts = {
+      all: state.leads.length,
+      scheduled: 0,
+      completed: 0,
+      'in-treatment': 0,
+      lost: 0,
+    }
+    
+    state.leads.forEach(lead => {
+      const appointmentCounts = getPatientAppointmentCounts(lead.id)
+      const derivedStatus = getDerivedPatientStatus(lead.id)
+      
+      if (appointmentCounts.pending > 0 || appointmentCounts.confirmed > 0) {
+        counts.scheduled++
+      }
+      if (appointmentCounts.completed > 0) {
+        counts.completed++
+      }
+      if (derivedStatus === 'active' || derivedStatus === 'scheduled') {
+        counts['in-treatment']++
+      }
+      if (derivedStatus === 'lost') {
+        counts.lost++
+      }
     })
+    
     return counts
-  }, [state.leads])
+  }, [state.leads, getDerivedPatientStatus, getPatientAppointmentCounts])
 
-  // Get status info for display
+  // Get status info for display (deprecated - use derived status)
   const getStatusInfo = (status: LeadStatus) => {
     const option = statusOptions.find(s => s.value === status)
     return option || { label: status, color: 'text-slate-600', bg: 'bg-slate-100' }
@@ -382,20 +425,54 @@ export default function PacientesPage() {
                 >
                   {t.common.all} ({statusCounts.all})
                 </button>
-                {statusOptions.map(status => (
-                  <button
-                    key={status.value}
-                    onClick={() => setStatusFilter(status.value)}
-                    className={cn(
-                      'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all',
-                      statusFilter === status.value
-                        ? `${status.bg} ${status.color} shadow-md`
-                        : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
-                    )}
-                  >
-                    {status.label} ({statusCounts[status.value]})
-                  </button>
-                ))}
+                <button
+                  onClick={() => setStatusFilter('scheduled')}
+                  className={cn(
+                    'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1',
+                    statusFilter === 'scheduled'
+                      ? 'bg-purple-100 text-purple-700 shadow-md'
+                      : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
+                  )}
+                >
+                  <Calendar className="w-4 h-4" />
+                  {language === 'es' ? 'Citas agendadas' : 'Scheduled appointments'} ({statusCounts.scheduled})
+                </button>
+                <button
+                  onClick={() => setStatusFilter('completed')}
+                  className={cn(
+                    'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1',
+                    statusFilter === 'completed'
+                      ? 'bg-green-100 text-green-700 shadow-md'
+                      : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
+                  )}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {language === 'es' ? 'Citas completadas' : 'Completed appointments'} ({statusCounts.completed})
+                </button>
+                <button
+                  onClick={() => setStatusFilter('in-treatment')}
+                  className={cn(
+                    'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1',
+                    statusFilter === 'in-treatment'
+                      ? 'bg-blue-100 text-blue-700 shadow-md'
+                      : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
+                  )}
+                >
+                  <Clock className="w-4 h-4" />
+                  {language === 'es' ? 'En tratamiento' : 'In treatment'} ({statusCounts['in-treatment']})
+                </button>
+                <button
+                  onClick={() => setStatusFilter('lost')}
+                  className={cn(
+                    'px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all flex items-center gap-1',
+                    statusFilter === 'lost'
+                      ? 'bg-red-100 text-red-700 shadow-md'
+                      : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300'
+                  )}
+                >
+                  <UserX className="w-4 h-4" />
+                  {language === 'es' ? 'Citas perdidas' : 'Lost appointments'} ({statusCounts.lost})
+                </button>
               </div>
             )}
           </div>
@@ -431,8 +508,18 @@ export default function PacientesPage() {
             ) : (
               <div className="p-3 lg:p-4 space-y-2">
                 {filteredPatients.map((patient) => {
-                  const statusInfo = getStatusInfo(patient.status)
+                  const derivedStatus = getDerivedPatientStatus(patient.id)
+                  const appointmentCounts = getPatientAppointmentCounts(patient.id)
                   const isSelected = selectedPatient?.id === patient.id
+
+                  // Define status info based on derived status
+                  const statusInfo = {
+                    new: { label: language === 'es' ? 'Nuevo' : 'New', color: 'text-primary-600', bg: 'bg-primary-100' },
+                    scheduled: { label: language === 'es' ? 'Agendado' : 'Scheduled', color: 'text-purple-600', bg: 'bg-purple-100' },
+                    active: { label: language === 'es' ? 'Activo' : 'Active', color: 'text-green-600', bg: 'bg-green-100' },
+                    inactive: { label: language === 'es' ? 'Inactivo' : 'Inactive', color: 'text-slate-600', bg: 'bg-slate-100' },
+                    lost: { label: language === 'es' ? 'Perdido' : 'Lost', color: 'text-red-600', bg: 'bg-red-100' },
+                  }[derivedStatus]
 
                   return (
                     <button
@@ -468,6 +555,24 @@ export default function PacientesPage() {
                             </span>
                             <span className="text-sm text-slate-500">{patient.phone}</span>
                           </div>
+
+                          {/* Show appointment counts */}
+                          {appointmentCounts.total > 0 && (
+                            <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500">
+                              {appointmentCounts.pending > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3 h-3" />
+                                  {appointmentCounts.pending} {language === 'es' ? 'pendiente(s)' : 'pending'}
+                                </span>
+                              )}
+                              {appointmentCounts.completed > 0 && (
+                                <span className="flex items-center gap-1">
+                                  <CheckCircle className="w-3 h-3" />
+                                  {appointmentCounts.completed} {language === 'es' ? 'completada(s)' : 'completed'}
+                                </span>
+                              )}
+                            </div>
+                          )}
 
                           {patient.identificationNumber && (
                             <div className="flex items-center gap-1.5 mt-1.5">

@@ -258,6 +258,16 @@ interface AppContextType {
   // Appointment helpers
   getPatientCurrentStatus: (leadId: string) => 'active' | 'inactive' | 'scheduled' | 'completed'
   getAvailableSlots: (date: Date, durationMinutes?: number) => { time: string; available: boolean }[]
+  // NEW: Appointment-based status derivation
+  getDerivedPatientStatus: (leadId: string) => 'new' | 'scheduled' | 'active' | 'inactive' | 'lost'
+  getPatientAppointmentCounts: (leadId: string) => {
+    pending: number
+    confirmed: number
+    completed: number
+    noShow: number
+    cancelled: number
+    total: number
+  }
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -565,6 +575,61 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return slots
   }
 
+  // Helper: Get appointment counts for a patient
+  const getPatientAppointmentCounts = (leadId: string) => {
+    const lead = state.leads.find((l) => l.id === leadId)
+    if (!lead) {
+      return { pending: 0, confirmed: 0, completed: 0, noShow: 0, cancelled: 0, total: 0 }
+    }
+
+    const appointments = lead.followUps.filter((fu) => fu.type === 'appointment' || fu.type === 'meeting')
+    
+    return {
+      pending: appointments.filter((fu) => fu.appointmentStatus === 'pending').length,
+      confirmed: appointments.filter((fu) => fu.appointmentStatus === 'confirmed').length,
+      completed: appointments.filter((fu) => fu.appointmentStatus === 'completed').length,
+      noShow: appointments.filter((fu) => fu.appointmentStatus === 'no-show').length,
+      cancelled: appointments.filter((fu) => fu.appointmentStatus === 'cancelled').length,
+      total: appointments.length,
+    }
+  }
+
+  // Helper: Derive patient status from their appointments
+  const getDerivedPatientStatus = (leadId: string): 'new' | 'scheduled' | 'active' | 'inactive' | 'lost' => {
+    const lead = state.leads.find((l) => l.id === leadId)
+    if (!lead) return 'new'
+
+    const appointments = lead.followUps.filter((fu) => fu.type === 'appointment' || fu.type === 'meeting')
+    
+    // No appointments = New patient
+    if (appointments.length === 0) return 'new'
+
+    const counts = getPatientAppointmentCounts(leadId)
+    const now = new Date()
+
+    // Has pending or confirmed appointments = Scheduled
+    if (counts.pending > 0 || counts.confirmed > 0) return 'scheduled'
+
+    // Has recent completed appointments (within last 30 days) = Active
+    const recentCompleted = appointments.filter((fu) => {
+      if (fu.appointmentStatus !== 'completed' || !fu.completedAt) return false
+      const daysSince = (now.getTime() - new Date(fu.completedAt).getTime()) / (1000 * 60 * 60 * 24)
+      return daysSince <= 30
+    })
+    if (recentCompleted.length > 0) return 'active'
+
+    // Only no-show or cancelled appointments = Lost
+    if (counts.noShow > 0 || counts.cancelled > 0) {
+      const hasCompleted = counts.completed > 0
+      if (!hasCompleted) return 'lost'
+    }
+
+    // Has old completed appointments = Inactive
+    if (counts.completed > 0) return 'inactive'
+
+    return 'inactive'
+  }
+
   const value: AppContextType = {
     state,
     dispatch,
@@ -590,6 +655,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     isCalendarConnected,
     getPatientCurrentStatus,
     getAvailableSlots,
+    getDerivedPatientStatus,
+    getPatientAppointmentCounts,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

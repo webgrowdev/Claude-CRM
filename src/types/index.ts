@@ -14,6 +14,7 @@ export type FunnelStatus =
   | 'noshow'        // No asistió - Faltó a la cita
 
 // Legacy support - maps to new statuses
+// @deprecated Use appointment-based status model instead. Patient status should be derived from their appointments.
 export type LeadStatus = 'new' | 'contacted' | 'scheduled' | 'closed' | 'lost'
 
 // Lead Source Types
@@ -51,6 +52,7 @@ export interface Lead {
   identificationNumber?: string // DNI, passport, or other ID
   identificationType?: 'dni' | 'passport' | 'other' // Type of ID document
   source: LeadSource
+  /** @deprecated Use appointment-based status model instead. Patient status should be derived from their appointments. */
   status: LeadStatus
   funnelStatus?: FunnelStatus // New expanded status
   treatments: string[]
@@ -103,7 +105,9 @@ export interface Note {
 export type AttendanceStatus = 'pending' | 'attended' | 'noshow' | 'cancelled' | 'rescheduled'
 
 // Appointment-level status (part of appointment-centric model)
-export type AppointmentLevelStatus = 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'noshow' | 'cancelled'
+// This is the NEW appointment-centric model where each appointment has its own status
+export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'no-show' | 'cancelled'
+export type AppointmentLevelStatus = AppointmentStatus // Alias for compatibility
 
 // Treatment phase tracking
 export type TreatmentPhase = 'consultation' | 'treatment' | 'recovery' | 'completed' | 'follow_up'
@@ -135,12 +139,13 @@ export interface FollowUp {
   assignedTo?: string
   reminderSent?: boolean
   confirmedByPatient?: boolean
-  // Attendance tracking for appointments
+  // Attendance tracking for appointments (deprecated - use appointmentStatus)
+  /** @deprecated Use appointmentStatus instead */
   attendanceStatus?: AttendanceStatus
   attendanceMarkedAt?: Date
   attendanceMarkedBy?: string
-  // NEW: Appointment-centric status model
-  appointmentStatus?: AppointmentLevelStatus
+  // NEW: Appointment-centric status model - each appointment has its own status
+  appointmentStatus?: AppointmentStatus
   treatmentPhase?: TreatmentPhase
   treatmentOutcome?: TreatmentOutcome
   sessionNumber?: number // e.g., 1 of 3

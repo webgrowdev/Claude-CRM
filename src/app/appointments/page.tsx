@@ -40,11 +40,11 @@ import {
 } from 'lucide-react'
 import { AppShell } from '@/components/layout'
 import { Card, Avatar, Button, Badge, Modal, TimeSlotPicker } from '@/components/ui'
-import { QuickBookingBar, AppointmentStatusBadge } from '@/components/appointments'
+import { QuickBookingBar, AppointmentStatusBadge, PatientSearchModal } from '@/components/appointments'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { FollowUp, Lead, AttendanceStatus } from '@/types'
+import { FollowUp, Lead, AttendanceStatus, AppointmentStatus } from '@/types'
 
 interface AppointmentWithLead {
   lead: Lead
@@ -62,6 +62,7 @@ export default function AppointmentsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showAttendanceModal, setShowAttendanceModal] = useState(false)
   const [showRescheduleModal, setShowRescheduleModal] = useState(false)
+  const [showPatientSearchModal, setShowPatientSearchModal] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithLead | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'attended' | 'noshow'>('all')
   const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null)
@@ -298,7 +299,7 @@ export default function AppointmentsPage() {
                 </p>
               </div>
               <button
-                onClick={() => router.push('/pacientes?action=new')}
+                onClick={() => setShowPatientSearchModal(true)}
                 className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary-500/25"
               >
                 <Plus className="w-5 h-5" />
@@ -868,6 +869,13 @@ export default function AppointmentsPage() {
           </div>
         )}
       </Modal>
+
+      {/* Patient Search Modal */}
+      <PatientSearchModal
+        isOpen={showPatientSearchModal}
+        onClose={() => setShowPatientSearchModal(false)}
+        language={language}
+      />
     </AppShell>
   )
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import {
   Calendar,
   MessageCircle,
@@ -13,6 +13,7 @@ import {
   Video,
   AlertCircle,
   CheckCircle2,
+  Settings,
 } from 'lucide-react'
 import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Card, Button, Input, Modal } from '@/components/ui'
@@ -33,6 +34,7 @@ import { GoogleCalendarSettings, ManyChatSettings, CalendarEvent } from '@/types
 
 export default function IntegrationsPage() {
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [googleSettings, setGoogleSettings] = useState<GoogleCalendarSettings | null>(null)
   const [manychatSettings, setManychatSettings] = useState<ManyChatSettings | null>(null)
   const [upcomingEvents, setUpcomingEvents] = useState<CalendarEvent[]>([])
@@ -493,6 +495,14 @@ export default function IntegrationsPage() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => router.push('/settings/integrations/manychat')}
+                        icon={<Settings className="w-4 h-4" />}
+                      >
+                        Configuración Detallada
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => window.open('https://manychat.com', '_blank')}
                         icon={<ExternalLink className="w-4 h-4" />}
                       >
@@ -511,7 +521,7 @@ export default function IntegrationsPage() {
                 ) : (
                   <div className="mt-4">
                     <Button
-                      onClick={() => setShowManyChatModal(true)}
+                      onClick={() => router.push('/settings/integrations/manychat')}
                       icon={<MessageCircle className="w-4 h-4" />}
                     >
                       Conectar ManyChat

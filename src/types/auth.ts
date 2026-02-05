@@ -2,14 +2,14 @@
 // Authentication Types for Supabase
 // ============================================
 
-import { User as SupabaseUser, Session as SupabaseSession } from '@supabase/supabase-js'
+import { Session as SupabaseSession } from '@supabase/supabase-js'
 import { Database } from './database'
 
 // User role type from database
 export type UserRole = Database['public']['Tables']['profiles']['Row']['role']
 
-// Extended user type with profile data
-export interface UserProfile extends Database['public']['Tables']['profiles']['Row'] {
+// ✅ FIX: interface can't extend indexed access types -> use `type` intersection instead
+export type UserProfile = Database['public']['Tables']['profiles']['Row'] & {
   email?: string // From auth.users
 }
 
@@ -19,7 +19,7 @@ export interface AuthUser {
   id: string
   email?: string
   created_at?: string
-  
+
   // From profiles table
   profile?: UserProfile
 }

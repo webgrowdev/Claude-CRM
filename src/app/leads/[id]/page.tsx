@@ -7,8 +7,6 @@ import {
   MessageCircle,
   Mail,
   Calendar,
-  MoreVertical,
-  Send,
   Clock,
   FileText,
   CheckCircle,
@@ -19,19 +17,19 @@ import {
   Edit,
   Video,
   Loader2,
-  ExternalLink
+  ExternalLink,
 } from 'lucide-react'
+
 import { Header, PageContainer } from '@/components/layout'
 import { Card, Avatar, Badge, Button, Modal, Input, TextArea, Select } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import {
   formatTimeAgo,
   formatRelativeDate,
-  getStatusLabel,
   getSourceLabel,
   getWhatsAppUrl,
   getPhoneUrl,
-  getEmailUrl
+  getEmailUrl,
 } from '@/lib/utils'
 import { LeadStatus, FollowUpType } from '@/types'
 
@@ -56,6 +54,7 @@ export default function LeadDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [noteContent, setNoteContent] = useState('')
   const [isCreatingFollowUp, setIsCreatingFollowUp] = useState(false)
+
   const [followUp, setFollowUp] = useState<{
     type: FollowUpType
     scheduledAt: string
@@ -69,6 +68,62 @@ export default function LeadDetailPage() {
   })
 
   const calendarConnected = isCalendarConnected()
+
+  const getSourceIcon = (source: string) => {
+    switch (source) {
+      case 'instagram':
+        return <Instagram className="w-4 h-4" />
+      case 'whatsapp':
+        return <MessageCircle className="w-4 h-4" />
+      case 'website':
+        return <Globe className="w-4 h-4" />
+      case 'referral':
+        return <Users className="w-4 h-4" />
+      default:
+        return <Phone className="w-4 h-4" />
+    }
+  }
+
+  // ✅ FIX: Hook must NOT be after a conditional return.
+  // Make it safe when `lead` is null.
+  const timeline = useMemo(() => {
+    if (!lead) return []
+
+    const items: Array<{
+      id: string
+      type: 'note' | 'followup'
+      content: string
+      date: Date
+      completed?: boolean
+      meetLink?: string
+      followUpType?: string
+    }> = []
+
+    lead.notes.forEach((note) => {
+      items.push({
+        id: note.id,
+        type: 'note',
+        content: note.content,
+        date: new Date(note.createdAt),
+      })
+    })
+
+    lead.followUps.forEach((fu) => {
+      items.push({
+        id: fu.id,
+        type: 'followup',
+        content: `${fu.type === 'call' ? 'Llamada' : fu.type === 'message' ? 'Mensaje' : fu.type === 'email' ? 'Email' : 'Reunión'}${
+          fu.notes ? `: ${fu.notes}` : ''
+        }`,
+        date: new Date(fu.scheduledAt),
+        completed: fu.completed,
+        meetLink: fu.meetLink,
+        followUpType: fu.type,
+      })
+    })
+
+    return items.sort((a, b) => b.date.getTime() - a.date.getTime())
+  }, [lead])
 
   if (!lead) {
     return (
@@ -121,65 +176,9 @@ export default function LeadDetailPage() {
     router.push('/leads')
   }
 
-  const getSourceIcon = (source: string) => {
-    switch (source) {
-      case 'instagram':
-        return <Instagram className="w-4 h-4" />
-      case 'whatsapp':
-        return <MessageCircle className="w-4 h-4" />
-      case 'website':
-        return <Globe className="w-4 h-4" />
-      case 'referral':
-        return <Users className="w-4 h-4" />
-      default:
-        return <Phone className="w-4 h-4" />
-    }
-  }
-
-  // Combine notes and follow-ups into timeline
-  const timeline = useMemo(() => {
-    const items: Array<{
-      id: string
-      type: 'note' | 'followup' | 'status'
-      content: string
-      date: Date
-      completed?: boolean
-      meetLink?: string
-      followUpType?: string
-    }> = []
-
-    lead.notes.forEach(note => {
-      items.push({
-        id: note.id,
-        type: 'note',
-        content: note.content,
-        date: new Date(note.createdAt),
-      })
-    })
-
-    lead.followUps.forEach(fu => {
-      items.push({
-        id: fu.id,
-        type: 'followup',
-        content: `${fu.type === 'call' ? 'Llamada' : fu.type === 'message' ? 'Mensaje' : fu.type === 'email' ? 'Email' : 'Reunión'}${fu.notes ? `: ${fu.notes}` : ''}`,
-        date: new Date(fu.scheduledAt),
-        completed: fu.completed,
-        meetLink: fu.meetLink,
-        followUpType: fu.type,
-      })
-    })
-
-    return items.sort((a, b) => b.date.getTime() - a.date.getTime())
-  }, [lead])
-
   return (
     <>
-      <Header
-        title={lead.name}
-        showBack
-        showMenu
-        onMenuClick={() => setShowMenu(true)}
-      />
+      <Header title={lead.name} showBack showMenu onMenuClick={() => setShowMenu(true)} />
 
       <PageContainer withBottomNav={false} className="pb-8">
         {/* Profile Section */}
@@ -190,9 +189,7 @@ export default function LeadDetailPage() {
             {getSourceIcon(lead.source)}
             <span className="text-sm">Vía {getSourceLabel(lead.source)}</span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Agregado {formatTimeAgo(new Date(lead.createdAt))}
-          </p>
+          <p className="text-xs text-slate-400 mt-1">Agregado {formatTimeAgo(new Date(lead.createdAt))}</p>
         </Card>
 
         {/* Quick Actions */}
@@ -256,11 +253,7 @@ export default function LeadDetailPage() {
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    lead.status === option.value ? 'bg-white' : option.color
-                  }`}
-                />
+                <span className={`w-2 h-2 rounded-full ${lead.status === option.value ? 'bg-white' : option.color}`} />
                 {option.label}
               </button>
             ))}
@@ -280,6 +273,7 @@ export default function LeadDetailPage() {
                 <p className="text-sm text-slate-800">{lead.phone}</p>
               </div>
             </div>
+
             {lead.email && (
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
@@ -300,7 +294,7 @@ export default function LeadDetailPage() {
             <p className="text-sm font-medium text-slate-700 mb-3">Tratamientos de Interés</p>
             <div className="flex flex-wrap gap-2">
               {lead.treatments.map((treatment, i) => (
-                <Badge key={i} variant="outline">
+                <Badge key={`${treatment}-${i}`} variant="outline">
                   {treatment}
                 </Badge>
               ))}
@@ -312,20 +306,13 @@ export default function LeadDetailPage() {
         <Card className="mt-4">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm font-medium text-slate-700">Notas y Actividad</p>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setShowNoteModal(true)}
-              icon={<FileText className="w-4 h-4" />}
-            >
+            <Button size="sm" variant="ghost" onClick={() => setShowNoteModal(true)} icon={<FileText className="w-4 h-4" />}>
               Agregar nota
             </Button>
           </div>
 
           {timeline.length === 0 ? (
-            <p className="text-sm text-slate-500 text-center py-4">
-              No hay actividad todavía
-            </p>
+            <p className="text-sm text-slate-500 text-center py-4">No hay actividad todavía</p>
           ) : (
             <div className="space-y-4">
               {timeline.map((item) => (
@@ -356,14 +343,15 @@ export default function LeadDetailPage() {
                     </div>
                     <div className="flex-1 w-px bg-slate-200 mt-2" />
                   </div>
+
                   <div className="flex-1 pb-4">
                     <p className="text-sm text-slate-800">{item.content}</p>
                     <p className="text-xs text-slate-400 mt-1">
                       {item.type === 'followup'
-                        ? (item.completed ? 'Completado ' : 'Programado para ') +
-                          formatRelativeDate(item.date)
+                        ? (item.completed ? 'Completado ' : 'Programado para ') + formatRelativeDate(item.date)
                         : formatTimeAgo(item.date)}
                     </p>
+
                     {item.meetLink && (
                       <a
                         href={item.meetLink}
@@ -385,12 +373,7 @@ export default function LeadDetailPage() {
       </PageContainer>
 
       {/* Menu Modal */}
-      <Modal
-        isOpen={showMenu}
-        onClose={() => setShowMenu(false)}
-        title="Opciones"
-        size="sm"
-      >
+      <Modal isOpen={showMenu} onClose={() => setShowMenu(false)} title="Opciones" size="sm">
         <div className="space-y-2">
           <button
             onClick={() => {
@@ -402,6 +385,7 @@ export default function LeadDetailPage() {
             <Edit className="w-5 h-5 text-slate-500" />
             <span className="text-slate-700">Editar lead</span>
           </button>
+
           <button
             onClick={() => {
               setShowMenu(false)
@@ -416,11 +400,7 @@ export default function LeadDetailPage() {
       </Modal>
 
       {/* Add Note Modal */}
-      <Modal
-        isOpen={showNoteModal}
-        onClose={() => setShowNoteModal(false)}
-        title="Agregar Nota"
-      >
+      <Modal isOpen={showNoteModal} onClose={() => setShowNoteModal(false)} title="Agregar Nota">
         <div className="space-y-4">
           <TextArea
             placeholder="Escribe una nota sobre este lead..."
@@ -429,11 +409,7 @@ export default function LeadDetailPage() {
             className="min-h-[120px]"
           />
           <div className="flex gap-3">
-            <Button
-              variant="outline"
-              fullWidth
-              onClick={() => setShowNoteModal(false)}
-            >
+            <Button variant="outline" fullWidth onClick={() => setShowNoteModal(false)}>
               Cancelar
             </Button>
             <Button fullWidth onClick={handleAddNote}>
@@ -444,11 +420,7 @@ export default function LeadDetailPage() {
       </Modal>
 
       {/* Add Follow-up Modal */}
-      <Modal
-        isOpen={showFollowUpModal}
-        onClose={() => setShowFollowUpModal(false)}
-        title="Programar Seguimiento"
-      >
+      <Modal isOpen={showFollowUpModal} onClose={() => setShowFollowUpModal(false)} title="Programar Seguimiento">
         <div className="space-y-4">
           <Select
             label="Tipo"
@@ -462,9 +434,12 @@ export default function LeadDetailPage() {
             ]}
           />
 
-          {/* Show calendar sync indicator for meetings */}
           {followUp.type === 'meeting' && (
-            <div className={`flex items-center gap-2 p-3 rounded-lg ${calendarConnected ? 'bg-purple-50 border border-purple-200' : 'bg-slate-50 border border-slate-200'}`}>
+            <div
+              className={`flex items-center gap-2 p-3 rounded-lg ${
+                calendarConnected ? 'bg-purple-50 border border-purple-200' : 'bg-slate-50 border border-slate-200'
+              }`}
+            >
               <Video className={`w-5 h-5 ${calendarConnected ? 'text-purple-600' : 'text-slate-400'}`} />
               <div className="flex-1">
                 <p className={`text-sm font-medium ${calendarConnected ? 'text-purple-700' : 'text-slate-600'}`}>
@@ -473,20 +448,15 @@ export default function LeadDetailPage() {
                 <p className="text-xs text-slate-500">
                   {calendarConnected
                     ? 'Se generará automáticamente un enlace de Google Meet'
-                    : 'Conecta tu calendario en Configuración → Integraciones'
-                  }
+                    : 'Conecta tu calendario en Configuración → Integraciones'}
                 </p>
               </div>
-              {calendarConnected && (
-                <CheckCircle className="w-5 h-5 text-purple-600" />
-              )}
+              {calendarConnected && <CheckCircle className="w-5 h-5 text-purple-600" />}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Fecha y Hora
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-1.5">Fecha y Hora</label>
             <input
               type="datetime-local"
               value={followUp.scheduledAt}
@@ -495,12 +465,9 @@ export default function LeadDetailPage() {
             />
           </div>
 
-          {/* Duration selector for meetings */}
           {followUp.type === 'meeting' && (
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                Duración
-              </label>
+              <label className="block text-sm font-medium text-slate-700 mb-1.5">Duración</label>
               <div className="flex gap-2">
                 {[15, 30, 45, 60, 90].map((mins) => (
                   <button
@@ -508,9 +475,7 @@ export default function LeadDetailPage() {
                     type="button"
                     onClick={() => setFollowUp({ ...followUp, duration: mins })}
                     className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-colors ${
-                      followUp.duration === mins
-                        ? 'bg-primary-500 text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      followUp.duration === mins ? 'bg-primary-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
                     {mins < 60 ? `${mins}m` : `${mins / 60}h`}
@@ -528,26 +493,19 @@ export default function LeadDetailPage() {
           />
 
           <div className="flex gap-3 pt-2">
-            <Button
-              variant="outline"
-              fullWidth
-              onClick={() => setShowFollowUpModal(false)}
-              disabled={isCreatingFollowUp}
-            >
+            <Button variant="outline" fullWidth onClick={() => setShowFollowUpModal(false)} disabled={isCreatingFollowUp}>
               Cancelar
             </Button>
-            <Button
-              fullWidth
-              onClick={handleAddFollowUp}
-              disabled={isCreatingFollowUp}
-            >
+            <Button fullWidth onClick={handleAddFollowUp} disabled={isCreatingFollowUp}>
               {isCreatingFollowUp ? (
                 <span className="flex items-center justify-center gap-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
                   {followUp.type === 'meeting' && calendarConnected ? 'Creando evento...' : 'Guardando...'}
                 </span>
+              ) : followUp.type === 'meeting' && calendarConnected ? (
+                'Crear con Google Meet'
               ) : (
-                followUp.type === 'meeting' && calendarConnected ? 'Crear con Google Meet' : 'Programar'
+                'Programar'
               )}
             </Button>
           </div>
@@ -555,21 +513,12 @@ export default function LeadDetailPage() {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        title="Eliminar Lead"
-        size="sm"
-      >
+      <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} title="Eliminar Lead" size="sm">
         <p className="text-slate-600 mb-6">
           ¿Estás seguro de que deseas eliminar a <strong>{lead.name}</strong>? Esta acción no se puede deshacer.
         </p>
         <div className="flex gap-3">
-          <Button
-            variant="outline"
-            fullWidth
-            onClick={() => setShowDeleteConfirm(false)}
-          >
+          <Button variant="outline" fullWidth onClick={() => setShowDeleteConfirm(false)}>
             Cancelar
           </Button>
           <Button variant="danger" fullWidth onClick={handleDelete}>

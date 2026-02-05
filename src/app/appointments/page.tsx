@@ -40,6 +40,7 @@ import {
 } from 'lucide-react'
 import { AppShell } from '@/components/layout'
 import { Card, Avatar, Button, Badge, Modal, TimeSlotPicker } from '@/components/ui'
+import { QuickBookingBar, AppointmentStatusBadge } from '@/components/appointments'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n'
 import { cn } from '@/lib/utils'
@@ -370,6 +371,16 @@ export default function AppointmentsPage() {
           </div>
         </div>
 
+        {/* Quick Booking Bar */}
+        <div className="flex-shrink-0 px-4 lg:px-6 py-4 bg-slate-50">
+          <QuickBookingBar
+            onBookingComplete={(leadId, followUp) => {
+              // Refresh the view by selecting the appointment date
+              setSelectedDate(new Date(followUp.scheduledAt))
+            }}
+          />
+        </div>
+
         {/* Main Content */}
         <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
           {/* Left: Calendar (collapsible on mobile) */}
@@ -585,7 +596,18 @@ export default function AppointmentsPage() {
                                     </p>
                                   )}
                                 </div>
-                                {getStatusBadge(followUp.attendanceStatus)}
+                                <div className="flex flex-col gap-1">
+                                  {getStatusBadge(followUp.attendanceStatus)}
+                                  {followUp.appointmentStatus && (
+                                    <AppointmentStatusBadge
+                                      status={followUp.appointmentStatus}
+                                      phase={followUp.treatmentPhase}
+                                      sessionNumber={followUp.sessionNumber}
+                                      totalSessions={followUp.totalSessions}
+                                      size="sm"
+                                    />
+                                  )}
+                                </div>
                               </div>
 
                               {followUp.treatmentName && (

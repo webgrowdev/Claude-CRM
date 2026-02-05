@@ -102,6 +102,20 @@ export interface Note {
 // Attendance status for in-person appointments
 export type AttendanceStatus = 'pending' | 'attended' | 'noshow' | 'cancelled' | 'rescheduled'
 
+// Appointment-level status (part of appointment-centric model)
+export type AppointmentLevelStatus = 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'noshow' | 'cancelled'
+
+// Treatment phase tracking
+export type TreatmentPhase = 'consultation' | 'treatment' | 'recovery' | 'completed' | 'follow_up'
+
+// Treatment outcome tracking
+export interface TreatmentOutcome {
+  result: 'successful' | 'partial' | 'needs_followup' | 'cancelled'
+  description?: string
+  nextSteps?: string
+  nextAppointmentDate?: Date
+}
+
 export interface FollowUp {
   id: string
   leadId: string
@@ -125,6 +139,12 @@ export interface FollowUp {
   attendanceStatus?: AttendanceStatus
   attendanceMarkedAt?: Date
   attendanceMarkedBy?: string
+  // NEW: Appointment-centric status model
+  appointmentStatus?: AppointmentLevelStatus
+  treatmentPhase?: TreatmentPhase
+  treatmentOutcome?: TreatmentOutcome
+  sessionNumber?: number // e.g., 1 of 3
+  totalSessions?: number // e.g., 3
 }
 
 // =============================================

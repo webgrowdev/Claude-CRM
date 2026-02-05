@@ -255,6 +255,9 @@ interface AppContextType {
   getUnreadNotificationsCount: () => number
   // Calendar integration
   isCalendarConnected: () => boolean
+  // Appointment helpers
+  getPatientCurrentStatus: (leadId: string) => 'active' | 'inactive' | 'scheduled' | 'completed'
+  getAvailableSlots: (date: Date, duration?: number) => { time: string; available: boolean }[]
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
@@ -473,6 +476,95 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return state.notifications.filter((n) => !n.read).length
   }
 
+  // Helper: Derive patient current status from their appointments
+  const getPatientCurrentStatus = (leadId: string): 'active' | 'inactive' | 'scheduled' | 'completed' => {
+    const lead = state.leads.find((l) => l.id === leadId)
+    if (!lead || lead.followUps.length === 0) return 'inactive'
+
+    const now = new Date()
+    const appointments = lead.followUps.filter((fu) => fu.type === 'appointment' || fu.type === 'meeting')
+
+    // Check for upcoming appointments
+    const upcomingAppointments = appointments.filter(
+      (fu) => !fu.completed && new Date(fu.scheduledAt) > now
+    )
+    if (upcomingAppointments.length > 0) return 'scheduled'
+
+    // Check for recent completed appointments (within last 30 days)
+    const recentCompleted = appointments.filter(
+      (fu) =>
+        fu.completed &&
+        fu.completedAt &&
+        (now.getTime() - new Date(fu.completedAt).getTime()) / (1000 * 60 * 60 * 24) <= 30
+    )
+    if (recentCompleted.length > 0) return 'active'
+
+    // Check if all appointments are completed
+    const allCompleted = appointments.length > 0 && appointments.every((fu) => fu.completed)
+    if (allCompleted) return 'completed'
+
+    return 'inactive'
+  }
+
+  // Helper: Get available time slots for a given date
+  const getAvailableSlots = (date: Date, duration: number = 30) => {
+    const slots: { time: string; available: boolean }[] = []
+    const workingHours = state.settings.workingHours || { start: '09:00', end: '18:00', days: [1, 2, 3, 4, 5] }
+
+    // Check if the date is a working day
+    const dayOfWeek = date.getDay()
+    if (!workingHours.days.includes(dayOfWeek)) {
+      return slots // Return empty array for non-working days
+    }
+
+    // Get all appointments for the selected date
+    const appointmentsOnDate: Date[] = []
+    state.leads.forEach((lead) => {
+      lead.followUps
+        .filter((fu) => !fu.completed && (fu.type === 'appointment' || fu.type === 'meeting'))
+        .forEach((fu) => {
+          const fuDate = new Date(fu.scheduledAt)
+          if (
+            fuDate.getFullYear() === date.getFullYear() &&
+            fuDate.getMonth() === date.getMonth() &&
+            fuDate.getDate() === date.getDate()
+          ) {
+            appointmentsOnDate.push(fuDate)
+          }
+        })
+    })
+
+    // Generate slots from working hours
+    const [startHour, startMin] = workingHours.start.split(':').map(Number)
+    const [endHour, endMin] = workingHours.end.split(':').map(Number)
+
+    let currentHour = startHour
+    let currentMin = startMin
+
+    while (currentHour < endHour || (currentHour === endHour && currentMin < endMin)) {
+      const timeStr = `${currentHour.toString().padStart(2, '0')}:${currentMin.toString().padStart(2, '0')}`
+      const slotDate = new Date(date)
+      slotDate.setHours(currentHour, currentMin, 0, 0)
+
+      // Check if slot is occupied
+      const isOccupied = appointmentsOnDate.some((apptDate) => {
+        const diff = Math.abs(slotDate.getTime() - apptDate.getTime()) / (1000 * 60)
+        return diff < duration
+      })
+
+      slots.push({ time: timeStr, available: !isOccupied })
+
+      // Move to next slot
+      currentMin += duration
+      if (currentMin >= 60) {
+        currentHour++
+        currentMin = 0
+      }
+    }
+
+    return slots
+  }
+
   const value: AppContextType = {
     state,
     dispatch,
@@ -496,6 +588,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     getRecentLeads,
     getUnreadNotificationsCount,
     isCalendarConnected,
+    getPatientCurrentStatus,
+    getAvailableSlots,
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

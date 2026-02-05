@@ -1,13 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
 
-export async function POST(request: NextRequest) {
-  // In a real implementation, you might want to:
-  // 1. Blacklist the token
-  // 2. Clear any server-side sessions
-  // 3. Log the logout action
-  
-  return NextResponse.json({
-    success: true,
-    message: 'Sesión cerrada correctamente',
-  })
+export async function POST() {
+  try {
+    // Sign out from Supabase Auth
+    const { error } = await supabase.auth.signOut()
+    
+    if (error) {
+      console.error('Logout error:', error)
+      return NextResponse.json({
+        success: false,
+        error: 'Error al cerrar sesión',
+      }, { status: 500 })
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Sesión cerrada correctamente',
+    })
+  } catch (error) {
+    console.error('Logout error:', error)
+    return NextResponse.json({
+      success: false,
+      error: 'Error al cerrar sesión',
+    }, { status: 500 })
+  }
 }

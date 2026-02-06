@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       console.error('Missing Supabase URL or Anon Key environment variables')
       return NextResponse.json(
-        { error: 'Server configuration error: Missing Supabase credentials' },
+        { error: 'Error de configuración del servidor: faltan credenciales de Supabase' },
         { status: 500 }
       )
     }
@@ -156,7 +156,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof Error) {
       if (error.message.includes('SUPABASE') || error.message.includes('environment variable')) {
         return NextResponse.json(
-          { error: 'Database connection error. Please check server configuration.' },
+          { error: 'Error de conexión con la base de datos. Por favor verifica la configuración del servidor.' },
           { status: 500 }
         )
       }

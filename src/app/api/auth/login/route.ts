@@ -13,6 +13,26 @@ type UserInsert = Database['public']['Tables']['users']['Insert']
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate Supabase configuration first
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('Missing Supabase URL or Anon Key environment variables')
+      return NextResponse.json(
+        { error: 'Error de configuración del servidor: faltan credenciales de Supabase' },
+        { status: 500 }
+      )
+    }
+
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable')
+      return NextResponse.json(
+        {
+          error:
+            'Falta SUPABASE_SERVICE_ROLE_KEY en el servidor. Sin esto, supabaseAdmin no puede bypass RLS.',
+        },
+        { status: 500 }
+      )
+    }
+
     const body = (await request.json().catch(() => null)) as
       | { email?: string; password?: string }
       | null
@@ -27,18 +47,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-
-    // ⚠️ Si esto falta, supabaseAdmin NO bypass RLS (y tu lookup puede "no encontrar" nada)
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      return NextResponse.json(
-        {
-          error:
-            'Falta SUPABASE_SERVICE_ROLE_KEY en el servidor. Sin esto, supabaseAdmin no puede bypass RLS.',
-        },
-        { status: 500 }
-      )
-    }
-
     // 1) Login contra Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
@@ -46,6 +54,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (authError || !authData.user) {
+      console.error('Supabase auth error:', authError)
       return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 })
     }
 
@@ -142,6 +151,17 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Login error:', error)
+    
+    // Check if it's a Supabase connection error
+    if (error instanceof Error) {
+      if (error.message.includes('SUPABASE') || error.message.includes('environment variable')) {
+        return NextResponse.json(
+          { error: 'Error de conexión con la base de datos. Por favor verifica la configuración del servidor.' },
+          { status: 500 }
+        )
+      }
+    }
+    
     return NextResponse.json({ error: 'Error al iniciar sesión' }, { status: 500 })
   }
 }

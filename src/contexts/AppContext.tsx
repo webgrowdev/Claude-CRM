@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react'
-import { Lead, LeadStatus, Treatment, User, Notification, Note, FollowUp, Settings, Appointment } from '@/types'
+import { Lead, LeadStatus, Treatment, User, Notification, Note, FollowUp, Settings, Appointment, AppointmentStatus } from '@/types'
 import { initialLeads, treatments as initialTreatments, currentUser, notifications as initialNotifications } from '@/data/mockData'
 import { generateId } from '@/lib/utils'
 import {
@@ -279,35 +279,209 @@ const AppContext = createContext<AppContextType | undefined>(undefined)
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
 
+  // Helper to get JWT token from cookie
+  const getAuthToken = (): string | null => {
+    if (typeof document === 'undefined') return null
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('token='))
+      ?.split('=')[1]
+    return token || null
+  }
+
   // Load initial data
   useEffect(() => {
-    // Simulate loading from storage/API
-    const loadData = () => {
-      // Try to load from localStorage first
-      const savedLeads = localStorage.getItem('clinic_leads')
-      const savedTreatments = localStorage.getItem('clinic_treatments')
-      const savedSettings = localStorage.getItem('clinic_settings')
-      const savedUser = localStorage.getItem('clinic_user')
+    const loadData = async () => {
+      const token = getAuthToken()
 
-      dispatch({
-        type: 'SET_LEADS',
-        payload: savedLeads ? JSON.parse(savedLeads, dateReviver) : initialLeads,
-      })
+      if (!token) {
+        console.warn('No authentication token found, using cached data')
+        // Fallback to localStorage if no token
+        const savedLeads = localStorage.getItem('clinic_leads')
+        const savedTreatments = localStorage.getItem('clinic_treatments')
+        const savedSettings = localStorage.getItem('clinic_settings')
+        const savedUser = localStorage.getItem('clinic_user')
 
-      dispatch({
-        type: 'SET_TREATMENTS',
-        payload: savedTreatments ? JSON.parse(savedTreatments) : initialTreatments,
-      })
+        dispatch({
+          type: 'SET_LEADS',
+          payload: savedLeads ? JSON.parse(savedLeads, dateReviver) : initialLeads,
+        })
 
-      if (savedSettings) {
-        dispatch({ type: 'UPDATE_SETTINGS', payload: JSON.parse(savedSettings) })
+        dispatch({
+          type: 'SET_TREATMENTS',
+          payload: savedTreatments ? JSON.parse(savedTreatments) : initialTreatments,
+        })
+
+        if (savedSettings) {
+          dispatch({ type: 'UPDATE_SETTINGS', payload: JSON.parse(savedSettings) })
+        }
+
+        if (savedUser) {
+          dispatch({ type: 'UPDATE_USER', payload: JSON.parse(savedUser) })
+        }
+
+        dispatch({ type: 'SET_LOADING', payload: false })
+        return
       }
 
-      if (savedUser) {
-        dispatch({ type: 'UPDATE_USER', payload: JSON.parse(savedUser) })
-      }
+      // Load data from APIs
+      try {
+        const headers = {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        }
 
-      dispatch({ type: 'SET_LOADING', payload: false })
+        // Load patients/leads from API
+        // Note: Using limit=1000 for initial load. For large datasets, consider:
+        // - Implementing pagination (load on-demand)
+        // - Using virtualized lists
+        // - Filtering to recent/active patients only
+        const patientsResponse = await fetch('/api/patients?limit=1000', { headers })
+        let leads: Lead[] = []
+        
+        if (patientsResponse.ok) {
+          const patientsData = await patientsResponse.json()
+          leads = (patientsData.patients || []).map((p: any) => ({
+            id: p.id,
+            name: p.name,
+            email: p.email || '',
+            phone: p.phone,
+            identificationNumber: p.identification_number,
+            identificationType: p.identification_type,
+            source: p.source || 'other',
+            status: p.status || 'new',
+            funnelStatus: p.funnel_status,
+            // TODO: Load treatments from patient_treatments junction table once implemented
+            treatments: [],
+            // TODO: Load notes from notes table once implemented
+            notes: [],
+            // Will be populated with appointments below
+            followUps: [],
+            assignedTo: p.assigned_to,
+            createdAt: new Date(p.created_at),
+            updatedAt: new Date(p.updated_at),
+            closedAt: p.closed_at ? new Date(p.closed_at) : undefined,
+            value: p.value,
+            instagram: p.instagram_handle,
+            preferredTime: p.preferred_time,
+            campaign: p.campaign,
+            tags: p.tags || [],
+            lastContactAt: p.last_contact_at ? new Date(p.last_contact_at) : undefined,
+            nextActionAt: p.next_action_at ? new Date(p.next_action_at) : undefined,
+            nextAction: p.next_action,
+            totalPaid: p.total_paid,
+            totalPending: p.total_pending,
+            npsScore: p.nps_score,
+          }))
+        } else {
+          // Fallback to localStorage on API error
+          const savedLeads = localStorage.getItem('clinic_leads')
+          leads = savedLeads ? JSON.parse(savedLeads, dateReviver) : initialLeads
+        }
+
+        // Load appointments from API and merge into leads
+        // Note: Using limit=1000 for initial load. For large datasets, consider:
+        // - Loading appointments for a specific date range only (e.g., current month ± 1 month)
+        // - Implementing on-demand loading when viewing calendar/appointments pages
+        // - Using pagination with cursor-based approach
+        const appointmentsResponse = await fetch('/api/appointments?limit=1000', { headers })
+        if (appointmentsResponse.ok) {
+          const appointmentsData = await appointmentsResponse.json()
+          const appointments = (appointmentsData.appointments || []).map((a: any) => ({
+            id: a.id,
+            patientId: a.patient_id,
+            patientName: a.patient?.name || '',
+            doctorId: a.doctor_id || '',
+            doctorName: a.doctor?.name || '',
+            treatmentId: a.treatment_id,
+            treatmentName: a.treatment?.name || '',
+            scheduledAt: new Date(a.scheduled_at),
+            duration: a.duration,
+            status: a.status,
+            notes: a.notes,
+            googleEventId: a.google_event_id,
+            meetLink: a.meet_link,
+            confirmedAt: a.confirmed_at ? new Date(a.confirmed_at) : undefined,
+            completedAt: a.completed_at ? new Date(a.completed_at) : undefined,
+            color: a.doctor?.color,
+          }))
+          dispatch({ type: 'SET_APPOINTMENTS', payload: appointments })
+
+          // Merge appointments into leads as followUps
+          leads = leads.map(lead => {
+            const leadAppointments = appointments
+              .filter((apt: any) => apt.patientId === lead.id)
+              .map((apt: any) => ({
+                id: apt.id,
+                leadId: lead.id,
+                type: 'appointment' as const,
+                scheduledAt: apt.scheduledAt,
+                completed: apt.status === 'completed',
+                completedAt: apt.completedAt,
+                notes: apt.notes,
+                googleEventId: apt.googleEventId,
+                meetLink: apt.meetLink,
+                duration: apt.duration,
+                treatmentId: apt.treatmentId,
+                treatmentName: apt.treatmentName,
+                assignedTo: apt.doctorId,
+                appointmentStatus: apt.status as AppointmentStatus,
+              }))
+            return {
+              ...lead,
+              followUps: [...(lead.followUps || []), ...leadAppointments],
+            }
+          })
+        }
+
+        dispatch({ type: 'SET_LEADS', payload: leads })
+        // Cache in localStorage
+        localStorage.setItem('clinic_leads', JSON.stringify(leads))
+
+        // Keep treatments from localStorage for now (until we have a treatments API endpoint)
+        const savedTreatments = localStorage.getItem('clinic_treatments')
+        dispatch({
+          type: 'SET_TREATMENTS',
+          payload: savedTreatments ? JSON.parse(savedTreatments) : initialTreatments,
+        })
+
+        const savedSettings = localStorage.getItem('clinic_settings')
+        if (savedSettings) {
+          dispatch({ type: 'UPDATE_SETTINGS', payload: JSON.parse(savedSettings) })
+        }
+
+        const savedUser = localStorage.getItem('clinic_user')
+        if (savedUser) {
+          dispatch({ type: 'UPDATE_USER', payload: JSON.parse(savedUser) })
+        }
+      } catch (error) {
+        console.error('Error loading data from APIs:', error)
+        // Fallback to localStorage on error
+        const savedLeads = localStorage.getItem('clinic_leads')
+        const savedTreatments = localStorage.getItem('clinic_treatments')
+        const savedSettings = localStorage.getItem('clinic_settings')
+        const savedUser = localStorage.getItem('clinic_user')
+
+        dispatch({
+          type: 'SET_LEADS',
+          payload: savedLeads ? JSON.parse(savedLeads, dateReviver) : initialLeads,
+        })
+
+        dispatch({
+          type: 'SET_TREATMENTS',
+          payload: savedTreatments ? JSON.parse(savedTreatments) : initialTreatments,
+        })
+
+        if (savedSettings) {
+          dispatch({ type: 'UPDATE_SETTINGS', payload: JSON.parse(savedSettings) })
+        }
+
+        if (savedUser) {
+          dispatch({ type: 'UPDATE_USER', payload: JSON.parse(savedUser) })
+        }
+      } finally {
+        dispatch({ type: 'SET_LOADING', payload: false })
+      }
     }
 
     loadData()
@@ -339,28 +513,201 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [state.user, state.isLoading])
 
   // Actions
-  const addLead = (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'notes' | 'followUps'>) => {
-    const newLead: Lead = {
-      ...leadData,
-      id: `lead-${generateId()}`,
-      notes: [],
-      followUps: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+  const addLead = async (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'notes' | 'followUps'>) => {
+    const token = getAuthToken()
+    
+    if (!token) {
+      console.warn('No token, using local-only mode')
+      const newLead: Lead = {
+        ...leadData,
+        id: `lead-${generateId()}`,
+        notes: [],
+        followUps: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+      dispatch({ type: 'ADD_LEAD', payload: newLead })
+      return
     }
-    dispatch({ type: 'ADD_LEAD', payload: newLead })
+
+    try {
+      // Call API to create patient
+      const response = await fetch('/api/patients', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: leadData.name,
+          email: leadData.email,
+          phone: leadData.phone,
+          identification_number: leadData.identificationNumber,
+          identification_type: leadData.identificationType,
+          source: leadData.source,
+          status: leadData.status,
+          funnel_status: leadData.funnelStatus,
+          instagram_handle: leadData.instagram,
+          preferred_time: leadData.preferredTime,
+          campaign: leadData.campaign,
+          tags: leadData.tags,
+          assigned_to: leadData.assignedTo,
+          value: leadData.value,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const patient = data.patient
+        const newLead: Lead = {
+          id: patient.id,
+          name: patient.name,
+          email: patient.email || '',
+          phone: patient.phone,
+          identificationNumber: patient.identification_number,
+          identificationType: patient.identification_type,
+          source: patient.source,
+          status: patient.status,
+          funnelStatus: patient.funnel_status,
+          treatments: leadData.treatments || [],
+          notes: [],
+          followUps: [],
+          assignedTo: patient.assigned_to,
+          createdAt: new Date(patient.created_at),
+          updatedAt: new Date(patient.updated_at),
+          closedAt: patient.closed_at ? new Date(patient.closed_at) : undefined,
+          value: patient.value,
+          instagram: patient.instagram_handle,
+          preferredTime: patient.preferred_time,
+          campaign: patient.campaign,
+          tags: patient.tags || [],
+          totalPaid: patient.total_paid,
+          totalPending: patient.total_pending,
+        }
+        dispatch({ type: 'ADD_LEAD', payload: newLead })
+      } else {
+        console.error('Failed to create patient via API')
+        // Fallback to local-only
+        const newLead: Lead = {
+          ...leadData,
+          id: `lead-${generateId()}`,
+          notes: [],
+          followUps: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }
+        dispatch({ type: 'ADD_LEAD', payload: newLead })
+      }
+    } catch (error) {
+      console.error('Error calling API:', error)
+      // Fallback to local-only
+      const newLead: Lead = {
+        ...leadData,
+        id: `lead-${generateId()}`,
+        notes: [],
+        followUps: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }
+      dispatch({ type: 'ADD_LEAD', payload: newLead })
+    }
   }
 
-  const updateLead = (lead: Lead) => {
+  const updateLead = async (lead: Lead) => {
+    const token = getAuthToken()
+    
+    // Update local state immediately
     dispatch({ type: 'UPDATE_LEAD', payload: lead })
+
+    if (!token) {
+      console.warn('No token, local-only update')
+      return
+    }
+
+    try {
+      // Call API to update patient
+      await fetch(`/api/patients?id=${lead.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: lead.name,
+          email: lead.email,
+          phone: lead.phone,
+          identification_number: lead.identificationNumber,
+          identification_type: lead.identificationType,
+          source: lead.source,
+          status: lead.status,
+          funnel_status: lead.funnelStatus,
+          instagram_handle: lead.instagram,
+          preferred_time: lead.preferredTime,
+          campaign: lead.campaign,
+          tags: lead.tags,
+          assigned_to: lead.assignedTo,
+          value: lead.value,
+          last_contact_at: lead.lastContactAt,
+          next_action_at: lead.nextActionAt,
+          next_action: lead.nextAction,
+        }),
+      })
+    } catch (error) {
+      console.error('Error updating patient via API:', error)
+    }
   }
 
-  const deleteLead = (id: string) => {
+  const deleteLead = async (id: string) => {
+    const token = getAuthToken()
+    
+    // Update local state immediately
     dispatch({ type: 'DELETE_LEAD', payload: id })
+
+    if (!token) {
+      console.warn('No token, local-only delete')
+      return
+    }
+
+    try {
+      // Call API to delete patient
+      await fetch(`/api/patients?id=${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+    } catch (error) {
+      console.error('Error deleting patient via API:', error)
+    }
   }
 
-  const updateLeadStatus = (id: string, status: LeadStatus) => {
+  const updateLeadStatus = async (id: string, status: LeadStatus) => {
+    const token = getAuthToken()
+    
+    // Update local state immediately
     dispatch({ type: 'UPDATE_LEAD_STATUS', payload: { id, status } })
+
+    if (!token) {
+      console.warn('No token, local-only status update')
+      return
+    }
+
+    try {
+      // Call API to update patient status
+      await fetch(`/api/patients?id=${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status,
+          closed_at: status === 'closed' ? new Date().toISOString() : null,
+        }),
+      })
+    } catch (error) {
+      console.error('Error updating patient status via API:', error)
+    }
   }
 
   const addNote = (leadId: string, content: string) => {

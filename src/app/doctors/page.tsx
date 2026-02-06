@@ -17,50 +17,53 @@ export default function DoctorsPage() {
 
   const loadDoctors = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/doctors')
-      // const data = await response.json()
-      // setDoctors(data.doctors)
+      // Get JWT token from cookie
+      const token = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('token='))
+        ?.split('=')[1]
+
+      if (!token) {
+        console.error('No authentication token found')
+        setIsLoading(false)
+        return
+      }
+
+      // Call real API
+      const response = await fetch('/api/doctors', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`)
+      }
+
+      const data = await response.json()
       
-      // Demo data
-      setDoctors([
-        {
-          id: '1',
-          name: 'Dr. María González',
-          email: 'maria@clinic.com',
-          phone: '+52 55 1234 5678',
-          specialty: 'Dermatología Estética',
-          color: '#3b82f6',
-          avatar: '',
-          active: true,
-          workingHours: {
-            1: { start: '09:00', end: '18:00', enabled: true },
-            2: { start: '09:00', end: '18:00', enabled: true },
-            3: { start: '09:00', end: '18:00', enabled: true },
-            4: { start: '09:00', end: '18:00', enabled: true },
-            5: { start: '09:00', end: '14:00', enabled: true },
-          },
-          slotDuration: 30,
+      // Map API response (profiles) to Doctor type
+      const mappedDoctors: Doctor[] = (data.doctors || []).map((profile: any) => ({
+        id: profile.id,
+        name: profile.name,
+        email: profile.email || '',
+        phone: profile.phone || '',
+        specialty: profile.specialty || '',
+        color: profile.color || '#3b82f6',
+        avatar: profile.avatar_url || '',
+        active: profile.is_active !== false,
+        // Set default working hours - these should be stored in DB in production
+        workingHours: {
+          1: { start: '09:00', end: '18:00', enabled: true },
+          2: { start: '09:00', end: '18:00', enabled: true },
+          3: { start: '09:00', end: '18:00', enabled: true },
+          4: { start: '09:00', end: '18:00', enabled: true },
+          5: { start: '09:00', end: '14:00', enabled: true },
         },
-        {
-          id: '2',
-          name: 'Dr. Carlos Ramírez',
-          email: 'carlos@clinic.com',
-          phone: '+52 55 9876 5432',
-          specialty: 'Cirugía Plástica',
-          color: '#10b981',
-          avatar: '',
-          active: true,
-          workingHours: {
-            1: { start: '10:00', end: '19:00', enabled: true },
-            2: { start: '10:00', end: '19:00', enabled: true },
-            3: { start: '10:00', end: '19:00', enabled: true },
-            4: { start: '10:00', end: '19:00', enabled: true },
-            5: { start: '10:00', end: '15:00', enabled: true },
-          },
-          slotDuration: 60,
-        },
-      ])
+        slotDuration: 30, // Default appointment duration
+      }))
+
+      setDoctors(mappedDoctors)
     } catch (error) {
       console.error('Error loading doctors:', error)
     } finally {

@@ -1,246 +1,361 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin } from '@/lib/supabase.server'
+import { requireAuth } from '@/lib/middleware'
 
-// API for external systems to create appointments
-// This endpoint allows clinic management systems to schedule in-person appointments
-
-export interface CreateAppointmentRequest {
-  // Patient identification - required
-  patientIdentificationNumber: string
-
-  // Or create new patient with these fields
-  patientName?: string
-  patientPhone?: string
-  patientEmail?: string
-
-  // Appointment details - required
-  scheduledAt: string // ISO 8601 date string
-  duration?: number // minutes, default 30
-
-  // Optional
-  treatmentId?: string
-  treatmentName?: string
-  notes?: string
-
-  // API authentication
-  apiKey?: string
-}
-
-export interface CreateAppointmentResponse {
-  success: boolean
-  appointmentId?: string
-  patientId?: string
-  message?: string
-  error?: string
-}
-
-// GET - List appointments for a date range
-export async function GET(request: NextRequest) {
+// GET - List appointments with filters
+export const GET = requireAuth(async (request: NextRequest, user) => {
   try {
+    // Verify clinicId exists
+    if (!user.clinicId) {
+      return NextResponse.json(
+        { error: 'No clinic ID found' },
+        { status: 401 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
     const patientId = searchParams.get('patientId')
-    const identificationNumber = searchParams.get('identificationNumber')
+    const doctorId = searchParams.get('doctorId')
+    const status = searchParams.get('status')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '100')
+    const offset = (page - 1) * limit
 
-    // In a real implementation, you would:
-    // 1. Validate API key from headers
-    // 2. Query your database for appointments
-    // 3. Filter by date range and/or patient
+    let query = supabaseAdmin
+      .from('appointments')
+      .select(`
+        *,
+        patient:patients!inner(id, name, phone, email),
+        doctor:profiles!appointments_doctor_id_fkey(id, name, specialty, color),
+        treatment:treatments(id, name, duration, price)
+      `, { count: 'exact' })
+      .eq('clinic_id', user.clinicId)
+      .order('scheduled_at', { ascending: true })
 
-    // For now, return a sample response structure
+    // Apply filters
+    if (startDate) {
+      query = query.gte('scheduled_at', startDate)
+    }
+
+    if (endDate) {
+      query = query.lte('scheduled_at', endDate)
+    }
+
+    if (patientId) {
+      query = query.eq('patient_id', patientId)
+    }
+
+    if (doctorId) {
+      query = query.eq('doctor_id', doctorId)
+    }
+
+    if (status && status !== 'all') {
+      query = query.eq('status', status)
+    }
+
+    // Pagination
+    query = query.range(offset, offset + limit - 1)
+
+    const { data: appointments, error, count } = await query
+
+    if (error) {
+      console.error('Error fetching appointments:', error)
+      return NextResponse.json(
+        { error: 'Error al obtener citas' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({
       success: true,
-      appointments: [],
-      message: 'API endpoint ready. Connect to database for real data.',
-      usage: {
-        description: 'Query appointments by date range or patient',
-        params: {
-          startDate: 'ISO 8601 date string (optional)',
-          endDate: 'ISO 8601 date string (optional)',
-          patientId: 'Patient ID in CRM (optional)',
-          identificationNumber: 'Patient DNI/ID number (optional)',
-        },
-        headers: {
-          'X-API-Key': 'Your API key for authentication',
-        },
+      appointments: appointments || [],
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit),
       },
     })
   } catch (error) {
+    console.error('Appointments GET error:', error)
     return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
+      { error: 'Error interno del servidor' },
       { status: 500 }
     )
   }
-}
+})
 
 // POST - Create a new appointment
-export async function POST(request: NextRequest) {
+export const POST = requireAuth(async (request: NextRequest, user) => {
   try {
-    const body: CreateAppointmentRequest = await request.json()
-
-    // Validate required fields
-    if (!body.patientIdentificationNumber && !body.patientName) {
+    // Verify clinicId exists
+    if (!user.clinicId) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Either patientIdentificationNumber or patientName is required',
-        },
-        { status: 400 }
+        { error: 'No clinic ID found' },
+        { status: 401 }
       )
     }
 
-    if (!body.scheduledAt) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'scheduledAt is required (ISO 8601 format)',
-        },
-        { status: 400 }
-      )
-    }
-
-    // Validate date format
-    const appointmentDate = new Date(body.scheduledAt)
-    if (isNaN(appointmentDate.getTime())) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Invalid date format. Use ISO 8601 (e.g., 2024-01-15T14:30:00Z)',
-        },
-        { status: 400 }
-      )
-    }
-
-    // In a real implementation, you would:
-    // 1. Validate API key from headers: request.headers.get('X-API-Key')
-    // 2. Look up patient by identification number
-    // 3. Create patient if not found (when patientName is provided)
-    // 4. Create the appointment/follow-up
-    // 5. Return the created appointment ID
-
-    // Generate mock IDs for response
-    const appointmentId = `apt-${Date.now()}`
-    const patientId = `lead-${Date.now()}`
-
-    return NextResponse.json({
-      success: true,
-      appointmentId,
-      patientId,
-      message: 'Appointment created successfully',
-      data: {
-        scheduledAt: body.scheduledAt,
-        duration: body.duration || 30,
-        treatmentName: body.treatmentName,
-        notes: body.notes,
-      },
-    })
-  } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
-    )
-  }
-}
-
-// PUT - Update appointment status (attendance)
-export async function PUT(request: NextRequest) {
-  try {
     const body = await request.json()
 
-    const { appointmentId, status, notes } = body
-
-    if (!appointmentId) {
+    // Validate required fields
+    if (!body.patient_id && !body.patientId) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'appointmentId is required',
-        },
+        { error: 'patient_id es requerido' },
         { status: 400 }
       )
     }
 
-    const validStatuses = ['pending', 'attended', 'noshow', 'cancelled', 'rescheduled']
-    if (status && !validStatuses.includes(status)) {
+    if (!body.scheduled_at && !body.scheduledAt) {
       return NextResponse.json(
-        {
-          success: false,
-          error: `Invalid status. Must be one of: ${validStatuses.join(', ')}`,
-        },
+        { error: 'scheduled_at es requerido' },
         { status: 400 }
       )
     }
 
-    // In a real implementation, you would:
-    // 1. Validate API key
-    // 2. Find the appointment
-    // 3. Update the status
-    // 4. Return confirmation
+    // Normalize field names (support both snake_case and camelCase)
+    const appointmentData = {
+      clinic_id: user.clinicId,
+      patient_id: body.patient_id || body.patientId,
+      doctor_id: body.doctor_id || body.doctorId || null,
+      treatment_id: body.treatment_id || body.treatmentId || null,
+      scheduled_at: body.scheduled_at || body.scheduledAt,
+      duration: body.duration || 30,
+      status: body.status || 'pending',
+      treatment_phase: body.treatment_phase || body.treatmentPhase || null,
+      method: body.method || 'in-person',
+      notes: body.notes || null,
+      google_event_id: body.google_event_id || body.googleEventId || null,
+      meet_link: body.meet_link || body.meetLink || null,
+      session_number: body.session_number || body.sessionNumber || null,
+      total_sessions: body.total_sessions || body.totalSessions || null,
+    }
+
+    // Create appointment
+    const { data: appointment, error } = await supabaseAdmin
+      .from('appointments')
+      .insert(appointmentData)
+      .select(`
+        *,
+        patient:patients(id, name, phone, email),
+        doctor:profiles!appointments_doctor_id_fkey(id, name, specialty, color),
+        treatment:treatments(id, name, duration, price)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Error creating appointment:', error)
+      return NextResponse.json(
+        { error: 'Error al crear cita' },
+        { status: 500 }
+      )
+    }
+
+    // Log activity
+    await supabaseAdmin.from('activity_logs').insert({
+      clinic_id: user.clinicId,
+      user_id: user.userId,
+      action_type: 'create',
+      resource_type: 'appointment',
+      resource_id: appointment.id,
+      description: 'Cita creada',
+      ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+      user_agent: request.headers.get('user-agent'),
+    })
 
     return NextResponse.json({
       success: true,
-      message: `Appointment ${appointmentId} updated`,
-      data: {
-        appointmentId,
-        status: status || 'pending',
-        notes,
-        updatedAt: new Date().toISOString(),
-      },
-    })
+      appointment,
+    }, { status: 201 })
   } catch (error) {
+    console.error('Appointment POST error:', error)
     return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
+      { error: 'Error interno del servidor' },
       { status: 500 }
     )
   }
-}
+})
 
-// DELETE - Cancel an appointment
-export async function DELETE(request: NextRequest) {
+// PUT - Update appointment
+export const PUT = requireAuth(async (request: NextRequest, user) => {
   try {
-    const { searchParams } = new URL(request.url)
-    const appointmentId = searchParams.get('appointmentId')
-
-    if (!appointmentId) {
+    // Verify clinicId exists
+    if (!user.clinicId) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'appointmentId query parameter is required',
-        },
+        { error: 'No clinic ID found' },
+        { status: 401 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID de cita requerido' },
         { status: 400 }
       )
     }
 
-    // In a real implementation, you would:
-    // 1. Validate API key
-    // 2. Find the appointment
-    // 3. Mark as cancelled or delete
-    // 4. Return confirmation
+    const body = await request.json()
+
+    // Prepare update data (normalize field names)
+    const updateData: any = {}
+    
+    if (body.doctor_id !== undefined || body.doctorId !== undefined) {
+      updateData.doctor_id = body.doctor_id || body.doctorId
+    }
+    if (body.treatment_id !== undefined || body.treatmentId !== undefined) {
+      updateData.treatment_id = body.treatment_id || body.treatmentId
+    }
+    if (body.scheduled_at !== undefined || body.scheduledAt !== undefined) {
+      updateData.scheduled_at = body.scheduled_at || body.scheduledAt
+    }
+    if (body.duration !== undefined) {
+      updateData.duration = body.duration
+    }
+    if (body.status !== undefined) {
+      updateData.status = body.status
+      // Auto-set or clear timestamps based on status
+      if (body.status === 'completed') {
+        updateData.completed_at = new Date().toISOString()
+      } else if (body.status === 'confirmed') {
+        updateData.confirmed_at = new Date().toISOString()
+      } else {
+        // Clear timestamps when status changes away from completed/confirmed
+        if (body.status !== 'completed') {
+          updateData.completed_at = null
+        }
+        if (body.status !== 'confirmed') {
+          updateData.confirmed_at = null
+        }
+      }
+    }
+    if (body.treatment_phase !== undefined || body.treatmentPhase !== undefined) {
+      updateData.treatment_phase = body.treatment_phase || body.treatmentPhase
+    }
+    if (body.notes !== undefined) {
+      updateData.notes = body.notes
+    }
+    if (body.outcome_result !== undefined || body.outcomeResult !== undefined) {
+      updateData.outcome_result = body.outcome_result || body.outcomeResult
+    }
+    if (body.outcome_description !== undefined || body.outcomeDescription !== undefined) {
+      updateData.outcome_description = body.outcome_description || body.outcomeDescription
+    }
+    if (body.next_steps !== undefined || body.nextSteps !== undefined) {
+      updateData.next_steps = body.next_steps || body.nextSteps
+    }
+
+    // Update appointment
+    const { data: appointment, error } = await supabaseAdmin
+      .from('appointments')
+      .update(updateData)
+      .eq('id', id)
+      .eq('clinic_id', user.clinicId)
+      .select(`
+        *,
+        patient:patients(id, name, phone, email),
+        doctor:profiles!appointments_doctor_id_fkey(id, name, specialty, color),
+        treatment:treatments(id, name, duration, price)
+      `)
+      .single()
+
+    if (error) {
+      console.error('Error updating appointment:', error)
+      return NextResponse.json(
+        { error: 'Error al actualizar cita' },
+        { status: 500 }
+      )
+    }
+
+    // Log activity
+    await supabaseAdmin.from('activity_logs').insert({
+      clinic_id: user.clinicId,
+      user_id: user.userId,
+      action_type: 'update',
+      resource_type: 'appointment',
+      resource_id: id,
+      changes: updateData,
+      ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+      user_agent: request.headers.get('user-agent'),
+    })
 
     return NextResponse.json({
       success: true,
-      message: `Appointment ${appointmentId} cancelled`,
-      data: {
-        appointmentId,
-        status: 'cancelled',
-        cancelledAt: new Date().toISOString(),
-      },
+      appointment,
     })
   } catch (error) {
+    console.error('Appointment PUT error:', error)
     return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      },
+      { error: 'Error interno del servidor' },
       { status: 500 }
     )
   }
-}
+})
+
+// DELETE - Delete/Cancel appointment
+export const DELETE = requireAuth(async (request: NextRequest, user) => {
+  try {
+    // Verify clinicId exists
+    if (!user.clinicId) {
+      return NextResponse.json(
+        { error: 'No clinic ID found' },
+        { status: 401 }
+      )
+    }
+
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id') || searchParams.get('appointmentId')
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'ID de cita requerido' },
+        { status: 400 }
+      )
+    }
+
+    // Soft delete - mark as cancelled instead of deleting
+    const { data: appointment, error } = await supabaseAdmin
+      .from('appointments')
+      .update({ status: 'cancelled' })
+      .eq('id', id)
+      .eq('clinic_id', user.clinicId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error cancelling appointment:', error)
+      return NextResponse.json(
+        { error: 'Error al cancelar cita' },
+        { status: 500 }
+      )
+    }
+
+    // Log activity
+    await supabaseAdmin.from('activity_logs').insert({
+      clinic_id: user.clinicId,
+      user_id: user.userId,
+      action_type: 'update',
+      resource_type: 'appointment',
+      resource_id: id,
+      changes: { status: 'cancelled' },
+      ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+      user_agent: request.headers.get('user-agent'),
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Cita cancelada correctamente',
+      appointment,
+    })
+  } catch (error) {
+    console.error('Appointment DELETE error:', error)
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    )
+  }
+})

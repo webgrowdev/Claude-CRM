@@ -53,7 +53,7 @@ interface FollowUpWithLead {
 export default function CalendarPage() {
   const router = useRouter()
   const { state, getUpcomingFollowUps, completeFollowUp } = useApp()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   const [currentMonth, setCurrentMonth] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date())

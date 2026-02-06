@@ -5,16 +5,21 @@ import type { Database } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-console.log('[ENV CHECK]', {
-  hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-  hasAnon: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  hasService: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-})
+
 
 type UserRow = Database['public']['Tables']['users']['Row']
 type UserInsert = Database['public']['Tables']['users']['Insert']
 
 export async function POST(request: NextRequest) {
+
+  console.log('[ENV CHECK SERVER]', {
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING',
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'MISSING',
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'MISSING',
+  NODE_ENV: process.env.NODE_ENV,
+})
+
+
   try {
     // Validate Supabase configuration first
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {

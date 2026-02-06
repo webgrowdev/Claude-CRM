@@ -5,6 +5,11 @@ import type { Database } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+console.log('[ENV CHECK]', {
+  hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+  hasAnon: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  hasService: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+})
 
 type UserRow = Database['public']['Tables']['users']['Row']
 type UserInsert = Database['public']['Tables']['users']['Insert']
@@ -166,16 +171,18 @@ export async function POST(request: NextRequest) {
         updated_at: u.updated_at,
       },
     })
-  } catch (error) {
+  }  catch (error) {
   console.error('Login error (FULL):', error)
 
-  const msg =
-    error instanceof Error ? error.message : 'Unknown error'
+  const debug =
+    error instanceof Error
+      ? { message: error.message, stack: error.stack }
+      : { message: String(error) }
 
-  // ⚠️ Temporal para debug. En prod lo volvemos a genérico.
   return NextResponse.json(
-    { error: 'Error al iniciar sesión', debug: msg },
+    { error: 'Error al iniciar sesión', debug },
     { status: 500 }
   )
 }
+
 }

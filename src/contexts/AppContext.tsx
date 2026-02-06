@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react'
-import { Lead, LeadStatus, Treatment, User, Notification, Note, FollowUp, Settings, Appointment } from '@/types'
+import { Lead, LeadStatus, Treatment, User, Notification, Note, FollowUp, Settings, Appointment, AppointmentStatus } from '@/types'
 import { initialLeads, treatments as initialTreatments, currentUser, notifications as initialNotifications } from '@/data/mockData'
 import { generateId } from '@/lib/utils'
 import {
@@ -333,9 +333,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         // Load patients/leads from API
         const patientsResponse = await fetch('/api/patients?limit=1000', { headers })
+        let leads: Lead[] = []
+        
         if (patientsResponse.ok) {
           const patientsData = await patientsResponse.json()
-          const leads = (patientsData.patients || []).map((p: any) => ({
+          leads = (patientsData.patients || []).map((p: any) => ({
             id: p.id,
             name: p.name,
             email: p.email || '',
@@ -347,7 +349,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             funnelStatus: p.funnel_status,
             treatments: [], // TODO: Load from patient_treatments junction table
             notes: [], // TODO: Load from notes table
-            followUps: [], // TODO: Load from appointments table
+            followUps: [], // Will be populated with appointments below
             assignedTo: p.assigned_to,
             createdAt: new Date(p.created_at),
             updatedAt: new Date(p.updated_at),
@@ -364,19 +366,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
             totalPending: p.total_pending,
             npsScore: p.nps_score,
           }))
-          dispatch({ type: 'SET_LEADS', payload: leads })
-          // Cache in localStorage
-          localStorage.setItem('clinic_leads', JSON.stringify(leads))
         } else {
           // Fallback to localStorage on API error
           const savedLeads = localStorage.getItem('clinic_leads')
-          dispatch({
-            type: 'SET_LEADS',
-            payload: savedLeads ? JSON.parse(savedLeads, dateReviver) : initialLeads,
-          })
+          leads = savedLeads ? JSON.parse(savedLeads, dateReviver) : initialLeads
         }
 
-        // Load appointments from API
+        // Load appointments from API and merge into leads
         const appointmentsResponse = await fetch('/api/appointments?limit=1000', { headers })
         if (appointmentsResponse.ok) {
           const appointmentsData = await appointmentsResponse.json()
@@ -399,7 +395,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
             color: a.doctor?.color,
           }))
           dispatch({ type: 'SET_APPOINTMENTS', payload: appointments })
+
+          // Merge appointments into leads as followUps
+          leads = leads.map(lead => {
+            const leadAppointments = appointments
+              .filter((apt: any) => apt.patientId === lead.id)
+              .map((apt: any) => ({
+                id: apt.id,
+                leadId: lead.id,
+                type: 'appointment' as const,
+                scheduledAt: apt.scheduledAt,
+                completed: apt.status === 'completed',
+                completedAt: apt.completedAt,
+                notes: apt.notes,
+                googleEventId: apt.googleEventId,
+                meetLink: apt.meetLink,
+                duration: apt.duration,
+                treatmentId: apt.treatmentId,
+                treatmentName: apt.treatmentName,
+                assignedTo: apt.doctorId,
+                appointmentStatus: apt.status as AppointmentStatus,
+              }))
+            return {
+              ...lead,
+              followUps: [...(lead.followUps || []), ...leadAppointments],
+            }
+          })
         }
+
+        dispatch({ type: 'SET_LEADS', payload: leads })
+        // Cache in localStorage
+        localStorage.setItem('clinic_leads', JSON.stringify(leads))
 
         // Keep treatments from localStorage for now (until we have a treatments API endpoint)
         const savedTreatments = localStorage.getItem('clinic_treatments')

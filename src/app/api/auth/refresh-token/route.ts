@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, generateToken } from '@/lib/auth'
-import { supabase } from '@/lib/supabase.client'
-import { Database } from '@/types/database'
+import { supabaseAdmin } from '@/lib/supabase.server'
+import type { Database } from '@/types/database'
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
 export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
         { error: 'No autorizado' },
@@ -24,9 +26,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get fresh user profile data
-    type ProfileRow = Database['public']['Tables']['profiles']['Row']
-    const { data: profile, error } = await supabase
+    // Get fresh profile data using admin client (bypasses RLS)
+    const { data: profile, error } = await supabaseAdmin
       .from('profiles')
       .select('*')
       .eq('id', payload.userId)
@@ -42,20 +43,24 @@ export async function POST(request: NextRequest) {
 
     const typedProfile = profile as ProfileRow
 
-    // Get email from Supabase Auth
-    const { data: { user: authUser } } = await supabase.auth.getUser()
+    // Get email from Supabase Auth admin API (profiles table doesn't store email)
+    let email = payload.email || ''
+    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(payload.userId)
+    if (authUser?.user?.email) {
+      email = authUser.user.email
+    }
 
     // Generate new token
     const newToken = await generateToken({
       userId: typedProfile.id,
-      email: authUser?.email || '',
+      email,
       role: typedProfile.role,
       clinicId: typedProfile.clinic_id || '',
     })
 
     const userResponse = {
       id: typedProfile.id,
-      email: authUser?.email || '',
+      email,
       name: typedProfile.name,
       role: typedProfile.role,
       clinic_id: typedProfile.clinic_id,

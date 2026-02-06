@@ -6,7 +6,7 @@ import type { Database } from '@/types/database'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-type UserRow = Database['public']['Tables']['users']['Row']
+type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,47 +23,52 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
     }
 
-    // Preferimos userId si existe; si no, usamos email
-    const userId = (payload as any).userId as string | undefined
-    const email = (payload as any).email as string | undefined
+    const userId = payload.userId
+    const payloadEmail = payload.email
 
-    if (!userId && !email) {
+    if (!userId && !payloadEmail) {
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
     }
 
-    let query = supabaseAdmin.from('users').select('*').eq('is_active', true).single()
+    // Query profiles table (the real table linked to auth.users)
+    const { data: profile, error } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .eq('is_active', true)
+      .single()
 
-    if (userId) {
-      query = query.eq('id', userId)
-    } else {
-      query = query.eq('email', email!.toLowerCase())
-    }
-
-    const { data: user, error } = await query
-
-    if (error || !user) {
-      // Log interno (no lo muestres al usuario)
-      console.error('Auth /me user lookup error:', error)
+    if (error || !profile) {
+      console.error('Auth /me profile lookup error:', error)
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
     }
 
-    const u = user as UserRow
+    const p = profile as ProfileRow
+
+    // Get email from Supabase Auth admin API (profiles table doesn't store email)
+    let email = payloadEmail || ''
+    if (userId) {
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId)
+      if (authUser?.user?.email) {
+        email = authUser.user.email
+      }
+    }
 
     return NextResponse.json({
       success: true,
       user: {
-        id: u.id,
-        email: u.email,
-        name: u.name,
-        role: u.role,
-        clinic_id: u.clinic_id,
-        phone: u.phone,
-        is_active: u.is_active,
-        avatar_url: u.avatar_url,
-        specialty: u.specialty,
-        color: u.color,
-        created_at: u.created_at,
-        updated_at: u.updated_at,
+        id: p.id,
+        email,
+        name: p.name,
+        role: p.role,
+        clinic_id: p.clinic_id,
+        phone: p.phone,
+        is_active: p.is_active,
+        avatar_url: p.avatar_url,
+        specialty: p.specialty,
+        color: p.color,
+        created_at: p.created_at,
+        updated_at: p.updated_at,
       },
     })
   } catch (error) {

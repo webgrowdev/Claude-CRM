@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase.client'
+import { supabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 
 // POST /api/export - Export data to CSV/Excel
@@ -29,7 +29,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
     // Fetch data based on type
     switch (type) {
       case 'patients':
-        const { data: patients, error: patientsError } = await supabase
+        const { data: patients, error: patientsError } = await supabaseAdmin
           .from('patients')
           .select('*')
           .eq('clinic_id', user.clinicId)
@@ -43,12 +43,12 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
         break
 
       case 'appointments':
-        const { data: appointments, error: appointmentsError } = await supabase
+        const { data: appointments, error: appointmentsError } = await supabaseAdmin
           .from('appointments')
           .select(`
             *,
             patients (name),
-            users (name)
+            profiles:doctor_id (name)
           `)
           .eq('clinic_id', user.clinicId)
           .gte('scheduled_at', dateRange?.start || '2000-01-01')
@@ -59,7 +59,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
         data = appointments?.map(apt => ({
           ...apt,
           patientName: apt.patients?.name,
-          doctorName: apt.users?.name,
+          doctorName: (apt as any).profiles?.name,
         })) || []
         headers = includeFields || ['patientName', 'doctorName', 'scheduled_at', 'appointment_status', 'duration']
         break
@@ -82,7 +82,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
       const csvContent = generateCSV(data, headers)
       
       // Log export activity
-      await supabase.from('activity_logs').insert({
+      await supabaseAdmin.from('activity_logs').insert({
         clinic_id: user.clinicId,
         user_id: user.userId,
         action_type: 'view', // Note: Could be 'export' if added to allowed action types

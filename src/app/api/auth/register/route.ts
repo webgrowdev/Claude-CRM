@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase.client'
+import { supabaseAdmin, createServerAuthClient } from '@/lib/supabase.server'
 import { generateToken } from '@/lib/auth'
-import { Database } from '@/types/database'
+import type { Database } from '@/types/database'
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,8 +17,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use Supabase Auth to create user
-    const { data: authData, error: signUpError } = await supabase.auth.signUp({
+    // Use a server-side auth client for sign-up (no session persistence)
+    const serverAuth = createServerAuthClient()
+    const { data: authData, error: signUpError } = await serverAuth.auth.signUp({
       email: email.toLowerCase(),
       password,
       options: {
@@ -42,33 +45,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if we need to manually create profile (if trigger doesn't exist)
-    const { data: existingProfile } = await supabase
+    // Check if profile was created by the DB trigger (handle_new_user)
+    const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
       .select('id')
       .eq('id', authData.user.id)
       .single()
 
     if (!existingProfile) {
-      // Manually create profile if trigger didn't do it
-      const defaultClinicId = 'c0000000-0000-0000-0000-000000000001'
-      
-      await supabase
+      // Manually create profile if trigger didn't fire
+      await supabaseAdmin
         .from('profiles')
         .insert({
           id: authData.user.id,
-          clinic_id: defaultClinicId,
+          clinic_id: null,
           name,
-          phone,
+          phone: phone || null,
           role,
           is_active: true,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any)
+        })
     }
 
     // Get the profile
-    type ProfileRow = Database['public']['Tables']['profiles']['Row']
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('*')
       .eq('id', authData.user.id)
@@ -84,7 +83,7 @@ export async function POST(request: NextRequest) {
     // Type assertion for profile
     const typedProfile = profile as ProfileRow
 
-    // Generate JWT token for backwards compatibility
+    // Generate JWT token
     const token = await generateToken({
       userId: typedProfile.id,
       email: authData.user.email || '',
@@ -109,16 +108,16 @@ export async function POST(request: NextRequest) {
 
     // Log activity
     if (typedProfile.clinic_id) {
-      await supabase.from('activity_logs').insert({
+      await supabaseAdmin.from('activity_logs').insert({
         clinic_id: typedProfile.clinic_id,
         user_id: typedProfile.id,
         action_type: 'create',
         resource_type: 'user',
         resource_id: typedProfile.id,
+        description: 'User registration',
         ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
         user_agent: request.headers.get('user-agent'),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any)
+      })
     }
 
     return NextResponse.json({

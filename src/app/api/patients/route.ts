@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase.client'
+import { supabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 
 // GET /api/patients - List all patients
@@ -21,7 +21,7 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = (page - 1) * limit
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('patients')
       .select('*', { count: 'exact' })
       .eq('clinic_id', user.clinicId)
@@ -94,7 +94,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
     }
 
     // Create patient
-    const { data: patient, error } = await supabase
+    const { data: patient, error } = await supabaseAdmin
       .from('patients')
       .insert({
         ...body,
@@ -115,7 +115,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
     }
 
     // Log activity
-    await supabase.from('activity_logs').insert({
+    await supabaseAdmin.from('activity_logs').insert({
       clinic_id: user.clinicId,
       user_id: user.userId,
       action_type: 'create',
@@ -162,7 +162,7 @@ export const PUT = requireAuth(async (request: NextRequest, user) => {
     const body = await request.json()
 
     // Update patient
-    const { data: patient, error } = await supabase
+    const { data: patient, error } = await supabaseAdmin
       .from('patients')
       .update({
         ...body,
@@ -182,7 +182,7 @@ export const PUT = requireAuth(async (request: NextRequest, user) => {
     }
 
     // Log activity
-    await supabase.from('activity_logs').insert({
+    await supabaseAdmin.from('activity_logs').insert({
       clinic_id: user.clinicId,
       user_id: user.userId,
       action_type: 'update',
@@ -228,7 +228,7 @@ export const DELETE = requireAuth(async (request: NextRequest, user) => {
     }
 
     // Delete patient
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('patients')
       .delete()
       .eq('id', id)
@@ -243,7 +243,7 @@ export const DELETE = requireAuth(async (request: NextRequest, user) => {
     }
 
     // Log activity
-    await supabase.from('activity_logs').insert({
+    await supabaseAdmin.from('activity_logs').insert({
       clinic_id: user.clinicId,
       user_id: user.userId,
       action_type: 'delete',

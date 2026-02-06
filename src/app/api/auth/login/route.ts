@@ -6,8 +6,8 @@ import type { Database } from '@/types/database'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-type ProfileRow = Database['public']['Tables']['profiles']['Row']
-type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
+type UserRow = Database['public']['Tables']['users']['Row']
+type UserInsert = Database['public']['Tables']['users']['Insert']
 
 export async function POST(request: NextRequest) {
   try {
@@ -39,13 +39,10 @@ export async function POST(request: NextRequest) {
     const password = body?.password
 
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email y contraseña son requeridos' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Email y contraseña son requeridos' }, { status: 400 })
     }
 
-    // 1) Login contra Supabase Auth using a server-side client (no session persistence)
+    // 1) Login contra Supabase Auth (server-side, sin persistencia)
     const serverAuth = createServerAuthClient()
     const { data: authData, error: authError } = await serverAuth.auth.signInWithPassword({
       email,
@@ -61,64 +58,90 @@ export async function POST(request: NextRequest) {
     const authEmail = (authUser.email || email).toLowerCase()
     const authUserId = authUser.id
 
-    // 2) Buscar en public.profiles (tabla real vinculada a auth.users)
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
+    // 2) Buscar en public.users (tu “perfil” real)
+    // OJO: no filtro is_active acá para no forzar inserts duplicados; valido después.
+    const { data: userRow, error: userLookupErr } = await supabaseAdmin
+      .from('users')
       .select('*')
       .eq('id', authUserId)
-      .eq('is_active', true)
       .maybeSingle()
 
-    // Si hubo error real (RLS / permisos / etc), lo logueamos
-    if (profileError) {
-      console.error('Supabase profiles lookup error:', profileError)
+    if (userLookupErr) {
+      console.error('Supabase users lookup error:', userLookupErr)
+      return NextResponse.json({ error: 'Error consultando el usuario' }, { status: 500 })
     }
 
-    // 2b) Si no existe, lo creamos alineando id = auth.uid() (clave para que RLS funcione)
-    let p: ProfileRow | null = (profile as ProfileRow | null) ?? null
+    let u: UserRow | null = (userRow as UserRow | null) ?? null
 
-    if (!p) {
-      const newProfile: ProfileInsert = {
-        id: authUserId,
+    // 2b) Si no existe, lo creamos con id = auth.users.id
+    if (!u) {
+      const newUser: UserInsert = {
+        id: authUserId, // CRÍTICO: debe ser el mismo que auth.users.id para que auth.uid() funcione con RLS
+        email: authEmail,
         name: authUser.user_metadata?.name || authEmail.split('@')[0] || 'Usuario',
-        role: 'owner',
-        clinic_id: null,
+        role: 'owner',     // válido por tu CHECK
+        clinic_id: null,   // por ahora null
         is_active: true,
-      }
+        phone: authUser.user_metadata?.phone ?? null,
+        avatar_url: authUser.user_metadata?.avatar_url ?? null,
+        specialty: authUser.user_metadata?.specialty ?? null,
+        color: authUser.user_metadata?.color ?? null,
 
+        // IMPORTANTE:
+        // NO seteamos password_hash porque Supabase Auth maneja contraseña.
+        // Para que esto funcione, password_hash debe ser NULLABLE o eliminarse.
+      } as UserInsert
+
+      // upsert evita duplicados por requests concurrentes
       const { data: created, error: createErr } = await supabaseAdmin
-        .from('profiles')
-        .insert(newProfile)
+        .from('users')
+        .upsert(newUser, { onConflict: 'id' })
         .select('*')
         .single()
 
       if (createErr || !created) {
-        console.error('Create profile error:', createErr)
+        console.error('Create user error:', createErr)
+
+        const debug =
+          process.env.NODE_ENV !== 'production'
+            ? {
+                message: createErr?.message,
+                details: (createErr as any)?.details,
+                hint: (createErr as any)?.hint,
+                code: (createErr as any)?.code,
+              }
+            : undefined
+
         return NextResponse.json(
-          { error: 'No se pudo crear el perfil del usuario' },
+          { error: 'No se pudo crear el usuario (perfil)', debug },
           { status: 500 }
         )
       }
 
-      p = created as ProfileRow
+      u = created as UserRow
+    }
+
+    // 2c) Validar activo
+    if (!u.is_active) {
+      return NextResponse.json({ error: 'Usuario desactivado' }, { status: 403 })
     }
 
     // 3) Emitir JWT interno (tu AuthContext)
     const token = await generateToken({
-      userId: p.id,
+      userId: u.id,
       email: authEmail,
-      role: p.role,
-      clinicId: p.clinic_id ?? '',
+      role: u.role,
+      clinicId: u.clinic_id ?? '',
     })
 
     // 4) Activity log (opcional)
-    if (p.clinic_id) {
+    if (u.clinic_id) {
       await supabaseAdmin.from('activity_logs').insert({
-        clinic_id: p.clinic_id,
-        user_id: p.id,
+        clinic_id: u.clinic_id,
+        user_id: u.id,
         action_type: 'view',
         resource_type: 'user',
-        resource_id: p.id,
+        resource_id: u.id,
         description: 'User login',
         ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
         user_agent: request.headers.get('user-agent'),
@@ -129,33 +152,22 @@ export async function POST(request: NextRequest) {
       success: true,
       token,
       user: {
-        id: p.id,
+        id: u.id,
         email: authEmail,
-        name: p.name,
-        role: p.role,
-        clinic_id: p.clinic_id,
-        phone: p.phone,
-        is_active: p.is_active,
-        avatar_url: p.avatar_url,
-        specialty: p.specialty,
-        color: p.color,
-        created_at: p.created_at,
-        updated_at: p.updated_at,
+        name: u.name,
+        role: u.role,
+        clinic_id: u.clinic_id,
+        phone: u.phone,
+        is_active: u.is_active,
+        avatar_url: u.avatar_url,
+        specialty: u.specialty,
+        color: u.color,
+        created_at: u.created_at,
+        updated_at: u.updated_at,
       },
     })
   } catch (error) {
     console.error('Login error:', error)
-
-    // Check if it's a Supabase connection error
-    if (error instanceof Error) {
-      if (error.message.includes('SUPABASE') || error.message.includes('environment variable')) {
-        return NextResponse.json(
-          { error: 'Error de conexión con la base de datos. Por favor verifica la configuración del servidor.' },
-          { status: 500 }
-        )
-      }
-    }
-
     return NextResponse.json({ error: 'Error al iniciar sesión' }, { status: 500 })
   }
 }

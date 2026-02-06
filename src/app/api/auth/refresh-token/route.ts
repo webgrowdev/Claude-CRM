@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, generateToken } from '@/lib/auth'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase.client'
 import { Database } from '@/types/database'
 
 export async function POST(request: NextRequest) {

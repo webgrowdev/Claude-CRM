@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-
+import { supabase } from '@/lib/supabase.client'
 export async function POST() {
   try {
     // Sign out from Supabase Auth

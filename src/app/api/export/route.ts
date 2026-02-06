@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase.client'
 import { requireAuth } from '@/lib/middleware'
 
 // POST /api/export - Export data to CSV/Excel

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase.client'
+import { supabaseAdmin } from '@/lib/supabase.server'
+
 import { generateToken } from '@/lib/auth'
 import type { Database } from '@/types/database'
 
@@ -25,12 +27,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!isSupabaseConfigured()) {
-      return NextResponse.json(
-        { error: 'Supabase no está configurado (faltan env vars públicas)' },
-        { status: 500 }
-      )
-    }
 
     // ⚠️ Si esto falta, supabaseAdmin NO bypass RLS (y tu lookup puede "no encontrar" nada)
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {

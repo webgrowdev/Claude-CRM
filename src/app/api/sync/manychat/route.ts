@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 import { getSubscribers } from '@/lib/manychat'
 import { ManyChatSubscriber } from '@/types/manychat'

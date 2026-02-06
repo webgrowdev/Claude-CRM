@@ -4,6 +4,12 @@ import { Database } from '@/types/database'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
 
+
+console.log('[ENV CHECK]', {
+  hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+  hasAnon: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  hasService: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+})
 // Create typed Supabase client
 // This allows the app to build and run in demo mode with dummy values if not configured
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {

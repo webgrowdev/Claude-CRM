@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, isSupabaseConfigured } from '@/lib/supabase'
+import { supabase, supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
 import { generateToken } from '@/lib/auth'
 import { Database } from '@/types/database'
 
+type UserRow = Database['public']['Tables']['users']['Row']
+type ActivityInsert = Database['public']['Tables']['activity_logs']['Insert']
+
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
+    const body = await request.json().catch(() => null) as { email?: string; password?: string } | null
+    const email = body?.email?.trim().toLowerCase()
+    const password = body?.password
 
-    // Validate input
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email y contraseña son requeridos' },
@@ -15,109 +19,90 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Demo mode: If Supabase is not configured, use demo credentials
+    // Si querés forzar modo real, podés borrar esto.
+    // Lo dejo para que no te rompa si no tenés envs.
     if (!isSupabaseConfigured()) {
-      // Demo user
-      if (email.toLowerCase() === 'admin@glowclinic.com' && password === 'admin123') {
-        const demoUser = {
-          id: 'demo-user-id',
-          email: 'admin@glowclinic.com',
-          name: 'Demo Admin',
-          role: 'owner',
-          clinic_id: 'demo-clinic-id',
-          phone: '+52 55 1234 5678',
-          is_active: true,
-        }
-
-        const token = await generateToken({
-          userId: demoUser.id,
-          email: demoUser.email,
-          role: demoUser.role,
-          clinicId: demoUser.clinic_id,
-        })
-
-        return NextResponse.json({
-          success: true,
-          token,
-          user: demoUser,
-          demo: true,
-        })
-      } else {
-        return NextResponse.json(
-          { error: 'Credenciales inválidas. Usa admin@glowclinic.com / admin123 en modo demo' },
-          { status: 401 }
-        )
-      }
+      return NextResponse.json(
+        { error: 'Supabase no está configurado. Configura NEXT_PUBLIC_SUPABASE_URL y NEXT_PUBLIC_SUPABASE_ANON_KEY.' },
+        { status: 500 }
+      )
     }
 
-    // Production mode: Use Supabase Auth
+    // 1) Auth real en Supabase
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: email.toLowerCase(),
+      email,
       password,
     })
 
-    if (authError || !authData.session) {
+    if (authError || !authData.user) {
       return NextResponse.json(
         { error: 'Credenciales inválidas' },
         { status: 401 }
       )
     }
 
-    // Get user profile from profiles table
-    type ProfileRow = Database['public']['Tables']['profiles']['Row']
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
+    // 2) Traer "perfil" desde TU tabla real: public.users
+    //    Usamos supabaseAdmin para evitar RLS (en server-side es correcto).
+    const { data: userRow, error: userError } = await supabaseAdmin
+      .from('users')
       .select('*')
-      .eq('id', authData.user.id)
+      .eq('email', email)
       .eq('is_active', true)
       .single()
 
-    if (profileError || !profile) {
+    if (userError || !userRow) {
       return NextResponse.json(
-        { error: 'Perfil de usuario no encontrado' },
+        { error: 'Perfil de usuario no encontrado. Falta registro en la tabla users o está inactivo.' },
         { status: 404 }
       )
     }
 
-    // Type assertion for profile
-    const typedProfile = profile as ProfileRow
+    const user = userRow as UserRow
 
-    // Generate JWT token for backwards compatibility with existing AuthContext
+    // 3) Generar JWT propio (compatibilidad con tu AuthContext)
     const token = await generateToken({
-      userId: typedProfile.id,
-      email: authData.user.email || '',
-      role: typedProfile.role,
-      clinicId: typedProfile.clinic_id || '',
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      clinicId: user.clinic_id ?? '',
     })
 
-    // Build user object
+    // 4) Respuesta user para frontend
     const userResponse = {
-      id: typedProfile.id,
-      email: authData.user.email,
-      name: typedProfile.name,
-      role: typedProfile.role,
-      clinic_id: typedProfile.clinic_id,
-      phone: typedProfile.phone,
-      is_active: typedProfile.is_active,
-      avatar_url: typedProfile.avatar_url,
-      specialty: typedProfile.specialty,
-      color: typedProfile.color,
-      created_at: typedProfile.created_at,
-      updated_at: typedProfile.updated_at,
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      clinic_id: user.clinic_id,
+      phone: user.phone,
+      is_active: user.is_active,
+      avatar_url: user.avatar_url,
+      specialty: user.specialty,
+      color: user.color,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
     }
 
-    // Log activity
-    if (typedProfile.clinic_id) {
-      await supabase.from('activity_logs').insert({
-        clinic_id: typedProfile.clinic_id,
-        user_id: typedProfile.id,
+    // 5) Log activity (opcional)
+    if (user.clinic_id) {
+      const ip =
+        request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+        request.headers.get('x-real-ip') ||
+        null
+
+      const activity: ActivityInsert = {
+        clinic_id: user.clinic_id,
+        user_id: user.id,
         action_type: 'view',
         resource_type: 'user',
-        resource_id: typedProfile.id,
-        ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
+        resource_id: user.id,
+        ip_address: ip,
         user_agent: request.headers.get('user-agent'),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } as any)
+        changes: null,
+      }
+
+      // No rompemos login si falla el log
+      await supabaseAdmin.from('activity_logs').insert(activity).catch(() => null)
     }
 
     return NextResponse.json({

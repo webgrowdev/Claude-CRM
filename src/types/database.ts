@@ -200,6 +200,64 @@ export interface Database {
           closed_at?: string | null
         }
       }
+      users: {
+  Row: {
+    id: string
+    email: string
+    password_hash: string
+    name: string
+    phone: string | null
+    role: 'owner' | 'manager' | 'doctor' | 'receptionist'
+    avatar_url: string | null
+    specialty: string | null
+    color: string | null
+    clinic_id: string | null
+    is_active: boolean | null
+    created_at: string
+    updated_at: string
+  }
+  Insert: {
+    id?: string
+    email: string
+    password_hash: string
+    name: string
+    phone?: string | null
+    role: 'owner' | 'manager' | 'doctor' | 'receptionist'
+    avatar_url?: string | null
+    specialty?: string | null
+    color?: string | null
+    clinic_id?: string | null
+    is_active?: boolean | null
+    created_at?: string
+    updated_at?: string
+  }
+  Update: {
+    id?: string
+    email?: string
+    password_hash?: string
+    name?: string
+    phone?: string | null
+    role?: 'owner' | 'manager' | 'doctor' | 'receptionist'
+    avatar_url?: string | null
+    specialty?: string | null
+    color?: string | null
+    clinic_id?: string | null
+    is_active?: boolean | null
+    created_at?: string
+    updated_at?: string
+  }
+  Relationships: [
+    {
+      foreignKeyName: 'users_clinic_id_fkey'
+      columns: ['clinic_id']
+      isOneToOne: false
+      referencedRelation: 'clinics'
+      referencedColumns: ['id']
+    }
+  ]
+}
+
+
       treatments: {
         Row: {
           id: string

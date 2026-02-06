@@ -291,20 +291,20 @@ VALUES (
 -- Hash generated with bcrypt for 'admin123'
 INSERT INTO users (id, email, password_hash, name, phone, role, clinic_id, is_active)
 VALUES (
-    'u0000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000001',
     'admin@glowclinic.com',
     '$2b$10$H4Oq3w3Myk8HLAeyQPQbmOFHjtDAtHvcpRu8G9vxUP902d.k/1oo2',
     'Admin User',
     '+52 55 1234 5678',
     'owner',
-    'c0000000-0000-0000-0000-000000000001',
+    '00000000-0000-0000-0000-000000000001',
     true
 ) ON CONFLICT (email) DO NOTHING;
 
 -- Update clinic owner
 UPDATE clinics 
-SET owner_id = 'u0000000-0000-0000-0000-000000000001'
-WHERE id = 'c0000000-0000-0000-0000-000000000001';
+SET owner_id = '00000000-0000-0000-0000-000000000001'
+WHERE id = '00000000-0000-0000-0000-000000000001';
 
 -- ============================================
 -- NOTES

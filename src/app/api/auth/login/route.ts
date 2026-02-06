@@ -167,7 +167,15 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Login error:', error)
-    return NextResponse.json({ error: 'Error al iniciar sesión' }, { status: 500 })
-  }
+  console.error('Login error (FULL):', error)
+
+  const msg =
+    error instanceof Error ? error.message : 'Unknown error'
+
+  // ⚠️ Temporal para debug. En prod lo volvemos a genérico.
+  return NextResponse.json(
+    { error: 'Error al iniciar sesión', debug: msg },
+    { status: 500 }
+  )
+}
 }

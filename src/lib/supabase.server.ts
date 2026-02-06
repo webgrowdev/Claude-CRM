@@ -1,4 +1,5 @@
 import 'server-only'
+import 'dotenv/config'
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
 
@@ -16,9 +17,7 @@ export function getSupabaseAdmin() {
 
 export function createServerAuthClient() {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!supabaseUrl || !anonKey) {
-    throw new Error('Missing Supabase environment variables for auth client')
-  }
+  if (!supabaseUrl || !anonKey) throw new Error('Missing Supabase env vars for auth client')
   return createClient<Database>(supabaseUrl, anonKey, {
     auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
   })

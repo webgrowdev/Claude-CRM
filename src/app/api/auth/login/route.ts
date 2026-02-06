@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, createServerAuthClient } from '@/lib/supabase.server'
+import { getSupabaseAdmin, createServerAuthClient } from '@/lib/supabase.server'
 import { generateToken } from '@/lib/auth'
 import type { Database } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+const supabaseAdmin = getSupabaseAdmin()
 
 
 type UserRow = Database['public']['Tables']['users']['Row']

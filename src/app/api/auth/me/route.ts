@@ -1,58 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 import { supabaseAdmin } from '@/lib/supabase'
-import { Database } from '@/types/database'
+import type { Database } from '@/types/database'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
+type UserRow = Database['public']['Tables']['users']['Row']
 
 export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('authorization')
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const token = authHeader.substring(7)
+    const token = authHeader.slice(7).trim()
     const payload = await verifyToken(token)
 
-    if (!payload || !payload.email) {
+    if (!payload) {
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
     }
 
-    type UserRow = Database['public']['Tables']['users']['Row']
+    // Preferimos userId si existe; si no, usamos email
+    const userId = (payload as any).userId as string | undefined
+    const email = (payload as any).email as string | undefined
 
-    // ✅ Buscamos en TU tabla real: public.users
-    // Usamos supabaseAdmin para evitar RLS en endpoints server-side
-    const { data: user, error } = await supabaseAdmin
-      .from('users')
-      .select('*')
-      .eq('email', payload.email.toLowerCase())
-      .eq('is_active', true)
-      .single()
+    if (!userId && !email) {
+      return NextResponse.json({ error: 'Token inválido' }, { status: 401 })
+    }
+
+    let query = supabaseAdmin.from('users').select('*').eq('is_active', true).single()
+
+    if (userId) {
+      query = query.eq('id', userId)
+    } else {
+      query = query.eq('email', email!.toLowerCase())
+    }
+
+    const { data: user, error } = await query
 
     if (error || !user) {
+      // Log interno (no lo muestres al usuario)
+      console.error('Auth /me user lookup error:', error)
       return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 })
     }
 
-    const typedUser = user as UserRow
-
-    const userResponse = {
-      id: typedUser.id,
-      email: typedUser.email,
-      name: typedUser.name,
-      role: typedUser.role,
-      clinic_id: typedUser.clinic_id,
-      phone: typedUser.phone,
-      is_active: typedUser.is_active,
-      avatar_url: typedUser.avatar_url,
-      specialty: typedUser.specialty,
-      color: typedUser.color,
-      created_at: typedUser.created_at,
-      updated_at: typedUser.updated_at,
-    }
+    const u = user as UserRow
 
     return NextResponse.json({
       success: true,
-      user: userResponse,
+      user: {
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        role: u.role,
+        clinic_id: u.clinic_id,
+        phone: u.phone,
+        is_active: u.is_active,
+        avatar_url: u.avatar_url,
+        specialty: u.specialty,
+        color: u.color,
+        created_at: u.created_at,
+        updated_at: u.updated_at,
+      },
     })
   } catch (error) {
     console.error('Auth check error:', error)

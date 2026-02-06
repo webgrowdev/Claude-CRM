@@ -10,7 +10,10 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-
+  experimental: {
+    // ayuda con algunos entornos que intentan prerender raro
+    serverActions: { allowedOrigins: ['growicrm.site'] },
+  },
   async headers() {
     return [
       {

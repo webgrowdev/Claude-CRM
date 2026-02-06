@@ -3,7 +3,11 @@ import { supabase, supabaseAdmin, isSupabaseConfigured } from '@/lib/supabase'
 import { generateToken } from '@/lib/auth'
 import type { Database } from '@/types/database'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 type UserRow = Database['public']['Tables']['users']['Row']
+type UserInsert = Database['public']['Tables']['users']['Insert']
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,7 +27,18 @@ export async function POST(request: NextRequest) {
 
     if (!isSupabaseConfigured()) {
       return NextResponse.json(
-        { error: 'Supabase no está configurado (falta .env.local)' },
+        { error: 'Supabase no está configurado (faltan env vars públicas)' },
+        { status: 500 }
+      )
+    }
+
+    // ⚠️ Si esto falta, supabaseAdmin NO bypass RLS (y tu lookup puede "no encontrar" nada)
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      return NextResponse.json(
+        {
+          error:
+            'Falta SUPABASE_SERVICE_ROLE_KEY en el servidor. Sin esto, supabaseAdmin no puede bypass RLS.',
+        },
         { status: 500 }
       )
     }
@@ -38,28 +53,58 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 })
     }
 
-    // 2) Buscar perfil real en public.users (tu esquema)
-    //    IMPORTANTE: usamos supabaseAdmin para evitar RLS bloqueando la lectura
+    const authUser = authData.user
+    const authEmail = (authUser.email || email).toLowerCase()
+    const authUserId = authUser.id
+
+    // 2) Buscar en public.users (tabla real)
     const { data: userRow, error: userError } = await supabaseAdmin
       .from('users')
       .select('*')
-      .eq('email', email)
+      .eq('email', authEmail)
       .eq('is_active', true)
-      .single()
+      .maybeSingle()
 
-    if (userError || !userRow) {
-      return NextResponse.json(
-        {
-          error:
-            'Perfil de usuario no encontrado en tabla users. Asegurate de que exista un registro en public.users con el mismo email y is_active=true.',
-        },
-        { status: 404 }
-      )
+    // Si hubo error real (RLS / permisos / etc), lo logueamos
+    if (userError) {
+      console.error('Supabase users lookup error:', userError)
     }
 
-    const u = userRow as UserRow
+    // 2b) Si no existe, lo creamos alineando id = auth.uid() (clave para que RLS funcione)
+    let u: UserRow | null = (userRow as UserRow | null) ?? null
 
-    // 3) Emitir tu JWT interno (compatibilidad con tu AuthContext)
+    if (!u) {
+      const newUser: UserInsert = {
+        id: authUserId,              // ✅ IMPORTANTE: alinear con auth.uid()
+        email: authEmail,
+        password_hash: 'supabase_auth', // placeholder (no lo usás si auth es Supabase)
+        name: authUser.user_metadata?.name || authEmail.split('@')[0] || 'Usuario',
+        role: 'owner',
+        clinic_id: null,
+        is_active: true,
+        avatar_url: null,
+        specialty: null,
+        color: null,
+      }
+
+      const { data: created, error: createErr } = await supabaseAdmin
+        .from('users')
+        .insert(newUser)
+        .select('*')
+        .single()
+
+      if (createErr || !created) {
+        console.error('Create user row error:', createErr)
+        return NextResponse.json(
+          { error: 'No se pudo crear el perfil en users' },
+          { status: 500 }
+        )
+      }
+
+      u = created as UserRow
+    }
+
+    // 3) Emitir JWT interno (tu AuthContext)
     const token = await generateToken({
       userId: u.id,
       email: u.email,
@@ -67,7 +112,7 @@ export async function POST(request: NextRequest) {
       clinicId: u.clinic_id ?? '',
     })
 
-    // 4) Activity log (opcional) - si clinic_id existe
+    // 4) Activity log (opcional)
     if (u.clinic_id) {
       await supabaseAdmin.from('activity_logs').insert({
         clinic_id: u.clinic_id,

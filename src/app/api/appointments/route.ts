@@ -218,11 +218,19 @@ export const PUT = requireAuth(async (request: NextRequest, user) => {
     }
     if (body.status !== undefined) {
       updateData.status = body.status
-      // Auto-set completed_at or confirmed_at based on status
+      // Auto-set or clear timestamps based on status
       if (body.status === 'completed') {
         updateData.completed_at = new Date().toISOString()
       } else if (body.status === 'confirmed') {
         updateData.confirmed_at = new Date().toISOString()
+      } else {
+        // Clear timestamps when status changes away from completed/confirmed
+        if (body.status !== 'completed') {
+          updateData.completed_at = null
+        }
+        if (body.status !== 'confirmed') {
+          updateData.confirmed_at = null
+        }
       }
     }
     if (body.treatment_phase !== undefined || body.treatmentPhase !== undefined) {

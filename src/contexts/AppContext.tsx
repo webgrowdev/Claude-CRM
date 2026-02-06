@@ -332,6 +332,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         // Load patients/leads from API
+        // Note: Using limit=1000 for initial load. For large datasets, consider:
+        // - Implementing pagination (load on-demand)
+        // - Using virtualized lists
+        // - Filtering to recent/active patients only
         const patientsResponse = await fetch('/api/patients?limit=1000', { headers })
         let leads: Lead[] = []
         
@@ -347,9 +351,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             source: p.source || 'other',
             status: p.status || 'new',
             funnelStatus: p.funnel_status,
-            treatments: [], // TODO: Load from patient_treatments junction table
-            notes: [], // TODO: Load from notes table
-            followUps: [], // Will be populated with appointments below
+            // TODO: Load treatments from patient_treatments junction table once implemented
+            treatments: [],
+            // TODO: Load notes from notes table once implemented
+            notes: [],
+            // Will be populated with appointments below
+            followUps: [],
             assignedTo: p.assigned_to,
             createdAt: new Date(p.created_at),
             updatedAt: new Date(p.updated_at),
@@ -373,6 +380,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         // Load appointments from API and merge into leads
+        // Note: Using limit=1000 for initial load. For large datasets, consider:
+        // - Loading appointments for a specific date range only (e.g., current month ± 1 month)
+        // - Implementing on-demand loading when viewing calendar/appointments pages
+        // - Using pagination with cursor-based approach
         const appointmentsResponse = await fetch('/api/appointments?limit=1000', { headers })
         if (appointmentsResponse.ok) {
           const appointmentsData = await appointmentsResponse.json()

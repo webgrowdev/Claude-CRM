@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase.client'
+import { supabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 import { hashPassword } from '@/lib/auth'
 
-// GET /api/doctors - List all doctors
+// GET /api/doctors - List all doctors (profiles with role='doctor')
 export const GET = requireAuth(async (request: NextRequest, user) => {
   try {
     // Verify clinicId exists
@@ -17,21 +17,11 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
     const { searchParams } = new URL(request.url)
     const active = searchParams.get('active')
 
-    let query = supabase
-      .from('doctors')
-      .select(`
-        *,
-        users:user_id (
-          id,
-          name,
-          email,
-          phone,
-          avatar_url,
-          specialty,
-          color
-        )
-      `)
+    let query = supabaseAdmin
+      .from('profiles')
+      .select('*')
       .eq('clinic_id', user.clinicId)
+      .eq('role', 'doctor')
 
     if (active !== null && active !== undefined) {
       query = query.eq('is_active', active === 'true')
@@ -72,7 +62,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
     }
 
     const body = await request.json()
-    
+
     // Validate required fields
     if (!body.name || !body.email || !body.password || !body.specialty) {
       return NextResponse.json(
@@ -81,67 +71,81 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
       )
     }
 
-    // Check if email already exists
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', body.email.toLowerCase())
-      .single()
+    // Check if email already exists in Supabase Auth
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
+    const emailExists = existingUsers?.users?.some(
+      (u) => u.email?.toLowerCase() === body.email.toLowerCase()
+    )
 
-    if (existingUser) {
+    if (emailExists) {
       return NextResponse.json(
         { error: 'El email ya está registrado' },
         { status: 400 }
       )
     }
 
-    // Hash password
-    const passwordHash = await hashPassword(body.password)
-
-    // Create user first
-    const { data: newUser, error: userError } = await supabase
-      .from('users')
-      .insert({
-        email: body.email.toLowerCase(),
-        password_hash: passwordHash,
+    // Create user in Supabase Auth
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: body.email.toLowerCase(),
+      password: body.password,
+      email_confirm: true,
+      user_metadata: {
         name: body.name,
-        phone: body.phone,
         role: 'doctor',
-        specialty: body.specialty,
-        color: body.color || '#3b82f6',
-        clinic_id: user.clinicId,
-        is_active: true,
-      })
-      .select()
-      .single()
+      },
+    })
 
-    if (userError) {
-      console.error('Error creating user:', userError)
+    if (authError || !authData.user) {
+      console.error('Error creating auth user:', authError)
       return NextResponse.json(
         { error: 'Error al crear usuario' },
         { status: 500 }
       )
     }
 
-    // Create doctor record
-    const { data: doctor, error: doctorError } = await supabase
-      .from('doctors')
-      .insert({
-        user_id: newUser.id,
-        clinic_id: user.clinicId,
-        specialty: body.specialty,
-        license_number: body.license_number,
-        is_active: true,
-        available_hours: body.available_hours || {},
-        color: body.color || '#3b82f6',
-      })
-      .select()
+    // Ensure profile exists (trigger should create it, but be safe)
+    const { data: existingProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('id', authData.user.id)
       .single()
 
-    if (doctorError) {
-      // Rollback user creation
-      await supabase.from('users').delete().eq('id', newUser.id)
-      console.error('Error creating doctor:', doctorError)
+    if (!existingProfile) {
+      await supabaseAdmin.from('profiles').insert({
+        id: authData.user.id,
+        clinic_id: user.clinicId,
+        name: body.name,
+        phone: body.phone || null,
+        role: 'doctor',
+        specialty: body.specialty,
+        color: body.color || '#3b82f6',
+        is_active: true,
+      })
+    } else {
+      // Update existing profile with doctor info
+      await supabaseAdmin
+        .from('profiles')
+        .update({
+          clinic_id: user.clinicId,
+          name: body.name,
+          phone: body.phone || null,
+          role: 'doctor',
+          specialty: body.specialty,
+          color: body.color || '#3b82f6',
+          is_active: true,
+        })
+        .eq('id', authData.user.id)
+    }
+
+    // Fetch the final profile
+    const { data: doctor, error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('id', authData.user.id)
+      .single()
+
+    if (profileError || !doctor) {
+      console.error('Error fetching doctor profile:', profileError)
       return NextResponse.json(
         { error: 'Error al crear doctor' },
         { status: 500 }
@@ -149,12 +153,13 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
     }
 
     // Log activity
-    await supabase.from('activity_logs').insert({
+    await supabaseAdmin.from('activity_logs').insert({
       clinic_id: user.clinicId,
       user_id: user.userId,
       action_type: 'create',
       resource_type: 'user',
-      resource_id: newUser.id,
+      resource_id: doctor.id,
+      description: 'Doctor created',
       ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
       user_agent: request.headers.get('user-agent'),
     })
@@ -163,7 +168,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
       success: true,
       doctor: {
         ...doctor,
-        user: newUser,
+        email: authData.user.email,
       },
     }, { status: 201 })
   } catch (error) {
@@ -198,16 +203,15 @@ export const PUT = requireAuth(async (request: NextRequest, user) => {
 
     const body = await request.json()
 
-    // Update doctor
-    const { data: doctor, error } = await supabase
-      .from('doctors')
+    // Update profile
+    const { data: doctor, error } = await supabaseAdmin
+      .from('profiles')
       .update({
         specialty: body.specialty,
-        license_number: body.license_number,
         is_active: body.is_active,
-        available_hours: body.available_hours,
         color: body.color,
-        updated_at: new Date().toISOString(),
+        name: body.name,
+        phone: body.phone,
       })
       .eq('id', id)
       .eq('clinic_id', user.clinicId)
@@ -222,27 +226,13 @@ export const PUT = requireAuth(async (request: NextRequest, user) => {
       )
     }
 
-    // Update user info if provided
-    if (body.name || body.phone || body.email) {
-      await supabase
-        .from('users')
-        .update({
-          name: body.name,
-          phone: body.phone,
-          email: body.email,
-          specialty: body.specialty,
-          color: body.color,
-        })
-        .eq('id', doctor.user_id)
-    }
-
     // Log activity
-    await supabase.from('activity_logs').insert({
+    await supabaseAdmin.from('activity_logs').insert({
       clinic_id: user.clinicId,
       user_id: user.userId,
       action_type: 'update',
       resource_type: 'user',
-      resource_id: doctor.user_id,
+      resource_id: id,
       changes: body,
       ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
       user_agent: request.headers.get('user-agent'),
@@ -282,9 +272,9 @@ export const DELETE = requireAuth(async (request: NextRequest, user) => {
       )
     }
 
-    // Instead of deleting, deactivate the doctor
-    const { data: doctor, error } = await supabase
-      .from('doctors')
+    // Instead of deleting, deactivate the doctor profile
+    const { data: doctor, error } = await supabaseAdmin
+      .from('profiles')
       .update({ is_active: false })
       .eq('id', id)
       .eq('clinic_id', user.clinicId)
@@ -299,19 +289,13 @@ export const DELETE = requireAuth(async (request: NextRequest, user) => {
       )
     }
 
-    // Also deactivate user
-    await supabase
-      .from('users')
-      .update({ is_active: false })
-      .eq('id', doctor.user_id)
-
     // Log activity
-    await supabase.from('activity_logs').insert({
+    await supabaseAdmin.from('activity_logs').insert({
       clinic_id: user.clinicId,
       user_id: user.userId,
       action_type: 'update',
       resource_type: 'user',
-      resource_id: doctor.user_id,
+      resource_id: id,
       changes: { is_active: false },
       ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
       user_agent: request.headers.get('user-agent'),

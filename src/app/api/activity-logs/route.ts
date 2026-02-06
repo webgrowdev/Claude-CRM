@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase.client'
+import { supabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 
 // GET /api/activity-logs - List activity logs
@@ -23,7 +23,7 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
     const limit = parseInt(searchParams.get('limit') || '50')
     const offset = (page - 1) * limit
 
-    let query = supabase
+    let query = supabaseAdmin
       .from('activity_logs')
       .select('*', { count: 'exact' })
       .eq('clinic_id', user.clinicId)
@@ -66,8 +66,8 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
     // Get user names for logs
     if (logs && logs.length > 0) {
       const userIds = Array.from(new Set(logs.map((log: any) => log.user_id).filter(Boolean)))
-      const { data: users } = await supabase
-        .from('users')
+      const { data: users } = await supabaseAdmin
+        .from('profiles')
         .select('id, name')
         .in('id', userIds)
 
@@ -122,7 +122,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
     }
 
     // Create activity log
-    const { data: log, error } = await supabase
+    const { data: log, error } = await supabaseAdmin
       .from('activity_logs')
       .insert({
         clinic_id: user.clinicId,

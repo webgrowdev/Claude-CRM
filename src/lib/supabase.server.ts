@@ -16,3 +16,21 @@ if (!serviceKey) {
 export const supabaseAdmin = createClient<Database>(supabaseUrl, serviceKey, {
   auth: { persistSession: false, autoRefreshToken: false },
 })
+
+/**
+ * Creates a server-side Supabase client for auth operations (sign-in, sign-up).
+ * Uses the anon key with session persistence disabled — safe for server use.
+ */
+export function createServerAuthClient() {
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  if (!supabaseUrl || !anonKey) {
+    throw new Error('Missing Supabase environment variables for auth client')
+  }
+  return createClient<Database>(supabaseUrl, anonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  })
+}

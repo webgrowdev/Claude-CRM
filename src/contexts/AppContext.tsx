@@ -289,6 +289,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return token || null
   }
 
+  // Helper to decode JWT and get clinicId
+  const getClinicIdFromToken = (): string | null => {
+    const token = getAuthToken()
+    if (!token) return null
+    
+    try {
+      // JWT is base64 encoded: header.payload.signature
+      const parts = token.split('.')
+      if (parts.length !== 3) return null
+      
+      const payload = JSON.parse(atob(parts[1]))
+      return payload.clinicId || null
+    } catch (error) {
+      console.error('Error decoding JWT:', error)
+      return null
+    }
+  }
+
+  // Helper to get namespaced localStorage key
+  const getStorageKey = (key: string): string => {
+    const clinicId = getClinicIdFromToken()
+    return clinicId ? `clinic_${clinicId}_${key}` : `clinic_${key}`
+  }
+
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
@@ -436,21 +460,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         dispatch({ type: 'SET_LEADS', payload: leads })
         // Cache in localStorage
-        localStorage.setItem('clinic_leads', JSON.stringify(leads))
+        localStorage.setItem(getStorageKey('leads'), JSON.stringify(leads))
 
         // Keep treatments from localStorage for now (until we have a treatments API endpoint)
-        const savedTreatments = localStorage.getItem('clinic_treatments')
+        const savedTreatments = localStorage.getItem(getStorageKey('treatments'))
         dispatch({
           type: 'SET_TREATMENTS',
           payload: savedTreatments ? JSON.parse(savedTreatments) : initialTreatments,
         })
 
-        const savedSettings = localStorage.getItem('clinic_settings')
+        const savedSettings = localStorage.getItem(getStorageKey('settings'))
         if (savedSettings) {
           dispatch({ type: 'UPDATE_SETTINGS', payload: JSON.parse(savedSettings) })
         }
 
-        const savedUser = localStorage.getItem('clinic_user')
+        const savedUser = localStorage.getItem(getStorageKey('user'))
         if (savedUser) {
           dispatch({ type: 'UPDATE_USER', payload: JSON.parse(savedUser) })
         }
@@ -490,25 +514,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Save to localStorage when data changes
   useEffect(() => {
     if (!state.isLoading) {
-      localStorage.setItem('clinic_leads', JSON.stringify(state.leads))
+      localStorage.setItem(getStorageKey('leads'), JSON.stringify(state.leads))
     }
   }, [state.leads, state.isLoading])
 
   useEffect(() => {
     if (!state.isLoading) {
-      localStorage.setItem('clinic_treatments', JSON.stringify(state.treatments))
+      localStorage.setItem(getStorageKey('treatments'), JSON.stringify(state.treatments))
     }
   }, [state.treatments, state.isLoading])
 
   useEffect(() => {
     if (!state.isLoading) {
-      localStorage.setItem('clinic_settings', JSON.stringify(state.settings))
+      localStorage.setItem(getStorageKey('settings'), JSON.stringify(state.settings))
     }
   }, [state.settings, state.isLoading])
 
   useEffect(() => {
     if (!state.isLoading) {
-      localStorage.setItem('clinic_user', JSON.stringify(state.user))
+      localStorage.setItem(getStorageKey('user'), JSON.stringify(state.user))
     }
   }, [state.user, state.isLoading])
 

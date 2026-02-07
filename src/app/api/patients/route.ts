@@ -93,12 +93,33 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
       )
     }
 
+    // Determine clinic_id: use body.clinic_id for owner/manager roles, otherwise use JWT's clinicId
+    let clinicId = user.clinicId
+
+    // Allow clinic_id override for owner/manager users (multi-tenant management)
+    if (body.clinic_id && (user.role === 'owner' || user.role === 'manager')) {
+      // Verify the clinic exists
+      const { data: clinic } = await supabaseAdmin
+        .from('clinics')
+        .select('id')
+        .eq('id', body.clinic_id)
+        .single()
+      
+      if (!clinic) {
+        return NextResponse.json(
+          { error: 'Clinic not found' },
+          { status: 404 }
+        )
+      }
+      clinicId = body.clinic_id
+    }
+
     // Create patient
     const { data: patient, error } = await supabaseAdmin
       .from('patients')
       .insert({
         ...body,
-        clinic_id: user.clinicId,
+        clinic_id: clinicId,
         assigned_to: body.assigned_to || user.userId,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -116,7 +137,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
 
     // Log activity
     await supabaseAdmin.from('activity_logs').insert({
-      clinic_id: user.clinicId,
+      clinic_id: clinicId,
       user_id: user.userId,
       action_type: 'create',
       resource_type: 'patient',

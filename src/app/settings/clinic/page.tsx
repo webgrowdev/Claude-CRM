@@ -8,6 +8,8 @@ import { useLanguage } from '@/i18n'
 
 export default function ClinicPage() {
   const { t } = useLanguage()
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     address: '',
@@ -78,6 +80,55 @@ export default function ClinicPage() {
     }
   }
 
+  // Load clinic data from API
+  useEffect(() => {
+    const loadClinic = async () => {
+      try {
+        const token = getAuthToken()
+        if (!token) {
+          console.warn('No auth token found')
+          setIsLoading(false)
+          return
+        }
+
+        const res = await fetch('/api/clinic', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+
+        if (res.ok) {
+          const { clinic } = await res.json()
+          setFormData({
+            name: clinic.name || '',
+            address: clinic.address || '',
+            phone: clinic.phone || '',
+            email: clinic.email || '',
+            website: '',
+            timezone: clinic.timezone || 'America/Mexico_City',
+            currency: 'USD',
+            workDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+            openTime: '09:00',
+            closeTime: '19:00',
+          })
+        }
+      } catch (error) {
+        console.error('Error loading clinic:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadClinic()
+  }, [])
+
+  // Helper to get JWT token from cookie
+  const getAuthToken = (): string | null => {
+    if (typeof document === 'undefined') return null
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('token='))
+      ?.split('=')[1]
+    return token || null
+  }
+
   const timezones = [
     { value: 'America/New_York', label: 'Eastern Time (ET)' },
     { value: 'America/Chicago', label: 'Central Time (CT)' },
@@ -98,15 +149,15 @@ export default function ClinicPage() {
   ]
 
   const handleSave = async () => {
-    const token = getAuthToken()
-    if (!token) {
-      console.warn('No authentication token found')
-      return
-    }
-
     setIsSaving(true)
     try {
-      const response = await fetch('/api/clinic', {
+      const token = getAuthToken()
+      if (!token) {
+        console.error('No auth token found')
+        return
+      }
+
+      const res = await fetch('/api/clinic', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -114,23 +165,21 @@ export default function ClinicPage() {
         },
         body: JSON.stringify({
           name: formData.name,
-          address: formData.address,
-          phone: formData.phone,
           email: formData.email,
-          website: formData.website,
+          phone: formData.phone,
+          address: formData.address,
           timezone: formData.timezone,
-          currency: formData.currency,
         }),
       })
 
-      if (response.ok) {
+      if (res.ok) {
         setSaved(true)
         setTimeout(() => setSaved(false), 2000)
       } else {
-        console.error('Failed to save clinic data')
+        console.error('Error saving clinic')
       }
     } catch (error) {
-      console.error('Error saving clinic data:', error)
+      console.error('Error saving clinic:', error)
     } finally {
       setIsSaving(false)
     }
@@ -277,8 +326,8 @@ export default function ClinicPage() {
           </Card>
 
           {/* Save Button */}
-          <Button fullWidth onClick={handleSave} disabled={isSaving}>
-            {isSaving ? 'Guardando...' : saved ? t.common.saved : t.common.save}
+          <Button fullWidth onClick={handleSave} disabled={isSaving || isLoading}>
+            {saved ? t.common.saved : isSaving ? 'Guardando...' : t.common.save}
           </Button>
         </div>
         )}

@@ -20,76 +20,44 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
       .eq('id', user.clinicId)
       .single()
 
-    if (error) {
+    if (error || !clinic) {
       console.error('Error fetching clinic:', error)
-      return NextResponse.json(
-        { error: 'Error al obtener información de la clínica' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Clinic not found' }, { status: 404 })
     }
 
-    return NextResponse.json({
-      success: true,
-      clinic: clinic || {},
-    })
+    return NextResponse.json({ success: true, clinic })
   } catch (error) {
     console.error('Clinic GET error:', error)
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 })
 
-// PUT /api/clinic - Update clinic information
+// PUT /api/clinic - Update current user's clinic info
 export const PUT = requireAuth(async (request: NextRequest, user) => {
   try {
-    // Verify clinicId exists
     if (!user.clinicId) {
-      return NextResponse.json(
-        { error: 'No clinic ID found' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'No clinic ID found' }, { status: 401 })
+    }
+
+    // Only owners and managers can update clinic info
+    if (!['owner', 'manager'].includes(user.role)) {
+      return NextResponse.json({ error: 'No permission' }, { status: 403 })
     }
 
     const body = await request.json()
 
-    // Prepare update data with proper typing
-    interface ClinicUpdateData {
-      name?: string
-      email?: string
-      phone?: string
-      address?: string
-      city?: string
-      state?: string
-      country?: string
-      timezone?: string
-      logo_url?: string
-      website?: string
-      currency?: string
-      updated_at: string
-    }
-    
-    const updateData: ClinicUpdateData = {
-      updated_at: new Date().toISOString()
-    }
-    
-    if (body.name !== undefined) updateData.name = body.name
-    if (body.email !== undefined) updateData.email = body.email
-    if (body.phone !== undefined) updateData.phone = body.phone
-    if (body.address !== undefined) updateData.address = body.address
-    if (body.city !== undefined) updateData.city = body.city
-    if (body.state !== undefined) updateData.state = body.state
-    if (body.country !== undefined) updateData.country = body.country
-    if (body.timezone !== undefined) updateData.timezone = body.timezone
-    if (body.logo_url !== undefined) updateData.logo_url = body.logo_url
-    if (body.website !== undefined) updateData.website = body.website
-    if (body.currency !== undefined) updateData.currency = body.currency
-
-    // Update clinic
     const { data: clinic, error } = await supabaseAdmin
       .from('clinics')
-      .update(updateData)
+      .update({
+        name: body.name,
+        email: body.email,
+        phone: body.phone,
+        address: body.address,
+        city: body.city,
+        state: body.state,
+        timezone: body.timezone,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', user.clinicId)
       .select()
       .single()

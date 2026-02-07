@@ -21,6 +21,7 @@ interface TeamMember {
 
 export default function TeamPage() {
   const { t } = useLanguage()
+  const [isLoading, setIsLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -197,8 +198,8 @@ export default function TeamPage() {
     setSelectedMember(member)
     setFormData({
       name: member.name,
-      email: member.email,
-      phone: member.phone,
+      email: '',
+      phone: member.phone || '',
       role: member.role,
       password: '',
     })
@@ -274,17 +275,13 @@ export default function TeamPage() {
                         <Badge variant={getRoleBadge(member.role) as 'primary' | 'default' | 'outline'} size="sm">
                           {getRoleLabel(member.role)}
                         </Badge>
-                        {member.status === 'pending' && (
+                        {!member.is_active && (
                           <Badge variant="warning" size="sm">{t.settings.pending}</Badge>
                         )}
                       </div>
                       <div className="flex items-center gap-4 mt-1 text-sm text-slate-500">
-                        <span className="flex items-center gap-1">
-                          <Mail className="w-3.5 h-3.5" />
-                          {member.email}
-                        </span>
                         {member.phone && (
-                          <span className="hidden sm:flex items-center gap-1">
+                          <span className="flex items-center gap-1">
                             <Phone className="w-3.5 h-3.5" />
                             {member.phone}
                           </span>

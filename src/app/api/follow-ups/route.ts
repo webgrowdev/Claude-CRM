@@ -3,21 +3,48 @@ import { getSupabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 
 // GET /api/follow-ups - List follow-ups
+// Reemplaza (o modifica) el handler GET existente por algo como esto (usa requireAuth como ahora)
 export const GET = requireAuth(async (request: NextRequest, user) => {
   try {
     const supabaseAdmin = getSupabaseAdmin()
-    
-    // Verify clinicId exists
+
+    // Verificar clinicId existe en token
     if (!user.clinicId) {
-      return NextResponse.json(
-        { error: 'No clinic ID found' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'No clinic ID found' }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
     const patientId = searchParams.get('patient_id')
-    const completed = searchParams.get('completed')
+
+    if (!patientId) {
+      return NextResponse.json({ error: 'patient_id query param is required' }, { status: 400 })
+    }
+
+    // Validar formato UUID básico
+    const uuidRE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    if (!uuidRE.test(patientId)) {
+      return NextResponse.json({ error: 'patient_id must be a valid UUID' }, { status: 400 })
+    }
+
+    // Verificar paciente existe y pertenece a la clinic del token
+    const { data: patient, error: patientErr } = await supabaseAdmin
+      .from('patients')
+      .select('id, clinic_id')
+      .eq('id', patientId)
+      .single()
+
+    if (patientErr) {
+      console.error('Error looking up patient for follow-ups:', patientErr)
+      return NextResponse.json({ error: 'Error fetching patient' }, { status: 500 })
+    }
+    if (!patient) {
+      return NextResponse.json({ error: 'Patient not found' }, { status: 404 })
+    }
+    if (patient.clinic_id !== user.clinicId) {
+      return NextResponse.json({ error: 'Patient does not belong to this clinic' }, { status: 403 })
+    }
+
+    // Ahora lanzar la query original de follow-ups filtrada por clinic y patient_id
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '100')
     const offset = (page - 1) * limit
@@ -26,29 +53,15 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
       .from('follow_ups')
       .select('*', { count: 'exact' })
       .eq('clinic_id', user.clinicId)
+      .eq('patient_id', patientId)
       .order('scheduled_at', { ascending: true })
-
-    // Filter by patient if provided
-    if (patientId) {
-      query = query.eq('patient_id', patientId)
-    }
-
-    // Filter by completed status
-    if (completed !== null && completed !== undefined) {
-      query = query.eq('completed', completed === 'true')
-    }
-
-    // Pagination
-    query = query.range(offset, offset + limit - 1)
+      .range(offset, offset + limit - 1)
 
     const { data: followUps, error, count } = await query
 
     if (error) {
       console.error('Error fetching follow-ups:', error)
-      return NextResponse.json(
-        { error: 'Error al obtener seguimientos' },
-        { status: 500 }
-      )
+      return NextResponse.json({ error: 'Error al obtener seguimientos' }, { status: 500 })
     }
 
     return NextResponse.json({
@@ -62,11 +75,8 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
       },
     })
   } catch (error) {
-    console.error('Follow-ups GET error:', error)
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    )
+    console.error('Follow-ups GET error (unhandled):', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 })
 

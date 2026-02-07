@@ -153,17 +153,6 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {/* Demo hint */}
-      <div className="px-6 pb-6">
-        <div className="bg-primary-50 rounded-lg p-3 text-center">
-          <p className="text-xs text-primary-700 mb-1">
-            <strong>Demo:</strong> Para conectar con base de datos real
-          </p>
-          <p className="text-xs text-primary-600">
-            Configura Supabase en .env.local (ver SETUP_GUIDE.md)
-          </p>
-        </div>
-      </div>
     </div>
   )
 }

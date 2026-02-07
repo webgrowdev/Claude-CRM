@@ -14,13 +14,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Look up clinic by API key
-    const { data: clinic } = await supabaseAdmin
+    const { data: clinic, error: clinicErr } = await supabaseAdmin
       .from('clinics')
       .select('id')
       .eq('api_key', apiKey)
       .single()
 
-    if (!clinic) {
+    if (clinicErr || !clinic) {
+      console.error('V1 Patients POST - invalid API key lookup:', clinicErr)
       return NextResponse.json({ error: 'Invalid API key' }, { status: 401 })
     }
 
@@ -30,13 +31,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'name and phone are required' }, { status: 400 })
     }
 
+    // Normalize / sanitize source to avoid CHECK constraint violations
+    const allowedSources = ['instagram','whatsapp','phone','website','referral','other']
+    const safeSource = allowedSources.includes(String(body.source)) ? body.source : 'other'
+
     // Check for duplicate by phone within this clinic
-    const { data: existing } = await supabaseAdmin
+    const { data: existing, error: existingErr } = await supabaseAdmin
       .from('patients')
       .select('id')
       .eq('clinic_id', clinic.id)
       .eq('phone', body.phone)
       .maybeSingle()
+
+    if (existingErr) {
+      console.error('V1 Patients POST - error checking existing patient:', existingErr)
+      return NextResponse.json({ error: 'Error checking existing patient' }, { status: 500 })
+    }
 
     if (existing) {
       // Update existing patient
@@ -45,7 +55,7 @@ export async function POST(request: NextRequest) {
         .update({
           name: body.name,
           email: body.email || null,
-          source: body.source || 'other',
+          source: safeSource,
           status: body.status || undefined,
           updated_at: new Date().toISOString(),
         })
@@ -69,7 +79,7 @@ export async function POST(request: NextRequest) {
         name: body.name,
         phone: body.phone,
         email: body.email || null,
-        source: body.source || 'other',
+        source: safeSource,
         status: body.status || 'new',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -92,19 +102,22 @@ export async function POST(request: NextRequest) {
 // GET /api/v1/patients - Public API to list patients (API key auth)
 export async function GET(request: NextRequest) {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+
     const apiKey = request.headers.get('X-API-Key') || request.headers.get('x-api-key')
     
     if (!apiKey) {
       return NextResponse.json({ error: 'API key required' }, { status: 401 })
     }
 
-    const { data: clinic } = await supabaseAdmin
+    const { data: clinic, error: clinicErr } = await supabaseAdmin
       .from('clinics')
       .select('id')
       .eq('api_key', apiKey)
       .single()
 
-    if (!clinic) {
+    if (clinicErr || !clinic) {
+      console.error('V1 Patients GET - invalid API key lookup:', clinicErr)
       return NextResponse.json({ error: 'Invalid API key' }, { status: 401 })
     }
 

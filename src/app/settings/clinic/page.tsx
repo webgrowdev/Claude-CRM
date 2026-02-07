@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Building, MapPin, Phone, Mail, Globe, Clock, Camera } from 'lucide-react'
 import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Card, Input, Button, Select } from '@/components/ui'
@@ -9,11 +9,11 @@ import { useLanguage } from '@/i18n'
 export default function ClinicPage() {
   const { t } = useLanguage()
   const [formData, setFormData] = useState({
-    name: 'Clinic Estética',
-    address: 'Av. Principal 123, Ciudad',
-    phone: '+1 234 567 8900',
-    email: 'contacto@clinica.com',
-    website: 'www.clinica.com',
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+    website: '',
     timezone: 'America/Mexico_City',
     currency: 'USD',
     workDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
@@ -21,6 +21,62 @@ export default function ClinicPage() {
     closeTime: '19:00',
   })
   const [saved, setSaved] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Helper to get JWT token from cookie
+  const getAuthToken = (): string | null => {
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('token='))
+      ?.split('=')[1]
+    return token || null
+  }
+
+  // Load clinic data on mount
+  useEffect(() => {
+    loadClinicData()
+  }, [])
+
+  const loadClinicData = async () => {
+    const token = getAuthToken()
+    if (!token) {
+      console.warn('No authentication token found')
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/clinic', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const clinic = data.clinic
+        setFormData({
+          name: clinic.name || '',
+          address: clinic.address || '',
+          phone: clinic.phone || '',
+          email: clinic.email || '',
+          website: clinic.website || '',
+          timezone: clinic.timezone || 'America/Mexico_City',
+          currency: clinic.currency || 'USD',
+          workDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+          openTime: '09:00',
+          closeTime: '19:00',
+        })
+      } else {
+        console.error('Failed to load clinic data')
+      }
+    } catch (error) {
+      console.error('Error loading clinic data:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const timezones = [
     { value: 'America/New_York', label: 'Eastern Time (ET)' },
@@ -41,10 +97,43 @@ export default function ClinicPage() {
     { value: 'ARS', label: 'ARS ($)' },
   ]
 
-  const handleSave = () => {
-    // In a real app, this would save to API/state
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+  const handleSave = async () => {
+    const token = getAuthToken()
+    if (!token) {
+      console.warn('No authentication token found')
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      const response = await fetch('/api/clinic', {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          address: formData.address,
+          phone: formData.phone,
+          email: formData.email,
+          website: formData.website,
+          timezone: formData.timezone,
+          currency: formData.currency,
+        }),
+      })
+
+      if (response.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      } else {
+        console.error('Failed to save clinic data')
+      }
+    } catch (error) {
+      console.error('Error saving clinic data:', error)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -52,7 +141,12 @@ export default function ClinicPage() {
       <Header title={t.settings.clinicInfo} showBack />
 
       <PageContainer>
-        <div className="lg:max-w-2xl lg:mx-auto space-y-6">
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <p className="text-slate-500">Cargando información de la clínica...</p>
+          </div>
+        ) : (
+          <div className="lg:max-w-2xl lg:mx-auto space-y-6">
           {/* Logo Section */}
           <Card className="text-center">
             <div className="w-24 h-24 mx-auto bg-primary-100 rounded-2xl flex items-center justify-center">
@@ -183,10 +277,11 @@ export default function ClinicPage() {
           </Card>
 
           {/* Save Button */}
-          <Button fullWidth onClick={handleSave}>
-            {saved ? t.common.saved : t.common.save}
+          <Button fullWidth onClick={handleSave} disabled={isSaving}>
+            {isSaving ? 'Guardando...' : saved ? t.common.saved : t.common.save}
           </Button>
         </div>
+        )}
       </PageContainer>
     </AppShell>
   )

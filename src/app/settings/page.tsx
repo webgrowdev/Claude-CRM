@@ -29,6 +29,7 @@ import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Card, Avatar, Modal, Button } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n'
+import { useAuth } from '@/contexts/AuthContext' // <-- añadido
 
 interface SettingsItem {
   icon: React.ReactNode
@@ -77,10 +78,10 @@ export default function SettingsPage() {
   const { language, setLanguage, t } = useLanguage()
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [showLanguageModal, setShowLanguageModal] = useState(false)
+  const { logout } = useAuth() // <-- usar logout central
 
-  const handleLogout = () => {
-    localStorage.removeItem('clinic_logged_in')
-    router.push('/login')
+  const handleLogout = async () => {
+    await logout()
   }
 
   const settingsGroups: SettingsGroup[] = [

@@ -22,12 +22,15 @@ import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n'
+import { useAuth } from '@/contexts/AuthContext' // <-- nuevo import
 
 export function Sidebar() {
-  const pathname = usePathname()
+ const pathname = usePathname()
   const { state } = useApp()
   const { t } = useLanguage()
   const [showMore, setShowMore] = useState(false)
+  const { logout } = useAuth() // use central logout
+
 
   // Main 4-section navigation
   const mainNavItems = [
@@ -55,11 +58,19 @@ export function Sidebar() {
     { href: '/settings', label: t.nav.settings, icon: Settings },
   ]
 
-  const handleLogout = () => {
-    localStorage.removeItem('clinic_token')
-    localStorage.removeItem('token')
-    localStorage.removeItem('clinic_logged_in')
-    window.location.href = '/login'
+  const handleLogout = async () => {
+    try {
+      await logout()
+    } catch (err) {
+      console.error('Logout failed from Sidebar:', err)
+      // fallback: legacy cleanup + redirect
+      try {
+        localStorage.removeItem('clinic_token')
+        localStorage.removeItem('token')
+        localStorage.removeItem('clinic_logged_in')
+      } catch (_) {}
+      window.location.href = '/login'
+    }
   }
 
   // Get role display name

@@ -130,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = async () => {
     try {
-      // Call logout endpoint
+      // Call logout endpoint (optional server-side signout)
       await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
@@ -141,11 +141,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Logout error:', error)
     }
 
-    // Clear local state
-    localStorage.removeItem('auth_token')
-    localStorage.removeItem('auth_user')
-    localStorage.removeItem('auth_remember')
-    
+    // Clear main auth keys
+    try {
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_user')
+      localStorage.removeItem('auth_remember')
+    } catch (e) {
+      console.warn('Could not remove auth keys from localStorage', e)
+    }
+
+    // Remove legacy / alternate keys used in some components
+    try {
+      localStorage.removeItem('clinic_token')
+      localStorage.removeItem('token')
+      localStorage.removeItem('clinic_logged_in')
+    } catch (e) {
+      // ignore if storage access fails
+    }
+
     setState({
       user: null,
       token: null,

@@ -45,6 +45,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy health check script
 COPY --chown=nextjs:nodejs healthcheck.sh ./healthcheck.sh
+RUN chmod +x /app/healthcheck.sh
 
 USER nextjs
 

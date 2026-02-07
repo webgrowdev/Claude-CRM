@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase.server'
+import { getSupabaseAdmin } from '@/lib/supabase.server'
 
 // POST /api/v1/appointments - Public API to create appointments (API key auth)
 export async function POST(request: NextRequest) {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Authenticate by API key
     const apiKey = request.headers.get('X-API-Key') || request.headers.get('x-api-key')
     

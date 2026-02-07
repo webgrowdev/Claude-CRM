@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase.server'
+import { getSupabaseAdmin } from '@/lib/supabase.server'
 import { verifyWebhookRequest } from '@/lib/manychat-verify'
 import { ManyChatWebhookPayload } from '@/types/manychat'
 
@@ -21,6 +21,8 @@ function convertSource(source: string | undefined): 'instagram' | 'whatsapp' | '
 // Receives webhook data from ManyChat in real-time
 export async function POST(request: NextRequest) {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Get raw body for signature verification
     const bodyText = await request.text()
     let payload: ManyChatWebhookPayload

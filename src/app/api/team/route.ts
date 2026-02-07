@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase.server'
+import { getSupabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 
 // GET /api/team - List all team members (all profiles in the clinic)
 export const GET = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(
@@ -75,6 +77,8 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
 // POST /api/team - Create new team member
 export const POST = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(
@@ -216,6 +220,8 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
 // PUT /api/team/:id - Update team member
 export const PUT = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(
@@ -303,6 +309,8 @@ export const PUT = requireAuth(async (request: NextRequest, user) => {
 // DELETE /api/team/:id - Deactivate team member
 export const DELETE = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(

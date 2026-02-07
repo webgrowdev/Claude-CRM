@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase.server'
+import { getSupabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 
 // GET - List appointments with filters
 export const GET = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(
@@ -90,6 +92,8 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
 // POST - Create a new appointment
 export const POST = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(
@@ -181,6 +185,8 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
 // PUT - Update appointment
 export const PUT = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(
@@ -299,6 +305,8 @@ export const PUT = requireAuth(async (request: NextRequest, user) => {
 // DELETE - Delete/Cancel appointment
 export const DELETE = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase.server'
+import { getSupabaseAdmin } from '@/lib/supabase.server'
 import type { Database } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
@@ -10,6 +10,8 @@ type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
 export async function GET(request: NextRequest) {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     const authHeader = request.headers.get('authorization')
 
     if (!authHeader?.startsWith('Bearer ')) {

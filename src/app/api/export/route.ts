@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase.server'
+import { getSupabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 
 // POST /api/export - Export data to CSV/Excel
 export const POST = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(

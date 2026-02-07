@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase.server'
+import { getSupabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 import { getSubscribers } from '@/lib/manychat'
 import { ManyChatSubscriber } from '@/types/manychat'
@@ -22,6 +22,8 @@ function convertSource(source: string | undefined): 'instagram' | 'whatsapp' | '
 // Manual synchronization of all ManyChat subscribers
 export const POST = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     if (!user.clinicId) {
       return NextResponse.json(
         { error: 'Clinic ID not found in user session' },

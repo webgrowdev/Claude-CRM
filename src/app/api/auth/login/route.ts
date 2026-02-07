@@ -5,7 +5,6 @@ import type { Database } from '@/types/database'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-const supabaseAdmin = getSupabaseAdmin()
 
 
 type UserRow = Database['public']['Tables']['users']['Row']
@@ -22,6 +21,8 @@ export async function POST(request: NextRequest) {
 
 
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Validate Supabase configuration first
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       console.error('Missing Supabase URL or Anon Key environment variables')

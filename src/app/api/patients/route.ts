@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase.server'
+import { getSupabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 
 // GET /api/patients - List all patients
 export const GET = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(
@@ -75,6 +77,8 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
 // POST /api/patients - Create new patient
 export const POST = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(
@@ -162,6 +166,8 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
 // PUT /api/patients/:id - Update patient
 export const PUT = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(
@@ -230,6 +236,8 @@ export const PUT = requireAuth(async (request: NextRequest, user) => {
 // DELETE /api/patients/:id - Delete patient
 export const DELETE = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(

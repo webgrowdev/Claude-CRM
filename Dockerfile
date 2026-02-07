@@ -34,9 +34,14 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 # Copy necessary files from builder
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+# Nota: Next.js standalone output requiere copiar manualmente:
+# 1. /public - archivos públicos (favicon, imágenes, etc.)
+# 2. /.next/standalone - servidor Node.js optimizado
+# 3. /.next/static - archivos estáticos con hash (CSS, JS chunks)
+# Estos archivos deben estar accesibles para Nginx en producción
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 

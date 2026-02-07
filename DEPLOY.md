@@ -104,11 +104,9 @@ curl http://localhost
 ```
 
 **¿Qué incluye el docker-compose.yml?**
-- ✅ Servicio de Next.js (clinic-crm)
-- ✅ Nginx como reverse proxy
-- ✅ Volúmenes compartidos para archivos estáticos (`/_next/static/`)
-- ✅ Configuración de caché correcta
-- ✅ Headers de proxy necesarios
+- ✅ Servicio de Next.js (clinic-crm) en modo standalone
+- ✅ Nginx como reverse proxy con caché optimizado
+- ✅ Headers de proxy necesarios para Next.js
 - ✅ Health checks
 - ✅ Auto-restart en caso de errores
 
@@ -122,7 +120,7 @@ docker-compose down
 
 # Ver archivos estáticos dentro del contenedor
 docker exec clinic-crm-app ls -la /app/.next/static
-docker exec clinic-crm-nginx ls -la /app/.next/static
+docker exec clinic-crm-app ls -la /app/public
 ```
 
 ### Desplegar en servicios de contenedores:
@@ -160,7 +158,7 @@ pm2 startup
 
 ### Con Nginx como proxy:
 
-**⚠️ IMPORTANTE:** Para evitar errores 404 en archivos estáticos (`/_next/static/`), necesitas configurar Nginx correctamente.
+**⚠️ IMPORTANTE:** Para evitar errores 404 en archivos estáticos (`/_next/static/`), necesitas configurar Nginx con headers de caché correctos. Next.js en modo standalone sirve estos archivos, pero Nginx debe proxearlos con la configuración adecuada.
 
 ```nginx
 # /etc/nginx/sites-available/clinic-crm
@@ -171,21 +169,22 @@ server {
     # Máximo tamaño de subida
     client_max_body_size 10M;
 
-    # Servir archivos estáticos de Next.js directamente
-    # Estos archivos tienen hash en el nombre y son inmutables
+    # Archivos estáticos de Next.js - proxear con caché agresivo
+    # Next.js standalone sirve estos archivos correctamente
     location /_next/static/ {
-        # Ajusta esta ruta según dónde esté tu build
-        alias /var/www/clinic-crm/.next/static/;
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
         expires 365d;
         add_header Cache-Control "public, max-age=31536000, immutable";
         access_log off;
     }
 
-    # Servir archivos públicos (favicon, imágenes, etc.)
-    location ~* ^/(favicon\.ico|manifest\.json|images/|assets/|icons/) {
-        root /var/www/clinic-crm/public;
-        expires 30d;
-        add_header Cache-Control "public, max-age=2592000";
+    # Archivos públicos (favicon, manifest)
+    location ~* ^/(favicon\.ico|manifest\.json) {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        expires 7d;
+        add_header Cache-Control "public, max-age=604800";
         access_log off;
     }
 
@@ -295,7 +294,6 @@ Failed to load resource: the server responded with a status of 404
 ```bash
 # Si usas Docker Compose
 docker exec clinic-crm-app ls -la /app/.next/static
-docker exec clinic-crm-nginx ls -la /app/.next/static
 
 # Si usas contenedor standalone
 docker exec <container-name> ls -la /app/.next/static
@@ -363,10 +361,10 @@ docker-compose up -d --build
 docker exec clinic-crm-app ls -laR /app/.next/static | head -50
 docker exec clinic-crm-app ls -la /app/public
 
-# 3. Verificar que Nginx puede acceder a los archivos
-docker exec clinic-crm-nginx ls -la /app/.next/static
+# 3. Verificar que Next.js puede servir los archivos
+docker exec clinic-crm-app ls -la /app/.next/static
 
-# 4. Probar endpoint directamente
+# 4. Probar endpoint directamente a través de Nginx
 curl -I http://localhost/_next/static/css/<nombre-archivo>.css
 # Debería retornar: HTTP/1.1 200 OK
 

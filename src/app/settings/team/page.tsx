@@ -6,12 +6,14 @@ import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Card, Button, Input, Modal, Avatar, Badge, Select, EmptyState } from '@/components/ui'
 import { useLanguage } from '@/i18n'
 
+type TeamRole = 'owner' | 'manager' | 'doctor' | 'receptionist'
+
 interface TeamMember {
   id: string
   name: string
   email: string
   phone: string
-  role: 'owner' | 'manager' | 'doctor' | 'receptionist'
+  role: TeamRole
   status: 'active' | 'pending'
   is_active: boolean
   created_at: string
@@ -27,7 +29,7 @@ export default function TeamPage() {
     name: '',
     email: '',
     phone: '',
-    role: 'receptionist' as 'owner' | 'manager' | 'doctor' | 'receptionist',
+    role: 'receptionist' as TeamRole,
     password: '',
   })
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
@@ -383,7 +385,7 @@ export default function TeamPage() {
           <Select
             label={t.settings.role}
             value={formData.role}
-            onChange={(value) => setFormData({ ...formData, role: value as 'owner' | 'manager' | 'doctor' | 'receptionist' })}
+            onChange={(value) => setFormData({ ...formData, role: value as TeamRole })}
             options={[
               { value: 'owner', label: 'Propietario' },
               { value: 'manager', label: 'Gerente' },
@@ -438,7 +440,7 @@ export default function TeamPage() {
           <Select
             label={t.settings.role}
             value={formData.role}
-            onChange={(value) => setFormData({ ...formData, role: value as 'owner' | 'manager' | 'doctor' | 'receptionist' })}
+            onChange={(value) => setFormData({ ...formData, role: value as TeamRole })}
             options={[
               { value: 'owner', label: 'Propietario' },
               { value: 'manager', label: 'Gerente' },

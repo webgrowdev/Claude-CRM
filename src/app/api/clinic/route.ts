@@ -54,8 +54,25 @@ export const PUT = requireAuth(async (request: NextRequest, user) => {
 
     const body = await request.json()
 
-    // Prepare update data
-    const updateData: any = {}
+    // Prepare update data with proper typing
+    interface ClinicUpdateData {
+      name?: string
+      email?: string
+      phone?: string
+      address?: string
+      city?: string
+      state?: string
+      country?: string
+      timezone?: string
+      logo_url?: string
+      website?: string
+      currency?: string
+      updated_at: string
+    }
+    
+    const updateData: ClinicUpdateData = {
+      updated_at: new Date().toISOString()
+    }
     
     if (body.name !== undefined) updateData.name = body.name
     if (body.email !== undefined) updateData.email = body.email
@@ -68,8 +85,6 @@ export const PUT = requireAuth(async (request: NextRequest, user) => {
     if (body.logo_url !== undefined) updateData.logo_url = body.logo_url
     if (body.website !== undefined) updateData.website = body.website
     if (body.currency !== undefined) updateData.currency = body.currency
-    
-    updateData.updated_at = new Date().toISOString()
 
     // Update clinic
     const { data: clinic, error } = await supabaseAdmin

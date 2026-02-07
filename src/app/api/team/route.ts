@@ -102,20 +102,7 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
       )
     }
 
-    // Check if email already exists in Supabase Auth
-    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
-    const emailExists = existingUsers?.users?.some(
-      (u) => u.email?.toLowerCase() === body.email.toLowerCase()
-    )
-
-    if (emailExists) {
-      return NextResponse.json(
-        { error: 'El email ya está registrado' },
-        { status: 400 }
-      )
-    }
-
-    // Create user in Supabase Auth
+    // Create user in Supabase Auth - it will automatically reject duplicate emails
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email: body.email.toLowerCase(),
       password: body.password,
@@ -126,7 +113,22 @@ export const POST = requireAuth(async (request: NextRequest, user) => {
       },
     })
 
-    if (authError || !authData.user) {
+    if (authError) {
+      console.error('Error creating auth user:', authError)
+      // Check if error is due to duplicate email
+      if (authError.message?.includes('already registered') || authError.message?.includes('User already registered')) {
+        return NextResponse.json(
+          { error: 'El email ya está registrado' },
+          { status: 400 }
+        )
+      }
+      return NextResponse.json(
+        { error: 'Error al crear usuario' },
+        { status: 500 }
+      )
+    }
+
+    if (!authData.user) {
       console.error('Error creating auth user:', authError)
       return NextResponse.json(
         { error: 'Error al crear usuario' },
@@ -234,16 +236,27 @@ export const PUT = requireAuth(async (request: NextRequest, user) => {
 
     const body = await request.json()
 
-    // Prepare update data
-    const updateData: any = {}
+    // Prepare update data with proper typing
+    interface ProfileUpdateData {
+      name?: string
+      phone?: string | null
+      role?: string
+      specialty?: string | null
+      color?: string | null
+      is_active?: boolean
+      updated_at: string
+    }
+    
+    const updateData: ProfileUpdateData = {
+      updated_at: new Date().toISOString()
+    }
+    
     if (body.name !== undefined) updateData.name = body.name
     if (body.phone !== undefined) updateData.phone = body.phone
     if (body.role !== undefined) updateData.role = body.role
     if (body.specialty !== undefined) updateData.specialty = body.specialty
     if (body.color !== undefined) updateData.color = body.color
     if (body.is_active !== undefined) updateData.is_active = body.is_active
-
-    updateData.updated_at = new Date().toISOString()
 
     // Update profile
     const { data: member, error } = await supabaseAdmin

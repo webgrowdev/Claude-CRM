@@ -203,6 +203,11 @@ export interface Database {
           closed_at?: string | null
         }
       }
+      /**
+       * @deprecated Use 'profiles' table instead. This table exists for backward compatibility only.
+       * The 'users' table should not be used in new code - all user data is now in 'profiles' table
+       * linked to auth.users. Email is stored in auth.users, not in profiles.
+       */
       users: {
   Row: {
     id: string
@@ -410,6 +415,65 @@ export interface Database {
           patient_id?: string
           content?: string
           created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      follow_ups: {
+        Row: {
+          id: string
+          clinic_id: string
+          patient_id: string
+          type: string
+          scheduled_at: string
+          completed: boolean
+          completed_at: string | null
+          notes: string | null
+          duration: number | null
+          treatment_id: string | null
+          treatment_name: string | null
+          assigned_to: string | null
+          google_event_id: string | null
+          meet_link: string | null
+          appointment_status: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clinic_id: string
+          patient_id: string
+          type: string
+          scheduled_at: string
+          completed?: boolean
+          completed_at?: string | null
+          notes?: string | null
+          duration?: number | null
+          treatment_id?: string | null
+          treatment_name?: string | null
+          assigned_to?: string | null
+          google_event_id?: string | null
+          meet_link?: string | null
+          appointment_status?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clinic_id?: string
+          patient_id?: string
+          type?: string
+          scheduled_at?: string
+          completed?: boolean
+          completed_at?: string | null
+          notes?: string | null
+          duration?: number | null
+          treatment_id?: string | null
+          treatment_name?: string | null
+          assigned_to?: string | null
+          google_event_id?: string | null
+          meet_link?: string | null
+          appointment_status?: string | null
           created_at?: string
           updated_at?: string
         }

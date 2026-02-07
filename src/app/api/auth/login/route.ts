@@ -7,8 +7,8 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 
-type UserRow = Database['public']['Tables']['users']['Row']
-type UserInsert = Database['public']['Tables']['users']['Insert']
+type ProfileRow = Database['public']['Tables']['profiles']['Row']
+type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
 
 export async function POST(request: NextRequest) {
 
@@ -72,24 +72,23 @@ export async function POST(request: NextRequest) {
 
     // 2) Buscar en public.users (tu “perfil” real)
     // OJO: no filtro is_active acá para no forzar inserts duplicados; valido después.
-    const { data: userRow, error: userLookupErr } = await supabaseAdmin
-      .from('users')
+    const { data: profileRow, error: profileLookupErr } = await supabaseAdmin
+      .from('profiles')
       .select('*')
       .eq('id', authUserId)
       .maybeSingle()
 
-    if (userLookupErr) {
-      console.error('Supabase users lookup error:', userLookupErr)
+    if (profileLookupErr) {
+      console.error('Supabase users lookup error:', profileLookupErr)
       return NextResponse.json({ error: 'Error consultando el usuario' }, { status: 500 })
     }
 
-    let u: UserRow | null = (userRow as UserRow | null) ?? null
+    let u: ProfileRow | null = (profileRow as ProfileRow | null) ?? null
 
     // 2b) Si no existe, lo creamos con id = auth.users.id
     if (!u) {
-      const newUser: UserInsert = {
+      const newProfile: ProfileInsert = {
         id: authUserId, // CRÍTICO: debe ser el mismo que auth.users.id para que auth.uid() funcione con RLS
-        email: authEmail,
         name: authUser.user_metadata?.name || authEmail.split('@')[0] || 'Usuario',
         role: 'owner',     // válido por tu CHECK
         clinic_id: null,   // por ahora null
@@ -98,21 +97,17 @@ export async function POST(request: NextRequest) {
         avatar_url: authUser.user_metadata?.avatar_url ?? null,
         specialty: authUser.user_metadata?.specialty ?? null,
         color: authUser.user_metadata?.color ?? null,
-
-        // IMPORTANTE:
-        // NO seteamos password_hash porque Supabase Auth maneja contraseña.
-        // Para que esto funcione, password_hash debe ser NULLABLE o eliminarse.
-      } as UserInsert
+      } as ProfileInsert
 
       // upsert evita duplicados por requests concurrentes
       const { data: created, error: createErr } = await supabaseAdmin
-        .from('users')
-        .upsert(newUser, { onConflict: 'id' })
+        .from('profiles')
+        .upsert(newProfile, { onConflict: 'id' })
         .select('*')
         .single()
 
       if (createErr || !created) {
-        console.error('Create user error:', createErr)
+        console.error('Create profile error:', createErr)
 
         const debug =
           process.env.NODE_ENV !== 'production'
@@ -130,7 +125,7 @@ export async function POST(request: NextRequest) {
         )
       }
 
-      u = created as UserRow
+      u = created as ProfileRow
     }
 
     // 2c) Validar activo

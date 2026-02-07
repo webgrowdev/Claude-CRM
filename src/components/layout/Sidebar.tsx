@@ -16,6 +16,7 @@ import {
   Kanban,
   HelpCircle,
   MapPin,
+  LayoutDashboard,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar } from '@/components/ui'
@@ -25,11 +26,16 @@ import { useLanguage } from '@/i18n'
 export function Sidebar() {
   const pathname = usePathname()
   const { state } = useApp()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [showMore, setShowMore] = useState(false)
 
   // Main 4-section navigation
   const mainNavItems = [
+    {
+      href: '/dashboard',
+      label: language === 'es' ? 'Inicio' : 'Dashboard',
+      icon: LayoutDashboard,
+    },
     {
       href: '/inbox',
       label: t.nav.inbox,
@@ -50,6 +56,8 @@ export function Sidebar() {
   ]
 
   const handleLogout = () => {
+    localStorage.removeItem('clinic_token')
+    localStorage.removeItem('token')
     localStorage.removeItem('clinic_logged_in')
     window.location.href = '/login'
   }
@@ -69,7 +77,7 @@ export function Sidebar() {
     <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r border-gray-200">
       {/* Logo */}
       <div className="flex items-center h-16 px-6 border-b border-gray-100">
-        <Link href="/inbox" className="flex items-center gap-3">
+        <Link href="/dashboard" className="flex items-center gap-3">
           <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/20">
             <span className="text-white font-bold text-lg">C</span>
           </div>
@@ -159,7 +167,7 @@ export function Sidebar() {
       <div className="px-4 py-2 border-t border-gray-100">
         <button
           onClick={() => {
-            localStorage.removeItem('clinic_onboarding_complete')
+            localStorage.removeItem('clinic_onboarding_completed')
             window.location.reload()
           }}
           className="flex items-center gap-3 px-3 py-2 w-full rounded-xl text-sm text-slate-500 hover:bg-gray-100 hover:text-slate-700 transition-all"

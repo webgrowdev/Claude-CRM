@@ -365,8 +365,9 @@ docker exec clinic-crm-app ls -la /app/public
 docker exec clinic-crm-app ls -la /app/.next/static
 
 # 4. Probar endpoint directamente a través de Nginx
-curl -I http://localhost/_next/static/css/<nombre-archivo>.css
+curl -I http://localhost/_next/static/css/{filename}.css
 # Debería retornar: HTTP/1.1 200 OK
+# y Cache-Control: public, max-age=31536000, immutable
 
 # 5. Ver logs de Nginx
 docker-compose logs nginx

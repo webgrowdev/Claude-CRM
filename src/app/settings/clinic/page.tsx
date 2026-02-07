@@ -23,11 +23,10 @@ export default function ClinicPage() {
     closeTime: '19:00',
   })
   const [saved, setSaved] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
 
   // Helper to get JWT token from cookie
   const getAuthToken = (): string | null => {
+    if (typeof document === 'undefined') return null
     const token = document.cookie
       .split('; ')
       .find(row => row.startsWith('token='))
@@ -78,55 +77,6 @@ export default function ClinicPage() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  // Load clinic data from API
-  useEffect(() => {
-    const loadClinic = async () => {
-      try {
-        const token = getAuthToken()
-        if (!token) {
-          console.warn('No auth token found')
-          setIsLoading(false)
-          return
-        }
-
-        const res = await fetch('/api/clinic', {
-          headers: { Authorization: `Bearer ${token}` }
-        })
-
-        if (res.ok) {
-          const { clinic } = await res.json()
-          setFormData({
-            name: clinic.name || '',
-            address: clinic.address || '',
-            phone: clinic.phone || '',
-            email: clinic.email || '',
-            website: '',
-            timezone: clinic.timezone || 'America/Mexico_City',
-            currency: 'USD',
-            workDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
-            openTime: '09:00',
-            closeTime: '19:00',
-          })
-        }
-      } catch (error) {
-        console.error('Error loading clinic:', error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    loadClinic()
-  }, [])
-
-  // Helper to get JWT token from cookie
-  const getAuthToken = (): string | null => {
-    if (typeof document === 'undefined') return null
-    const token = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('token='))
-      ?.split('=')[1]
-    return token || null
   }
 
   const timezones = [

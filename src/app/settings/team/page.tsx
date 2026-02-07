@@ -34,7 +34,6 @@ export default function TeamPage() {
     password: '',
   })
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
-  const [isLoading, setIsLoading] = useState(true)
 
   // Helper to get JWT token from cookie
   const getAuthToken = (): string | null => {

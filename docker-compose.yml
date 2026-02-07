@@ -1,8 +1,6 @@
 # Docker Compose para Clinic CRM - Configuración de Producción
 # Incluye Next.js app + Nginx para servir archivos estáticos correctamente
 
-version: '3.8'
-
 services:
   # Servicio principal de Next.js
   clinic-crm:

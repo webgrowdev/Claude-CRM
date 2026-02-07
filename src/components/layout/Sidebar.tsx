@@ -26,14 +26,14 @@ import { useLanguage } from '@/i18n'
 export function Sidebar() {
   const pathname = usePathname()
   const { state } = useApp()
-  const { t, language } = useLanguage()
+  const { t } = useLanguage()
   const [showMore, setShowMore] = useState(false)
 
   // Main 4-section navigation
   const mainNavItems = [
     {
       href: '/dashboard',
-      label: language === 'es' ? 'Inicio' : 'Dashboard',
+      label: t.nav.home,
       icon: LayoutDashboard,
     },
     {

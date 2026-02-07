@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyToken, generateToken } from '@/lib/auth'
-import { supabaseAdmin } from '@/lib/supabase.server'
+import { getSupabaseAdmin } from '@/lib/supabase.server'
 import type { Database } from '@/types/database'
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
 export async function POST(request: NextRequest) {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     const authHeader = request.headers.get('authorization')
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

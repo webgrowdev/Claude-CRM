@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin, createServerAuthClient } from '@/lib/supabase.server'
+import { getSupabaseAdmin, createServerAuthClient } from '@/lib/supabase.server'
 import { generateToken } from '@/lib/auth'
 import type { Database } from '@/types/database'
 
@@ -7,6 +7,8 @@ type ProfileRow = Database['public']['Tables']['profiles']['Row']
 
 export async function POST(request: NextRequest) {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     const { email, password, name, phone, role = 'manager' } = await request.json()
 
     // Validate input

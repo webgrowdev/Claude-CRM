@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase.server'
+import { getSupabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 import { hashPassword } from '@/lib/auth'
 
 // GET /api/doctors - List all doctors (profiles with role='doctor')
 export const GET = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(

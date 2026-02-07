@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseAdmin } from '@/lib/supabase.server'
+import { getSupabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 
 // GET /api/clinic - Get clinic information
 export const GET = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     // Verify clinicId exists
     if (!user.clinicId) {
       return NextResponse.json(
@@ -35,6 +37,8 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
 // PUT /api/clinic - Update current user's clinic info
 export const PUT = requireAuth(async (request: NextRequest, user) => {
   try {
+    const supabaseAdmin = getSupabaseAdmin()
+    
     if (!user.clinicId) {
       return NextResponse.json({ error: 'No clinic ID found' }, { status: 401 })
     }

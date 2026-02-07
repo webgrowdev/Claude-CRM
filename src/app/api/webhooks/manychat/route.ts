@@ -61,13 +61,40 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get default clinic ID from environment
-    const defaultClinicId = process.env.NEXT_PUBLIC_DEFAULT_CLINIC_ID
-    if (!defaultClinicId) {
-      console.error('NEXT_PUBLIC_DEFAULT_CLINIC_ID not configured')
+    // Determine clinic_id from webhook authentication
+    const webhookSecret = request.headers.get('X-Webhook-Secret') || request.headers.get('x-webhook-secret')
+    const clinicIdParam = new URL(request.url).searchParams.get('clinic_id')
+
+    let clinicId: string | null = null
+
+    if (clinicIdParam) {
+      // Verify clinic exists
+      const { data: clinic } = await supabaseAdmin
+        .from('clinics')
+        .select('id')
+        .eq('id', clinicIdParam)
+        .single()
+      if (clinic) clinicId = clinic.id
+    } else if (webhookSecret) {
+      // Look up clinic by webhook secret
+      const { data: settings } = await supabaseAdmin
+        .from('manychat_settings')
+        .select('clinic_id')
+        .eq('webhook_secret', webhookSecret)
+        .single()
+      if (settings) clinicId = settings.clinic_id
+    }
+
+    if (!clinicId) {
+      // Fallback to env variable for backward compatibility
+      clinicId = process.env.NEXT_PUBLIC_DEFAULT_CLINIC_ID || null
+    }
+
+    if (!clinicId) {
+      console.error('Could not determine clinic_id')
       return NextResponse.json(
-        { error: 'Default clinic not configured' },
-        { status: 500 }
+        { error: 'Could not determine clinic. Provide clinic_id param or configure webhook secret.' },
+        { status: 400 }
       )
     }
 
@@ -75,7 +102,7 @@ export async function POST(request: NextRequest) {
     const { data: existingPatients } = await supabaseAdmin
       .from('patients')
       .select('id, name, phone, email, manychat_subscriber_id')
-      .eq('clinic_id', defaultClinicId)
+      .eq('clinic_id', clinicId)
       .or(`phone.eq.${payload.phone},manychat_subscriber_id.eq.${payload.subscriber_id}`)
       .limit(1)
 
@@ -121,7 +148,7 @@ export async function POST(request: NextRequest) {
         .from('patients')
         .insert({
           ...patientData,
-          clinic_id: defaultClinicId,
+          clinic_id: clinicId,
           created_at: new Date().toISOString(),
         })
         .select('id')
@@ -141,7 +168,7 @@ export async function POST(request: NextRequest) {
 
     // Log activity
     await supabaseAdmin.from('activity_logs').insert({
-      clinic_id: defaultClinicId,
+      clinic_id: clinicId,
       action_type: action,
       resource_type: 'patient',
       resource_id: patientId,
@@ -157,7 +184,7 @@ export async function POST(request: NextRequest) {
 
     // Log webhook received
     await supabaseAdmin.from('manychat_webhook_logs').insert({
-      clinic_id: defaultClinicId,
+      clinic_id: clinicId,
       subscriber_id: payload.subscriber_id,
       event_type: payload.event || 'webhook_received',
       payload: payload,

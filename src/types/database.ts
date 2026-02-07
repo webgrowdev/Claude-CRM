@@ -26,6 +26,7 @@ export interface Database {
           country: string | null
           timezone: string | null
           logo_url: string | null
+          api_key: string | null
           created_at: string
           updated_at: string
         }
@@ -40,6 +41,7 @@ export interface Database {
           country?: string | null
           timezone?: string | null
           logo_url?: string | null
+          api_key?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -54,6 +56,7 @@ export interface Database {
           country?: string | null
           timezone?: string | null
           logo_url?: string | null
+          api_key?: string | null
           created_at?: string
           updated_at?: string
         }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Users, Plus, Mail, Phone, MoreVertical, Edit, Trash2, Shield, User } from 'lucide-react'
 import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Card, Button, Input, Modal, Avatar, Badge, Select, EmptyState } from '@/components/ui'
@@ -9,15 +9,15 @@ import { useLanguage } from '@/i18n'
 interface TeamMember {
   id: string
   name: string
-  email: string
-  phone: string
-  role: 'admin' | 'user' | 'viewer'
-  status: 'active' | 'pending'
-  createdAt: Date
+  phone: string | null
+  role: 'owner' | 'manager' | 'doctor' | 'receptionist'
+  is_active: boolean
+  created_at: string
 }
 
 export default function TeamPage() {
   const { t } = useLanguage()
+  const [isLoading, setIsLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -26,73 +26,94 @@ export default function TeamPage() {
     name: '',
     email: '',
     phone: '',
-    role: 'user' as 'admin' | 'user' | 'viewer',
+    role: 'doctor' as 'owner' | 'manager' | 'doctor' | 'receptionist',
   })
 
-  // Mock data - in real app this would come from state/API
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
-    {
-      id: '1',
-      name: 'Dr. María García',
-      email: 'maria@clinica.com',
-      phone: '+1 234 567 8900',
-      role: 'admin',
-      status: 'active',
-      createdAt: new Date('2024-01-01'),
-    },
-    {
-      id: '2',
-      name: 'Ana López',
-      email: 'ana@clinica.com',
-      phone: '+1 234 567 8901',
-      role: 'user',
-      status: 'active',
-      createdAt: new Date('2024-02-15'),
-    },
-  ])
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+
+  // Load team members from API
+  useEffect(() => {
+    const loadTeam = async () => {
+      try {
+        const token = getAuthToken()
+        if (!token) {
+          console.warn('No auth token found')
+          setIsLoading(false)
+          return
+        }
+
+        const res = await fetch('/api/team', {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+
+        if (res.ok) {
+          const { members } = await res.json()
+          setTeamMembers(members || [])
+        }
+      } catch (error) {
+        console.error('Error loading team:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadTeam()
+  }, [])
+
+  // Helper to get JWT token from cookie
+  const getAuthToken = (): string | null => {
+    if (typeof document === 'undefined') return null
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('token='))
+      ?.split('=')[1]
+    return token || null
+  }
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'admin': return t.settings.roleAdmin
-      case 'user': return t.settings.roleUser
-      case 'viewer': return t.settings.roleViewer
+      case 'owner': return t.settings.roleAdmin
+      case 'manager': return t.settings.roleUser
+      case 'doctor': return 'Doctor'
+      case 'receptionist': return t.settings.roleViewer
       default: return role
     }
   }
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'admin': return 'primary'
-      case 'user': return 'default'
-      case 'viewer': return 'outline'
+      case 'owner': return 'primary'
+      case 'manager': return 'default'
+      case 'doctor': return 'default'
+      case 'receptionist': return 'outline'
       default: return 'default'
     }
   }
 
   const handleAdd = () => {
-    if (!formData.name || !formData.email) return
+    if (!formData.name) return
 
+    // In a real app, this would call the API
     const newMember: TeamMember = {
       id: Date.now().toString(),
       name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
+      phone: formData.phone || null,
       role: formData.role,
-      status: 'pending',
-      createdAt: new Date(),
+      is_active: true,
+      created_at: new Date().toISOString(),
     }
 
     setTeamMembers([...teamMembers, newMember])
-    setFormData({ name: '', email: '', phone: '', role: 'user' })
+    setFormData({ name: '', email: '', phone: '', role: 'doctor' })
     setShowAddModal(false)
   }
 
   const handleEdit = () => {
-    if (!selectedMember || !formData.name || !formData.email) return
+    if (!selectedMember || !formData.name) return
 
+    // In a real app, this would call the API
     setTeamMembers(teamMembers.map(m =>
       m.id === selectedMember.id
-        ? { ...m, ...formData }
+        ? { ...m, name: formData.name, phone: formData.phone || null, role: formData.role }
         : m
     ))
     setShowEditModal(false)
@@ -102,6 +123,7 @@ export default function TeamPage() {
   const handleDelete = () => {
     if (!selectedMember) return
 
+    // In a real app, this would call the API
     setTeamMembers(teamMembers.filter(m => m.id !== selectedMember.id))
     setShowDeleteConfirm(false)
     setSelectedMember(null)
@@ -111,8 +133,8 @@ export default function TeamPage() {
     setSelectedMember(member)
     setFormData({
       name: member.name,
-      email: member.email,
-      phone: member.phone,
+      email: '',
+      phone: member.phone || '',
       role: member.role,
     })
     setShowEditModal(true)
@@ -131,7 +153,7 @@ export default function TeamPage() {
         rightContent={
           <button
             onClick={() => {
-              setFormData({ name: '', email: '', phone: '', role: 'user' })
+              setFormData({ name: '', email: '', phone: '', role: 'doctor' })
               setShowAddModal(true)
             }}
             className="p-2 rounded-lg bg-primary-500 text-white hover:bg-primary-600 transition-colors"
@@ -151,7 +173,7 @@ export default function TeamPage() {
             </div>
             <Button
               onClick={() => {
-                setFormData({ name: '', email: '', phone: '', role: 'user' })
+                setFormData({ name: '', email: '', phone: '', role: 'doctor' })
                 setShowAddModal(true)
               }}
               icon={<Plus className="w-5 h-5" />}
@@ -183,17 +205,13 @@ export default function TeamPage() {
                         <Badge variant={getRoleBadge(member.role) as 'primary' | 'default' | 'outline'} size="sm">
                           {getRoleLabel(member.role)}
                         </Badge>
-                        {member.status === 'pending' && (
+                        {!member.is_active && (
                           <Badge variant="warning" size="sm">{t.settings.pending}</Badge>
                         )}
                       </div>
                       <div className="flex items-center gap-4 mt-1 text-sm text-slate-500">
-                        <span className="flex items-center gap-1">
-                          <Mail className="w-3.5 h-3.5" />
-                          {member.email}
-                        </span>
                         {member.phone && (
-                          <span className="hidden sm:flex items-center gap-1">
+                          <span className="flex items-center gap-1">
                             <Phone className="w-3.5 h-3.5" />
                             {member.phone}
                           </span>
@@ -285,11 +303,12 @@ export default function TeamPage() {
           <Select
             label={t.settings.role}
             value={formData.role}
-            onChange={(value) => setFormData({ ...formData, role: value as 'admin' | 'user' | 'viewer' })}
+            onChange={(value) => setFormData({ ...formData, role: value as 'owner' | 'manager' | 'doctor' | 'receptionist' })}
             options={[
-              { value: 'admin', label: t.settings.roleAdmin },
-              { value: 'user', label: t.settings.roleUser },
-              { value: 'viewer', label: t.settings.roleViewer },
+              { value: 'owner', label: t.settings.roleAdmin },
+              { value: 'manager', label: t.settings.roleUser },
+              { value: 'doctor', label: 'Doctor' },
+              { value: 'receptionist', label: t.settings.roleViewer },
             ]}
           />
 
@@ -339,11 +358,12 @@ export default function TeamPage() {
           <Select
             label={t.settings.role}
             value={formData.role}
-            onChange={(value) => setFormData({ ...formData, role: value as 'admin' | 'user' | 'viewer' })}
+            onChange={(value) => setFormData({ ...formData, role: value as 'owner' | 'manager' | 'doctor' | 'receptionist' })}
             options={[
-              { value: 'admin', label: t.settings.roleAdmin },
-              { value: 'user', label: t.settings.roleUser },
-              { value: 'viewer', label: t.settings.roleViewer },
+              { value: 'owner', label: t.settings.roleAdmin },
+              { value: 'manager', label: t.settings.roleUser },
+              { value: 'doctor', label: 'Doctor' },
+              { value: 'receptionist', label: t.settings.roleViewer },
             ]}
           />
 

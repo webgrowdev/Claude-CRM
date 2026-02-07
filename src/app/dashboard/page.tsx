@@ -29,7 +29,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react'
 import { Header, PageContainer, AppShell } from '@/components/layout'
-import { Card, Avatar, Badge, LeadScoreBadge } from '@/components/ui'
+import { Card, Avatar, Badge } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n/LanguageContext'
 import {
@@ -41,7 +41,6 @@ import {
   getPhoneUrl,
   cn,
 } from '@/lib/utils'
-import { calculateLeadScore } from '@/services/leadScoring'
 import { Lead } from '@/types'
 
 // ====== Colores para las cards de stats ======
@@ -186,12 +185,10 @@ export default function DashboardPage() {
     const now = new Date()
     const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000)
 
-    // Hot leads (score alto, no cerrados)
+    // Hot leads (new or contacted leads)
     const hotLeads = state.leads
       .filter((l) => l.status === 'new' || l.status === 'contacted')
-      .map((l) => ({ ...l, score: calculateLeadScore(l, state.treatments) }))
-      .filter((l) => l.score.total >= 70)
-      .sort((a, b) => b.score.total - a.score.total)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 3)
 
     // Leads sin contactar por más de 48h
@@ -320,11 +317,6 @@ export default function DashboardPage() {
                               {lead.name}
                             </p>
                             <div className="flex items-center gap-2">
-                              <LeadScoreBadge
-                                score={lead.score.total}
-                                size="sm"
-                                showLabel={false}
-                              />
                               <span className="text-xs text-slate-500">
                                 {lead.treatments[0] ||
                                   (language === 'es'

@@ -392,10 +392,4 @@ export const inboxTourSteps: TourStep[] = [
     content: 'Cada tarjeta muestra información clave del lead. Toca para ver los detalles completos.',
     placement: 'bottom',
   },
-  {
-    target: '[data-tour="lead-score"]',
-    title: 'Puntuación de Lead',
-    content: 'El score indica qué tan probable es que este lead se convierta en paciente. Mayor puntuación = mayor prioridad.',
-    placement: 'left',
-  },
 ]

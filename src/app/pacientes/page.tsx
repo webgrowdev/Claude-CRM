@@ -33,7 +33,7 @@ import {
   UserX,
 } from 'lucide-react'
 import { AppShell } from '@/components/layout'
-import { Input, Card, Avatar, Badge, Modal, Button, Select, TextArea, TimeSlotPicker, LeadScoreBadge, LeadScoreDetail } from '@/components/ui'
+import { Input, Card, Avatar, Badge, Modal, Button, Select, TextArea, TimeSlotPicker } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n/LanguageContext'
 import {
@@ -46,8 +46,7 @@ import {
   getEmailUrl,
   cn,
 } from '@/lib/utils'
-import { LeadStatus, LeadSource, FollowUpType, Lead, LeadScore } from '@/types'
-import { calculateLeadScore } from '@/services/leadScoring'
+import { LeadStatus, LeadSource, FollowUpType, Lead } from '@/types'
 
 const getStatusOptions = (t: any): { value: LeadStatus; label: string; color: string; bg: string }[] => [
   { value: 'new', label: t.status.new, color: 'text-primary-600', bg: 'bg-primary-100' },
@@ -355,14 +354,6 @@ export default function PacientesPage() {
     return option || { label: status, color: 'text-slate-600', bg: 'bg-slate-100' }
   }
 
-  // Calculate lead score
-  const getPatientScore = (patient: Lead): LeadScore => {
-    if (patient.score && patient.score.total !== undefined) {
-      return patient.score
-    }
-    return calculateLeadScore(patient, state.treatments)
-  }
-
   return (
     <AppShell>
       <div className="flex flex-col h-[calc(100vh-4rem)] lg:h-screen overflow-hidden bg-slate-50">
@@ -535,7 +526,6 @@ export default function PacientesPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-semibold text-slate-900 truncate">{patient.name}</p>
-                            <LeadScoreBadge score={getPatientScore(patient).total} size="sm" showLabel={false} />
                             
                             {/* Show appointment status badges instead of global status */}
                             {appointmentCounts.total > 0 ? (
@@ -773,26 +763,24 @@ export default function PacientesPage() {
                   )}
                 </div>
 
-                {/* Lead Score Section */}
-                <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-xl p-4 mt-4">
-                  <h3 className="text-sm font-semibold text-slate-800 mb-3">
-                    {language === 'es' ? 'Puntuación del Lead' : 'Lead Score'}
-                  </h3>
-                  <LeadScoreDetail score={getPatientScore(selectedPatient)} />
-                </div>
               </div>
 
               {/* Timeline - Improved */}
-              <div className="flex-1 overflow-y-auto p-4 lg:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-slate-900">{t.patients.activity}</h3>
-                  <button
-                    onClick={() => setShowNoteModal(true)}
-                    className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
-                  >
-                    <Plus className="w-4 h-4" />
-                    {t.patients.addNote}
-                  </button>
+              <div className="flex-1 overflow-y-auto p-5 lg:p-8">
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-bold text-slate-900">{t.patients.activity}</h3>
+                    <button
+                      onClick={() => setShowNoteModal(true)}
+                      className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+                    >
+                      <Plus className="w-4 h-4" />
+                      {t.patients.addNote}
+                    </button>
+                  </div>
+                  <p className="text-sm text-slate-500">
+                    {t.patients.activitySubtitle}
+                  </p>
                 </div>
 
                 {timeline.length === 0 ? (
@@ -803,92 +791,96 @@ export default function PacientesPage() {
                     <p className="text-slate-500">{t.patients.noActivity}</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {timeline.map((item) => (
-                      <div
-                        key={item.id}
-                        className={cn(
-                          "p-4 rounded-xl border transition-all",
-                          item.type === 'note'
-                            ? 'bg-slate-50 border-slate-200'
-                            : item.completed
-                            ? 'bg-green-50 border-green-200'
-                            : item.followUpType === 'meeting'
-                            ? 'bg-purple-50 border-purple-200'
-                            : item.followUpType === 'appointment'
-                            ? 'bg-teal-50 border-teal-200'
-                            : 'bg-blue-50 border-blue-200'
-                        )}
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className={cn(
-                            'p-2 rounded-lg',
+                  <div className="space-y-4 relative">
+                    {/* Vertical connecting line - positioned to align with icon centers (left-5 = 1.25rem) */}
+                    <div className="absolute left-5 top-8 bottom-0 w-px bg-slate-200" />
+                    
+                    {timeline.map((item, index) => (
+                      <div key={item.id} className="relative">
+                        <div
+                          className={cn(
+                            "p-5 rounded-xl border shadow-sm transition-all",
                             item.type === 'note'
-                              ? 'bg-slate-200 text-slate-600'
+                              ? 'bg-slate-50 border-slate-200'
                               : item.completed
-                              ? 'bg-green-200 text-green-700'
+                              ? 'bg-green-50 border-green-200'
                               : item.followUpType === 'meeting'
-                              ? 'bg-purple-200 text-purple-700'
+                              ? 'bg-purple-50 border-purple-200'
                               : item.followUpType === 'appointment'
-                              ? 'bg-teal-200 text-teal-700'
-                              : 'bg-blue-200 text-blue-700'
-                          )}>
-                            {item.type === 'note' ? (
-                              <FileText className="w-4 h-4" />
-                            ) : item.completed ? (
-                              <CheckCircle className="w-4 h-4" />
-                            ) : item.followUpType === 'meeting' ? (
-                              <Video className="w-4 h-4" />
-                            ) : item.followUpType === 'appointment' ? (
-                              <MapPin className="w-4 h-4" />
-                            ) : (
-                              <Clock className="w-4 h-4" />
-                            )}
-                          </div>
-
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="text-sm text-slate-800">{item.content}</p>
-                              {/* Show appointment status badge for appointments/meetings */}
-                              {item.type === 'followup' && (item.followUpType === 'appointment' || item.followUpType === 'meeting') && item.appointmentStatus && (
-                                <Badge 
-                                  variant={
-                                    item.appointmentStatus === 'confirmed' ? 'success' :
-                                    item.appointmentStatus === 'completed' ? 'default' :
-                                    item.appointmentStatus === 'no-show' ? 'error' :
-                                    item.appointmentStatus === 'cancelled' ? 'secondary' :
-                                    'warning'
-                                  }
-                                  size="sm"
-                                >
-                                  {item.appointmentStatus === 'pending' ? '📅 Pendiente' :
-                                   item.appointmentStatus === 'confirmed' ? '✅ Confirmada' :
-                                   item.appointmentStatus === 'completed' ? '✓ Completada' :
-                                   item.appointmentStatus === 'no-show' ? '❌ No asistió' :
-                                   item.appointmentStatus === 'cancelled' ? '🚫 Cancelada' :
-                                   item.appointmentStatus}
-                                </Badge>
+                              ? 'bg-teal-50 border-teal-200'
+                              : 'bg-blue-50 border-blue-200'
+                          )}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className={cn(
+                              'p-2.5 rounded-lg relative z-10 bg-white border-2',
+                              item.type === 'note'
+                                ? 'border-slate-300 text-slate-600'
+                                : item.completed
+                                ? 'border-green-300 text-green-700'
+                                : item.followUpType === 'meeting'
+                                ? 'border-purple-300 text-purple-700'
+                                : item.followUpType === 'appointment'
+                                ? 'border-teal-300 text-teal-700'
+                                : 'border-blue-300 text-blue-700'
+                            )}>
+                              {item.type === 'note' ? (
+                                <FileText className="w-5 h-5" />
+                              ) : item.completed ? (
+                                <CheckCircle className="w-5 h-5" />
+                              ) : item.followUpType === 'meeting' ? (
+                                <Video className="w-5 h-5" />
+                              ) : item.followUpType === 'appointment' ? (
+                                <MapPin className="w-5 h-5" />
+                              ) : (
+                                <Clock className="w-5 h-5" />
                               )}
                             </div>
-                            <p className="text-xs text-slate-500 mt-1">
-                              {item.type === 'followup'
-                                ? (item.completed ? `${t.followUp.completed} ` : `${t.followUp.scheduledFor} `) +
-                                  formatRelativeDate(item.date)
-                                : formatTimeAgo(item.date)}
-                            </p>
 
-                            {item.meetLink && (
-                              <a
-                                href={item.meetLink}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-medium rounded-lg transition-colors"
-                              >
-                                <Video className="w-3.5 h-3.5" />
-                                {t.calendar.joinMeet}
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 flex-wrap">
+                                <p className="text-base text-slate-800 font-medium">{item.content}</p>
+                                {/* Show appointment status badge for appointments/meetings */}
+                                {item.type === 'followup' && (item.followUpType === 'appointment' || item.followUpType === 'meeting') && item.appointmentStatus && (
+                                  <Badge 
+                                    variant={
+                                      item.appointmentStatus === 'confirmed' ? 'success' :
+                                      item.appointmentStatus === 'completed' ? 'default' :
+                                      item.appointmentStatus === 'no-show' ? 'error' :
+                                      item.appointmentStatus === 'cancelled' ? 'secondary' :
+                                      'warning'
+                                    }
+                                    size="md"
+                                  >
+                                    {item.appointmentStatus === 'pending' ? '📅 Pendiente' :
+                                     item.appointmentStatus === 'confirmed' ? '✅ Confirmada' :
+                                     item.appointmentStatus === 'completed' ? '✓ Completada' :
+                                     item.appointmentStatus === 'no-show' ? '❌ No asistió' :
+                                     item.appointmentStatus === 'cancelled' ? '🚫 Cancelada' :
+                                     item.appointmentStatus}
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-sm text-slate-500 mt-1.5">
+                                {item.type === 'followup'
+                                  ? (item.completed ? `${t.followUp.completed} ` : `${t.followUp.scheduledFor} `) +
+                                    formatRelativeDate(item.date)
+                                  : formatTimeAgo(item.date)}
+                              </p>
+
+                              {item.meetLink && (
+                                <a
+                                  href={item.meetLink}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm hover:shadow-md"
+                                >
+                                  <Video className="w-4 h-4" />
+                                  {t.calendar.joinMeet}
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>

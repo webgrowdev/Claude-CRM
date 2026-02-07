@@ -3,6 +3,7 @@ import { getSupabaseAdmin, createServerAuthClient } from '@/lib/supabase.server'
 import { generateToken } from '@/lib/auth'
 import type { Database } from '@/types/database'
 
+export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
@@ -17,11 +18,12 @@ export async function POST(request: NextRequest) {
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'MISSING',
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'MISSING',
   NODE_ENV: process.env.NODE_ENV,
+  cwd: process.cwd(),
+  pid: process.pid,
 })
 
 
   try {
-    const supabaseAdmin = getSupabaseAdmin()
     
     // Validate Supabase configuration first
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -42,7 +44,8 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-
+    
+    const supabaseAdmin = getSupabaseAdmin()
     const body = (await request.json().catch(() => null)) as
       | { email?: string; password?: string }
       | null

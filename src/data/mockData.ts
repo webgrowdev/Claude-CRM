@@ -1,6 +1,17 @@
 import { Lead, Treatment, User, FollowUp, Notification, DashboardStats, ReportData } from '@/types'
 
-// Current user
+/**
+ * @deprecated This file contains mock data for reference and testing only.
+ * DO NOT import or use this data in production code.
+ * All data should be loaded from the API endpoints instead.
+ */
+
+// ============================================================
+// DEPRECATED: Current user - load from /api/auth/me instead
+// ============================================================
+/**
+ * @deprecated Use GET /api/auth/me to load the current user
+ */
 export const currentUser: User = {
   id: 'user-1',
   name: 'María Santos',
@@ -9,7 +20,9 @@ export const currentUser: User = {
   avatar: undefined,
 }
 
-// Team members
+// ============================================================
+// DEPRECATED: Team members - load from /api/team instead
+// ============================================================
 export const teamMembers: User[] = [
   currentUser,
   {
@@ -26,7 +39,10 @@ export const teamMembers: User[] = [
   },
 ]
 
-// Treatments
+// ============================================================
+// REFERENCE ONLY: Treatments data
+// Load from GET /api/treatments in production code
+// ============================================================
 export const treatments: Treatment[] = [
   {
     id: 'treat-1',
@@ -151,7 +167,13 @@ const daysFromNow = (days: number) => {
   return date
 }
 
-// Mock Leads
+// ============================================================
+// DEPRECATED: Mock Leads data
+// Load from GET /api/patients in production code
+// ============================================================
+/**
+ * @deprecated Use GET /api/patients to load patients/leads
+ */
 export const initialLeads: Lead[] = [
   {
     id: 'lead-1',
@@ -515,7 +537,12 @@ export const initialLeads: Lead[] = [
   },
 ]
 
-// Notifications
+// ============================================================
+// DEPRECATED: Notifications - these should come from a real notification system
+// ============================================================
+/**
+ * @deprecated Implement a real notification system
+ */
 export const notifications: Notification[] = [
   {
     id: 'notif-1',
@@ -546,7 +573,12 @@ export const notifications: Notification[] = [
   },
 ]
 
-// Dashboard stats
+// ============================================================
+// DEPRECATED: Dashboard stats - calculate from real data
+// ============================================================
+/**
+ * @deprecated Calculate stats from actual database data
+ */
 export const dashboardStats: DashboardStats = {
   newLeads: 12,
   newLeadsChange: 15,
@@ -558,7 +590,12 @@ export const dashboardStats: DashboardStats = {
   conversionChange: 5,
 }
 
-// Report data
+// ============================================================
+// DEPRECATED: Report data - calculate from real data
+// ============================================================
+/**
+ * @deprecated Calculate reports from actual database data
+ */
 export const reportData: ReportData = {
   totalLeads: 47,
   totalLeadsChange: 12,

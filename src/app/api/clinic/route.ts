@@ -2,13 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 
-// GET /api/clinic - Get current user's clinic info
+// GET /api/clinic - Get clinic information
 export const GET = requireAuth(async (request: NextRequest, user) => {
   try {
+    // Verify clinicId exists
     if (!user.clinicId) {
-      return NextResponse.json({ error: 'No clinic ID found' }, { status: 401 })
+      return NextResponse.json(
+        { error: 'No clinic ID found' },
+        { status: 401 }
+      )
     }
 
+    // Fetch clinic data
     const { data: clinic, error } = await supabaseAdmin
       .from('clinics')
       .select('*')
@@ -59,7 +64,10 @@ export const PUT = requireAuth(async (request: NextRequest, user) => {
 
     if (error) {
       console.error('Error updating clinic:', error)
-      return NextResponse.json({ error: 'Error updating clinic' }, { status: 500 })
+      return NextResponse.json(
+        { error: 'Error al actualizar clínica' },
+        { status: 500 }
+      )
     }
 
     // Log activity
@@ -69,14 +77,20 @@ export const PUT = requireAuth(async (request: NextRequest, user) => {
       action_type: 'update',
       resource_type: 'clinic',
       resource_id: user.clinicId,
-      changes: body,
+      changes: updateData,
       ip_address: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip'),
       user_agent: request.headers.get('user-agent'),
     })
 
-    return NextResponse.json({ success: true, clinic })
+    return NextResponse.json({
+      success: true,
+      clinic,
+    })
   } catch (error) {
     console.error('Clinic PUT error:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    )
   }
 })

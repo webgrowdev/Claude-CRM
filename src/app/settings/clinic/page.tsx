@@ -23,6 +23,62 @@ export default function ClinicPage() {
     closeTime: '19:00',
   })
   const [saved, setSaved] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Helper to get JWT token from cookie
+  const getAuthToken = (): string | null => {
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('token='))
+      ?.split('=')[1]
+    return token || null
+  }
+
+  // Load clinic data on mount
+  useEffect(() => {
+    loadClinicData()
+  }, [])
+
+  const loadClinicData = async () => {
+    const token = getAuthToken()
+    if (!token) {
+      console.warn('No authentication token found')
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/clinic', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const clinic = data.clinic
+        setFormData({
+          name: clinic.name || '',
+          address: clinic.address || '',
+          phone: clinic.phone || '',
+          email: clinic.email || '',
+          website: clinic.website || '',
+          timezone: clinic.timezone || 'America/Mexico_City',
+          currency: clinic.currency || 'USD',
+          workDays: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+          openTime: '09:00',
+          closeTime: '19:00',
+        })
+      } else {
+        console.error('Failed to load clinic data')
+      }
+    } catch (error) {
+      console.error('Error loading clinic data:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   // Load clinic data from API
   useEffect(() => {
@@ -134,7 +190,12 @@ export default function ClinicPage() {
       <Header title={t.settings.clinicInfo} showBack />
 
       <PageContainer>
-        <div className="lg:max-w-2xl lg:mx-auto space-y-6">
+        {isLoading ? (
+          <div className="flex justify-center items-center py-12">
+            <p className="text-slate-500">Cargando información de la clínica...</p>
+          </div>
+        ) : (
+          <div className="lg:max-w-2xl lg:mx-auto space-y-6">
           {/* Logo Section */}
           <Card className="text-center">
             <div className="w-24 h-24 mx-auto bg-primary-100 rounded-2xl flex items-center justify-center">
@@ -269,6 +330,7 @@ export default function ClinicPage() {
             {saved ? t.common.saved : isSaving ? 'Guardando...' : t.common.save}
           </Button>
         </div>
+        )}
       </PageContainer>
     </AppShell>
   )

@@ -2,7 +2,6 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react'
 import { Lead, LeadStatus, Treatment, User, Notification, Note, FollowUp, Settings, Appointment, AppointmentStatus } from '@/types'
-import { treatments as initialTreatments, currentUser } from '@/data/mockData'
 import { generateId } from '@/lib/utils'
 import {
   getGoogleCalendarSettings,
@@ -56,11 +55,18 @@ const initialSettings: Settings = {
   reminderTime: 30,
 }
 
+const initialUser: User = {
+  id: '',
+  name: '',
+  email: '',
+  role: 'agent',
+}
+
 const initialState: AppState = {
   leads: [],
   treatments: [],
   appointments: [],
-  user: currentUser,
+  user: initialUser,
   notifications: [],
   settings: initialSettings,
   isLoading: true,
@@ -279,38 +285,10 @@ const AppContext = createContext<AppContextType | undefined>(undefined)
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
 
-  // Helper to get JWT token from cookie
+  // Helper to get JWT token from localStorage
   const getAuthToken = (): string | null => {
-    if (typeof document === 'undefined') return null
-    const token = document.cookie
-      .split('; ')
-      .find(row => row.startsWith('token='))
-      ?.split('=')[1]
-    return token || null
-  }
-
-  // Helper to decode JWT and get clinicId
-  const getClinicIdFromToken = (): string | null => {
-    const token = getAuthToken()
-    if (!token) return null
-    
-    try {
-      // JWT is base64 encoded: header.payload.signature
-      const parts = token.split('.')
-      if (parts.length !== 3) return null
-      
-      const payload = JSON.parse(atob(parts[1]))
-      return payload.clinicId || null
-    } catch (error) {
-      console.error('Error decoding JWT:', error)
-      return null
-    }
-  }
-
-  // Helper to get namespaced localStorage key
-  const getStorageKey = (key: string): string => {
-    const clinicId = getClinicIdFromToken()
-    return clinicId ? `clinic_${clinicId}_${key}` : `clinic_${key}`
+    if (typeof window === 'undefined') return null
+    return localStorage.getItem('auth_token')
   }
 
   // Load initial data
@@ -319,31 +297,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const token = getAuthToken()
 
       if (!token) {
-        console.warn('No authentication token found, using cached data')
-        // Fallback to localStorage if no token (no mock data dependency)
-        const savedLeads = localStorage.getItem('clinic_leads')
-        const savedTreatments = localStorage.getItem('clinic_treatments')
-        const savedSettings = localStorage.getItem('clinic_settings')
-        const savedUser = localStorage.getItem('clinic_user')
-
-        dispatch({
-          type: 'SET_LEADS',
-          payload: savedLeads ? JSON.parse(savedLeads, dateReviver) : [],
-        })
-
-        dispatch({
-          type: 'SET_TREATMENTS',
-          payload: savedTreatments ? JSON.parse(savedTreatments) : initialTreatments,
-        })
-
-        if (savedSettings) {
-          dispatch({ type: 'UPDATE_SETTINGS', payload: JSON.parse(savedSettings) })
-        }
-
-        if (savedUser) {
-          dispatch({ type: 'UPDATE_USER', payload: JSON.parse(savedUser) })
-        }
-
+        console.warn('No authentication token found')
+        dispatch({ type: 'SET_LEADS', payload: [] })
+        dispatch({ type: 'SET_TREATMENTS', payload: [] })
+        dispatch({ type: 'SET_APPOINTMENTS', payload: [] })
+        dispatch({ type: 'UPDATE_USER', payload: initialUser })
         dispatch({ type: 'SET_LOADING', payload: false })
         return
       }
@@ -355,59 +313,131 @@ export function AppProvider({ children }: { children: ReactNode }) {
           'Content-Type': 'application/json',
         }
 
+        // Load user from API
+        const userResponse = await fetch('/api/auth/me', { headers })
+        if (userResponse.ok) {
+          const userData = await userResponse.json()
+          dispatch({ type: 'UPDATE_USER', payload: userData.user })
+        }
+
+        // Load treatments from API
+        const treatmentsResponse = await fetch('/api/treatments', { headers })
+        if (treatmentsResponse.ok) {
+          const treatmentsData = await treatmentsResponse.json()
+          const treatments = (treatmentsData.treatments || []).map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            description: t.description,
+            price: t.price,
+            duration: t.duration,
+            category: t.category,
+          }))
+          dispatch({ type: 'SET_TREATMENTS', payload: treatments })
+        }
+
+        // Load settings from API
+        const settingsResponse = await fetch('/api/clinic', { headers })
+        if (settingsResponse.ok) {
+          const settingsData = await settingsResponse.json()
+          const clinic = settingsData.clinic
+          if (clinic) {
+            dispatch({ 
+              type: 'UPDATE_SETTINGS', 
+              payload: {
+                clinicName: clinic.name,
+                clinicAddress: clinic.address,
+                clinicPhone: clinic.phone,
+                clinicEmail: clinic.email,
+              }
+            })
+          }
+        }
+
         // Load patients/leads from API
-        // Note: Using limit=1000 for initial load. For large datasets, consider:
-        // - Implementing pagination (load on-demand)
-        // - Using virtualized lists
-        // - Filtering to recent/active patients only
         const patientsResponse = await fetch('/api/patients?limit=1000', { headers })
         let leads: Lead[] = []
         
         if (patientsResponse.ok) {
           const patientsData = await patientsResponse.json()
-          leads = (patientsData.patients || []).map((p: any) => ({
-            id: p.id,
-            name: p.name,
-            email: p.email || '',
-            phone: p.phone,
-            identificationNumber: p.identification_number,
-            identificationType: p.identification_type,
-            source: p.source || 'other',
-            status: p.status || 'new',
-            funnelStatus: p.funnel_status,
-            // TODO: Load treatments from patient_treatments junction table once implemented
-            treatments: [],
-            // TODO: Load notes from notes table once implemented
-            notes: [],
-            // Will be populated with appointments below
-            followUps: [],
-            assignedTo: p.assigned_to,
-            createdAt: new Date(p.created_at),
-            updatedAt: new Date(p.updated_at),
-            closedAt: p.closed_at ? new Date(p.closed_at) : undefined,
-            value: p.value,
-            instagram: p.instagram_handle,
-            preferredTime: p.preferred_time,
-            campaign: p.campaign,
-            tags: p.tags || [],
-            lastContactAt: p.last_contact_at ? new Date(p.last_contact_at) : undefined,
-            nextActionAt: p.next_action_at ? new Date(p.next_action_at) : undefined,
-            nextAction: p.next_action,
-            totalPaid: p.total_paid,
-            totalPending: p.total_pending,
-            npsScore: p.nps_score,
-          }))
-        } else {
-          // Fallback to localStorage on API error (no mock data dependency)
-          const savedLeads = localStorage.getItem('clinic_leads')
-          leads = savedLeads ? JSON.parse(savedLeads, dateReviver) : []
+          const patients = patientsData.patients || []
+          
+          // Load notes and follow-ups for each patient
+          const leadsWithData = await Promise.all(
+            patients.map(async (p: any) => {
+              // Load notes for this patient
+              let notes: Note[] = []
+              try {
+                const notesResponse = await fetch(`/api/notes?patient_id=${p.id}`, { headers })
+                if (notesResponse.ok) {
+                  const notesData = await notesResponse.json()
+                  notes = (notesData.notes || []).map((n: any) => ({
+                    id: n.id,
+                    content: n.content,
+                    createdAt: new Date(n.created_at),
+                    createdBy: n.created_by,
+                  }))
+                }
+              } catch (error) {
+                console.error(`Error loading notes for patient ${p.id}:`, error)
+              }
+
+              // Load follow-ups for this patient
+              let followUps: FollowUp[] = []
+              try {
+                const followUpsResponse = await fetch(`/api/follow-ups?patient_id=${p.id}`, { headers })
+                if (followUpsResponse.ok) {
+                  const followUpsData = await followUpsResponse.json()
+                  followUps = (followUpsData.followUps || []).map((f: any) => ({
+                    id: f.id,
+                    leadId: p.id,
+                    type: f.type,
+                    scheduledAt: new Date(f.scheduled_at),
+                    completed: f.completed,
+                    completedAt: f.completed_at ? new Date(f.completed_at) : undefined,
+                    notes: f.notes,
+                    assignedTo: f.assigned_to,
+                  }))
+                }
+              } catch (error) {
+                console.error(`Error loading follow-ups for patient ${p.id}:`, error)
+              }
+
+              return {
+                id: p.id,
+                name: p.name,
+                email: p.email || '',
+                phone: p.phone,
+                identificationNumber: p.identification_number,
+                identificationType: p.identification_type,
+                source: p.source || 'other',
+                status: p.status || 'new',
+                funnelStatus: p.funnel_status,
+                treatments: [],
+                notes,
+                followUps,
+                assignedTo: p.assigned_to,
+                createdAt: new Date(p.created_at),
+                updatedAt: new Date(p.updated_at),
+                closedAt: p.closed_at ? new Date(p.closed_at) : undefined,
+                value: p.value,
+                instagram: p.instagram_handle,
+                preferredTime: p.preferred_time,
+                campaign: p.campaign,
+                tags: p.tags || [],
+                lastContactAt: p.last_contact_at ? new Date(p.last_contact_at) : undefined,
+                nextActionAt: p.next_action_at ? new Date(p.next_action_at) : undefined,
+                nextAction: p.next_action,
+                totalPaid: p.total_paid,
+                totalPending: p.total_pending,
+                npsScore: p.nps_score,
+              }
+            })
+          )
+          
+          leads = leadsWithData
         }
 
         // Load appointments from API and merge into leads
-        // Note: Using limit=1000 for initial load. For large datasets, consider:
-        // - Loading appointments for a specific date range only (e.g., current month ± 1 month)
-        // - Implementing on-demand loading when viewing calendar/appointments pages
-        // - Using pagination with cursor-based approach
         const appointmentsResponse = await fetch('/api/appointments?limit=1000', { headers })
         if (appointmentsResponse.ok) {
           const appointmentsData = await appointmentsResponse.json()
@@ -459,50 +489,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
 
         dispatch({ type: 'SET_LEADS', payload: leads })
-        // Cache in localStorage
-        localStorage.setItem(getStorageKey('leads'), JSON.stringify(leads))
-
-        // Keep treatments from localStorage for now (until we have a treatments API endpoint)
-        const savedTreatments = localStorage.getItem(getStorageKey('treatments'))
-        dispatch({
-          type: 'SET_TREATMENTS',
-          payload: savedTreatments ? JSON.parse(savedTreatments) : initialTreatments,
-        })
-
-        const savedSettings = localStorage.getItem(getStorageKey('settings'))
-        if (savedSettings) {
-          dispatch({ type: 'UPDATE_SETTINGS', payload: JSON.parse(savedSettings) })
-        }
-
-        const savedUser = localStorage.getItem(getStorageKey('user'))
-        if (savedUser) {
-          dispatch({ type: 'UPDATE_USER', payload: JSON.parse(savedUser) })
-        }
       } catch (error) {
         console.error('Error loading data from APIs:', error)
-        // Fallback to localStorage on error (no mock data dependency)
-        const savedLeads = localStorage.getItem('clinic_leads')
-        const savedTreatments = localStorage.getItem('clinic_treatments')
-        const savedSettings = localStorage.getItem('clinic_settings')
-        const savedUser = localStorage.getItem('clinic_user')
-
-        dispatch({
-          type: 'SET_LEADS',
-          payload: savedLeads ? JSON.parse(savedLeads, dateReviver) : [],
-        })
-
-        dispatch({
-          type: 'SET_TREATMENTS',
-          payload: savedTreatments ? JSON.parse(savedTreatments) : initialTreatments,
-        })
-
-        if (savedSettings) {
-          dispatch({ type: 'UPDATE_SETTINGS', payload: JSON.parse(savedSettings) })
-        }
-
-        if (savedUser) {
-          dispatch({ type: 'UPDATE_USER', payload: JSON.parse(savedUser) })
-        }
+        dispatch({ type: 'SET_LEADS', payload: [] })
+        dispatch({ type: 'SET_TREATMENTS', payload: [] })
+        dispatch({ type: 'SET_APPOINTMENTS', payload: [] })
       } finally {
         dispatch({ type: 'SET_LOADING', payload: false })
       }
@@ -511,30 +502,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     loadData()
   }, [])
 
-  // Save to localStorage when data changes
-  useEffect(() => {
-    if (!state.isLoading) {
-      localStorage.setItem(getStorageKey('leads'), JSON.stringify(state.leads))
-    }
-  }, [state.leads, state.isLoading])
 
-  useEffect(() => {
-    if (!state.isLoading) {
-      localStorage.setItem(getStorageKey('treatments'), JSON.stringify(state.treatments))
-    }
-  }, [state.treatments, state.isLoading])
-
-  useEffect(() => {
-    if (!state.isLoading) {
-      localStorage.setItem(getStorageKey('settings'), JSON.stringify(state.settings))
-    }
-  }, [state.settings, state.isLoading])
-
-  useEffect(() => {
-    if (!state.isLoading) {
-      localStorage.setItem(getStorageKey('user'), JSON.stringify(state.user))
-    }
-  }, [state.user, state.isLoading])
 
   // Actions
   const addLead = async (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'notes' | 'followUps'>) => {
@@ -734,14 +702,52 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const addNote = (leadId: string, content: string) => {
+  const addNote = async (leadId: string, content: string) => {
+    const token = getAuthToken()
+    
     const note: Note = {
       id: `note-${generateId()}`,
       content,
       createdAt: new Date(),
       createdBy: state.user.id,
     }
+    
+    // Update local state immediately
     dispatch({ type: 'ADD_NOTE', payload: { leadId, note } })
+
+    if (!token) {
+      console.warn('No token, local-only note')
+      return
+    }
+
+    try {
+      // Call API to create note
+      const response = await fetch('/api/notes', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          patient_id: leadId,
+          content: content,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // Update with the actual ID from API
+        const apiNote: Note = {
+          id: data.note.id,
+          content: data.note.content,
+          createdAt: new Date(data.note.created_at),
+          createdBy: data.note.created_by,
+        }
+        dispatch({ type: 'ADD_NOTE', payload: { leadId, note: apiNote } })
+      }
+    } catch (error) {
+      console.error('Error creating note via API:', error)
+    }
   }
 
   const addFollowUp = async (
@@ -749,6 +755,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     followUpData: Omit<FollowUp, 'id' | 'leadId' | 'completed'>,
     syncWithCalendar: boolean = true
   ): Promise<FollowUp | null> => {
+    const token = getAuthToken()
     const lead = state.leads.find(l => l.id === leadId)
     if (!lead) return null
 
@@ -757,7 +764,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       id: `fu-${generateId()}`,
       leadId,
       completed: false,
-      duration: followUpData.duration || 30, // default 30 min
+      duration: followUpData.duration || 30,
     }
 
     // Sync with Google Calendar if connected and it's a meeting
@@ -772,16 +779,52 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error('Failed to create calendar event:', error)
-        // Continue without calendar sync
       }
     }
 
+    // Update local state immediately
     dispatch({ type: 'ADD_FOLLOWUP', payload: { leadId, followUp } })
 
     // Automatically change status to 'scheduled' if it's a meeting or call and status is new/contacted
     if ((followUpData.type === 'meeting' || followUpData.type === 'call') &&
         (lead.status === 'new' || lead.status === 'contacted')) {
       dispatch({ type: 'UPDATE_LEAD_STATUS', payload: { id: leadId, status: 'scheduled' } })
+    }
+
+    if (!token) {
+      console.warn('No token, local-only follow-up')
+      return followUp
+    }
+
+    try {
+      // Call API to create follow-up
+      const response = await fetch('/api/follow-ups', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          patient_id: leadId,
+          type: followUpData.type,
+          scheduled_at: followUpData.scheduledAt,
+          notes: followUpData.notes,
+          assigned_to: followUpData.assignedTo,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        // Update with the actual ID from API
+        const apiFollowUp: FollowUp = {
+          ...followUp,
+          id: data.followUp.id,
+        }
+        dispatch({ type: 'ADD_FOLLOWUP', payload: { leadId, followUp: apiFollowUp } })
+        return apiFollowUp
+      }
+    } catch (error) {
+      console.error('Error creating follow-up via API:', error)
     }
 
     return followUp
@@ -792,28 +835,142 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return settings.connected
   }
 
-  const completeFollowUp = (leadId: string, followUpId: string) => {
+  const completeFollowUp = async (leadId: string, followUpId: string) => {
+    const token = getAuthToken()
+    
+    // Update local state immediately
     dispatch({ type: 'COMPLETE_FOLLOWUP', payload: { leadId, followUpId } })
+
+    if (!token) {
+      console.warn('No token, local-only complete')
+      return
+    }
+
+    try {
+      // Call API to complete follow-up
+      await fetch(`/api/follow-ups?id=${followUpId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          completed: true,
+        }),
+      })
+    } catch (error) {
+      console.error('Error completing follow-up via API:', error)
+    }
   }
 
   const getLeadById = (id: string) => {
     return state.leads.find((lead) => lead.id === id)
   }
 
-  const addTreatment = (treatmentData: Omit<Treatment, 'id'>) => {
+  const addTreatment = async (treatmentData: Omit<Treatment, 'id'>) => {
+    const token = getAuthToken()
+    
     const treatment: Treatment = {
       ...treatmentData,
       id: `treat-${generateId()}`,
     }
+    
+    // Update local state immediately
     dispatch({ type: 'ADD_TREATMENT', payload: treatment })
+
+    if (!token) {
+      console.warn('No token, local-only treatment')
+      return
+    }
+
+    try {
+      // Call API to create treatment
+      const response = await fetch('/api/treatments', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: treatmentData.name,
+          description: treatmentData.description,
+          price: treatmentData.price,
+          duration: treatmentData.duration,
+          category: treatmentData.category,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const apiTreatment: Treatment = {
+          id: data.treatment.id,
+          name: data.treatment.name,
+          description: data.treatment.description,
+          price: data.treatment.price,
+          duration: data.treatment.duration,
+          category: data.treatment.category,
+        }
+        dispatch({ type: 'ADD_TREATMENT', payload: apiTreatment })
+      }
+    } catch (error) {
+      console.error('Error creating treatment via API:', error)
+    }
   }
 
-  const updateTreatment = (treatment: Treatment) => {
+  const updateTreatment = async (treatment: Treatment) => {
+    const token = getAuthToken()
+    
+    // Update local state immediately
     dispatch({ type: 'UPDATE_TREATMENT', payload: treatment })
+
+    if (!token) {
+      console.warn('No token, local-only update')
+      return
+    }
+
+    try {
+      // Call API to update treatment
+      await fetch(`/api/treatments?id=${treatment.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: treatment.name,
+          description: treatment.description,
+          price: treatment.price,
+          duration: treatment.duration,
+          category: treatment.category,
+        }),
+      })
+    } catch (error) {
+      console.error('Error updating treatment via API:', error)
+    }
   }
 
-  const deleteTreatment = (id: string) => {
+  const deleteTreatment = async (id: string) => {
+    const token = getAuthToken()
+    
+    // Update local state immediately
     dispatch({ type: 'DELETE_TREATMENT', payload: id })
+
+    if (!token) {
+      console.warn('No token, local-only delete')
+      return
+    }
+
+    try {
+      // Call API to delete treatment
+      await fetch(`/api/treatments?id=${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+    } catch (error) {
+      console.error('Error deleting treatment via API:', error)
+    }
   }
 
   const markNotificationRead = (id: string) => {

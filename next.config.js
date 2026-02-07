@@ -1,9 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'standalone',
+  // SIN output: 'standalone' — Hostinger no lo necesita
 
-  // ✅ Destraba builds en CI/deploy
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -11,7 +10,6 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   experimental: {
-    // ayuda con algunos entornos que intentan prerender raro
     serverActions: { allowedOrigins: ['growicrm.site'] },
   },
   async headers() {

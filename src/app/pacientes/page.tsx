@@ -779,7 +779,7 @@ export default function PacientesPage() {
                     </button>
                   </div>
                   <p className="text-sm text-slate-500">
-                    {language === 'es' ? 'Historial completo del paciente' : 'Complete patient history'}
+                    {t.patients.activitySubtitle}
                   </p>
                 </div>
 
@@ -792,7 +792,7 @@ export default function PacientesPage() {
                   </div>
                 ) : (
                   <div className="space-y-4 relative">
-                    {/* Vertical connecting line */}
+                    {/* Vertical connecting line - positioned to align with icon centers (left-5 = 1.25rem) */}
                     <div className="absolute left-5 top-8 bottom-0 w-px bg-slate-200" />
                     
                     {timeline.map((item, index) => (

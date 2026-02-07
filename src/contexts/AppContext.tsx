@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react'
 import { Lead, LeadStatus, Treatment, User, Notification, Note, FollowUp, Settings, Appointment, AppointmentStatus } from '@/types'
-import { initialLeads, treatments as initialTreatments, currentUser, notifications as initialNotifications } from '@/data/mockData'
+import { treatments as initialTreatments, currentUser } from '@/data/mockData'
 import { generateId } from '@/lib/utils'
 import {
   getGoogleCalendarSettings,
@@ -296,7 +296,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (!token) {
         console.warn('No authentication token found, using cached data')
-        // Fallback to localStorage if no token
+        // Fallback to localStorage if no token (no mock data dependency)
         const savedLeads = localStorage.getItem('clinic_leads')
         const savedTreatments = localStorage.getItem('clinic_treatments')
         const savedSettings = localStorage.getItem('clinic_settings')
@@ -304,7 +304,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         dispatch({
           type: 'SET_LEADS',
-          payload: savedLeads ? JSON.parse(savedLeads, dateReviver) : initialLeads,
+          payload: savedLeads ? JSON.parse(savedLeads, dateReviver) : [],
         })
 
         dispatch({
@@ -374,9 +374,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
             npsScore: p.nps_score,
           }))
         } else {
-          // Fallback to localStorage on API error
+          // Fallback to localStorage on API error (no mock data dependency)
           const savedLeads = localStorage.getItem('clinic_leads')
-          leads = savedLeads ? JSON.parse(savedLeads, dateReviver) : initialLeads
+          leads = savedLeads ? JSON.parse(savedLeads, dateReviver) : []
         }
 
         // Load appointments from API and merge into leads
@@ -456,7 +456,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         }
       } catch (error) {
         console.error('Error loading data from APIs:', error)
-        // Fallback to localStorage on error
+        // Fallback to localStorage on error (no mock data dependency)
         const savedLeads = localStorage.getItem('clinic_leads')
         const savedTreatments = localStorage.getItem('clinic_treatments')
         const savedSettings = localStorage.getItem('clinic_settings')
@@ -464,7 +464,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         dispatch({
           type: 'SET_LEADS',
-          payload: savedLeads ? JSON.parse(savedLeads, dateReviver) : initialLeads,
+          payload: savedLeads ? JSON.parse(savedLeads, dateReviver) : [],
         })
 
         dispatch({

@@ -1,19 +1,22 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Users, Plus, Mail, Phone, MoreVertical, Edit, Trash2, Shield, User } from 'lucide-react'
 import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Card, Button, Input, Modal, Avatar, Badge, Select, EmptyState } from '@/components/ui'
 import { useLanguage } from '@/i18n'
+
+type TeamRole = 'owner' | 'manager' | 'doctor' | 'receptionist'
 
 interface TeamMember {
   id: string
   name: string
   email: string
   phone: string
-  role: 'admin' | 'user' | 'viewer'
+  role: TeamRole
   status: 'active' | 'pending'
-  createdAt: Date
+  is_active: boolean
+  created_at: string
 }
 
 export default function TeamPage() {
@@ -26,85 +29,168 @@ export default function TeamPage() {
     name: '',
     email: '',
     phone: '',
-    role: 'user' as 'admin' | 'user' | 'viewer',
+    role: 'receptionist' as TeamRole,
+    password: '',
   })
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data - in real app this would come from state/API
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
-    {
-      id: '1',
-      name: 'Dr. María García',
-      email: 'maria@clinica.com',
-      phone: '+1 234 567 8900',
-      role: 'admin',
-      status: 'active',
-      createdAt: new Date('2024-01-01'),
-    },
-    {
-      id: '2',
-      name: 'Ana López',
-      email: 'ana@clinica.com',
-      phone: '+1 234 567 8901',
-      role: 'user',
-      status: 'active',
-      createdAt: new Date('2024-02-15'),
-    },
-  ])
+  // Helper to get JWT token from cookie
+  const getAuthToken = (): string | null => {
+    const token = document.cookie
+      .split('; ')
+      .find(row => row.startsWith('token='))
+      ?.split('=')[1]
+    return token || null
+  }
+
+  // Load team members on mount
+  useEffect(() => {
+    loadTeamMembers()
+  }, [])
+
+  const loadTeamMembers = async () => {
+    const token = getAuthToken()
+    if (!token) {
+      console.warn('No authentication token found')
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const response = await fetch('/api/team', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const members = (data.team || []).map((member: any) => ({
+          id: member.id,
+          name: member.name,
+          email: member.email || '',
+          phone: member.phone || '',
+          role: member.role,
+          status: member.is_active ? 'active' : 'pending',
+          is_active: member.is_active,
+          created_at: member.created_at,
+        }))
+        setTeamMembers(members)
+      } else {
+        console.error('Failed to load team members')
+      }
+    } catch (error) {
+      console.error('Error loading team members:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const getRoleLabel = (role: string) => {
     switch (role) {
-      case 'admin': return t.settings.roleAdmin
-      case 'user': return t.settings.roleUser
-      case 'viewer': return t.settings.roleViewer
+      case 'owner': return 'Propietario'
+      case 'manager': return 'Gerente'
+      case 'doctor': return 'Doctor'
+      case 'receptionist': return 'Recepcionista'
       default: return role
     }
   }
 
   const getRoleBadge = (role: string) => {
     switch (role) {
-      case 'admin': return 'primary'
-      case 'user': return 'default'
-      case 'viewer': return 'outline'
+      case 'owner': return 'primary'
+      case 'manager': return 'default'
+      case 'doctor': return 'default'
+      case 'receptionist': return 'outline'
       default: return 'default'
     }
   }
 
-  const handleAdd = () => {
-    if (!formData.name || !formData.email) return
+  const handleAdd = async () => {
+    if (!formData.name || !formData.email || !formData.password) return
 
-    const newMember: TeamMember = {
-      id: Date.now().toString(),
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      role: formData.role,
-      status: 'pending',
-      createdAt: new Date(),
+    const token = getAuthToken()
+    if (!token) return
+
+    try {
+      const response = await fetch('/api/team', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (response.ok) {
+        await loadTeamMembers()
+        setFormData({ name: '', email: '', phone: '', role: 'receptionist', password: '' })
+        setShowAddModal(false)
+      } else {
+        console.error('Failed to create team member')
+      }
+    } catch (error) {
+      console.error('Error creating team member:', error)
     }
-
-    setTeamMembers([...teamMembers, newMember])
-    setFormData({ name: '', email: '', phone: '', role: 'user' })
-    setShowAddModal(false)
   }
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     if (!selectedMember || !formData.name || !formData.email) return
 
-    setTeamMembers(teamMembers.map(m =>
-      m.id === selectedMember.id
-        ? { ...m, ...formData }
-        : m
-    ))
-    setShowEditModal(false)
-    setSelectedMember(null)
+    const token = getAuthToken()
+    if (!token) return
+
+    try {
+      const response = await fetch(`/api/team?id=${selectedMember.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          phone: formData.phone,
+          role: formData.role,
+        }),
+      })
+
+      if (response.ok) {
+        await loadTeamMembers()
+        setShowEditModal(false)
+        setSelectedMember(null)
+      } else {
+        console.error('Failed to update team member')
+      }
+    } catch (error) {
+      console.error('Error updating team member:', error)
+    }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!selectedMember) return
 
-    setTeamMembers(teamMembers.filter(m => m.id !== selectedMember.id))
-    setShowDeleteConfirm(false)
-    setSelectedMember(null)
+    const token = getAuthToken()
+    if (!token) return
+
+    try {
+      const response = await fetch(`/api/team?id=${selectedMember.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+
+      if (response.ok) {
+        await loadTeamMembers()
+        setShowDeleteConfirm(false)
+        setSelectedMember(null)
+      } else {
+        console.error('Failed to delete team member')
+      }
+    } catch (error) {
+      console.error('Error deleting team member:', error)
+    }
   }
 
   const openEdit = (member: TeamMember) => {
@@ -114,6 +200,7 @@ export default function TeamPage() {
       email: member.email,
       phone: member.phone,
       role: member.role,
+      password: '',
     })
     setShowEditModal(true)
   }
@@ -131,7 +218,7 @@ export default function TeamPage() {
         rightContent={
           <button
             onClick={() => {
-              setFormData({ name: '', email: '', phone: '', role: 'user' })
+              setFormData({ name: '', email: '', phone: '', role: 'receptionist', password: '' })
               setShowAddModal(true)
             }}
             className="p-2 rounded-lg bg-primary-500 text-white hover:bg-primary-600 transition-colors"
@@ -151,7 +238,7 @@ export default function TeamPage() {
             </div>
             <Button
               onClick={() => {
-                setFormData({ name: '', email: '', phone: '', role: 'user' })
+                setFormData({ name: '', email: '', phone: '', role: 'receptionist', password: '' })
                 setShowAddModal(true)
               }}
               icon={<Plus className="w-5 h-5" />}
@@ -161,7 +248,11 @@ export default function TeamPage() {
           </div>
 
           {/* Team List */}
-          {teamMembers.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <p className="text-slate-500">Cargando miembros del equipo...</p>
+            </div>
+          ) : teamMembers.length === 0 ? (
             <EmptyState
               icon={<Users className="w-8 h-8" />}
               title={t.settings.noTeamMembers}
@@ -282,14 +373,24 @@ export default function TeamPage() {
             onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
           />
 
+          <Input
+            label="Contraseña"
+            placeholder="Contraseña temporal"
+            type="password"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            required
+          />
+
           <Select
             label={t.settings.role}
             value={formData.role}
-            onChange={(value) => setFormData({ ...formData, role: value as 'admin' | 'user' | 'viewer' })}
+            onChange={(value) => setFormData({ ...formData, role: value as TeamRole })}
             options={[
-              { value: 'admin', label: t.settings.roleAdmin },
-              { value: 'user', label: t.settings.roleUser },
-              { value: 'viewer', label: t.settings.roleViewer },
+              { value: 'owner', label: 'Propietario' },
+              { value: 'manager', label: 'Gerente' },
+              { value: 'doctor', label: 'Doctor' },
+              { value: 'receptionist', label: 'Recepcionista' },
             ]}
           />
 
@@ -339,11 +440,12 @@ export default function TeamPage() {
           <Select
             label={t.settings.role}
             value={formData.role}
-            onChange={(value) => setFormData({ ...formData, role: value as 'admin' | 'user' | 'viewer' })}
+            onChange={(value) => setFormData({ ...formData, role: value as TeamRole })}
             options={[
-              { value: 'admin', label: t.settings.roleAdmin },
-              { value: 'user', label: t.settings.roleUser },
-              { value: 'viewer', label: t.settings.roleViewer },
+              { value: 'owner', label: 'Propietario' },
+              { value: 'manager', label: 'Gerente' },
+              { value: 'doctor', label: 'Doctor' },
+              { value: 'receptionist', label: 'Recepcionista' },
             ]}
           />
 

@@ -41,77 +41,44 @@ export default function ActivityLogPage() {
 
   const loadLogs = async () => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/activity-logs')
-      // const data = await response.json()
-      // setLogs(data.logs)
+      const token = localStorage.getItem('auth_token')
+      if (!token) {
+        console.error('No auth token found')
+        setIsLoading(false)
+        return
+      }
 
-      // Demo data
-      const demoLogs: ActivityLog[] = [
-        {
-          id: '1',
-          userId: 'u1',
-          userName: 'María González',
-          action: 'create',
-          resource: 'appointment',
-          resourceId: 'apt1',
-          resourceName: 'Cita con Ana López',
-          timestamp: new Date(Date.now() - 1000 * 60 * 30),
-          ipAddress: '192.168.1.1',
+      const response = await fetch('/api/activity-logs', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
         },
-        {
-          id: '2',
-          userId: 'u2',
-          userName: 'Carlos Ramírez',
-          action: 'update',
-          resource: 'patient',
-          resourceId: 'p1',
-          resourceName: 'Juan Pérez',
-          changes: [
-            { field: 'phone', oldValue: '+52 55 1111 1111', newValue: '+52 55 2222 2222' },
-            { field: 'email', oldValue: 'old@email.com', newValue: 'new@email.com' },
-          ],
-          timestamp: new Date(Date.now() - 1000 * 60 * 60),
-          ipAddress: '192.168.1.2',
-        },
-        {
-          id: '3',
-          userId: 'u1',
-          userName: 'María González',
-          action: 'delete',
-          resource: 'appointment',
-          resourceId: 'apt2',
-          resourceName: 'Cita con Pedro García',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-          ipAddress: '192.168.1.1',
-        },
-        {
-          id: '4',
-          userId: 'u3',
-          userName: 'Admin User',
-          action: 'create',
-          resource: 'patient',
-          resourceId: 'p2',
-          resourceName: 'Laura Martínez',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
-          ipAddress: '192.168.1.3',
-        },
-        {
-          id: '5',
-          userId: 'u2',
-          userName: 'Carlos Ramírez',
-          action: 'update',
-          resource: 'appointment',
-          resourceId: 'apt3',
-          resourceName: 'Cita con Sofia Hernández',
-          changes: [
-            { field: 'status', oldValue: 'pending', newValue: 'confirmed' },
-          ],
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
-          ipAddress: '192.168.1.2',
-        },
-      ]
-      setLogs(demoLogs)
+      })
+      
+      if (!response.ok) {
+        throw new Error('Error loading activity logs')
+      }
+
+      const data = await response.json()
+      
+      // Transform API data to match ActivityLog interface
+      const transformedLogs: ActivityLog[] = (data.logs || []).map((log: any) => ({
+        id: log.id,
+        userId: log.user_id,
+        userName: log.user_name || 'Usuario desconocido',
+        action: log.action_type,
+        resource: log.resource_type,
+        resourceId: log.resource_id,
+        resourceName: log.description || '',
+        changes: log.changes ? Object.entries(log.changes).map(([field, value]: any) => ({
+          field,
+          oldValue: value?.old || '',
+          newValue: value?.new || value || '',
+        })) : undefined,
+        timestamp: new Date(log.created_at),
+        ipAddress: log.ip_address,
+      }))
+
+      setLogs(transformedLogs)
     } catch (error) {
       console.error('Error loading logs:', error)
     } finally {

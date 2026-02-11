@@ -46,13 +46,13 @@ import {
   getEmailUrl,
   cn,
 } from '@/lib/utils'
-import { LeadStatus, LeadSource, FollowUpType, Lead } from '@/types'
+import { FunnelStatus, LeadSource, FollowUpType, Patient } from '@/types'
 
-const getStatusOptions = (t: any): { value: LeadStatus; label: string; color: string; bg: string }[] => [
+const getStatusOptions = (t: any): { value: FunnelStatus; label: string; color: string; bg: string }[] => [
   { value: 'new', label: t.status.new, color: 'text-primary-600', bg: 'bg-primary-100' },
   { value: 'contacted', label: t.status.contacted, color: 'text-amber-600', bg: 'bg-amber-100' },
-  { value: 'scheduled', label: t.status.scheduled, color: 'text-purple-600', bg: 'bg-purple-100' },
-  { value: 'closed', label: t.status.closed, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+  { value: 'appointment', label: t.status.scheduled, color: 'text-purple-600', bg: 'bg-purple-100' },
+  { value: 'treatment', label: t.status.closed, color: 'text-emerald-600', bg: 'bg-emerald-100' },
   { value: 'lost', label: t.status.lost, color: 'text-red-600', bg: 'bg-red-100' },
 ]
 
@@ -76,7 +76,7 @@ const sourceColors: Record<LeadSource, string> = {
 
 export default function PacientesPage() {
   const searchParams = useSearchParams()
-  const { state, addLead, updateLeadStatus, addNote, addFollowUp, deleteLead, isCalendarConnected, getDerivedPatientStatus, getPatientAppointmentCounts } = useApp()
+  const { state, addPatient, updatePatientStatus, addNote, addFollowUp, deletePatient, isCalendarConnected, getDerivedPatientStatus, getPatientAppointmentCounts } = useApp()
   const { t, language } = useLanguage()
 
   // Get translated status options
@@ -84,7 +84,7 @@ export default function PacientesPage() {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'scheduled' | 'completed' | 'in-treatment' | 'lost'>('all')
-  const [selectedPatient, setSelectedPatient] = useState<Lead | null>(null)
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showFollowUpModal, setShowFollowUpModal] = useState(false)
   const [showNoteModal, setShowNoteModal] = useState(false)
@@ -117,13 +117,13 @@ export default function PacientesPage() {
   // Get all existing appointments for conflict checking
   const allAppointments = useMemo(() => {
     const appointments: any[] = []
-    state.leads.forEach(lead => {
-      lead.followUps
+    state.patients.forEach(patient => {
+      patient.followUps
         .filter(fu => fu.type === 'meeting' || fu.type === 'appointment')
         .forEach(fu => appointments.push(fu))
     })
     return appointments
-  }, [state.leads])
+  }, [state.patients])
 
   const calendarConnected = isCalendarConnected()
 
@@ -135,26 +135,26 @@ export default function PacientesPage() {
 
     // Handle patient selection from other pages (id or selected param)
     const patientId = searchParams.get('id') || searchParams.get('selected')
-    if (patientId && state.leads.length > 0) {
-      const patient = state.leads.find(l => l.id === patientId)
+    if (patientId && state.patients.length > 0) {
+      const patient = state.patients.find(p => p.id === patientId)
       if (patient) {
         setSelectedPatient(patient)
       }
     }
-  }, [searchParams, state.leads])
+  }, [searchParams, state.patients])
 
   // Update selected patient when state changes
   useEffect(() => {
     if (selectedPatient) {
-      const updated = state.leads.find(l => l.id === selectedPatient.id)
+      const updated = state.patients.find(p => p.id === selectedPatient.id)
       if (updated) {
         setSelectedPatient(updated)
       }
     }
-  }, [state.leads, selectedPatient?.id])
+  }, [state.patients, selectedPatient?.id])
 
   const filteredPatients = useMemo(() => {
-    let patients = [...state.leads]
+    let patients = [...state.patients]
 
     if (statusFilter !== 'all') {
       patients = patients.filter(p => {
@@ -193,12 +193,12 @@ export default function PacientesPage() {
     return patients.sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
-  }, [state.leads, statusFilter, searchQuery, getDerivedPatientStatus, getPatientAppointmentCounts])
+  }, [state.patients, statusFilter, searchQuery, getDerivedPatientStatus, getPatientAppointmentCounts])
 
   const handleAddPatient = () => {
     if (!newPatient.name || !newPatient.phone) return
 
-    addLead({
+    addPatient({
       name: newPatient.name,
       phone: newPatient.phone,
       email: newPatient.email || undefined,
@@ -267,7 +267,7 @@ export default function PacientesPage() {
 
   const handleDelete = () => {
     if (!selectedPatient) return
-    deleteLead(selectedPatient.id)
+    deletePatient(selectedPatient.id)
     setSelectedPatient(null)
     setShowDeleteConfirm(false)
   }
@@ -320,16 +320,16 @@ export default function PacientesPage() {
 
   const statusCounts = useMemo(() => {
     const counts = {
-      all: state.leads.length,
+      all: state.patients.length,
       scheduled: 0,
       completed: 0,
       'in-treatment': 0,
       lost: 0,
     }
     
-    state.leads.forEach(lead => {
-      const appointmentCounts = getPatientAppointmentCounts(lead.id)
-      const derivedStatus = getDerivedPatientStatus(lead.id)
+    state.patients.forEach(patient => {
+      const appointmentCounts = getPatientAppointmentCounts(patient.id)
+      const derivedStatus = getDerivedPatientStatus(patient.id)
       
       if (appointmentCounts.pending > 0 || appointmentCounts.confirmed > 0) {
         counts.scheduled++
@@ -346,10 +346,10 @@ export default function PacientesPage() {
     })
     
     return counts
-  }, [state.leads, getDerivedPatientStatus, getPatientAppointmentCounts])
+  }, [state.patients, getDerivedPatientStatus, getPatientAppointmentCounts])
 
   // Get status info for display (deprecated - use derived status)
-  const getStatusInfo = (status: LeadStatus) => {
+  const getStatusInfo = (status: FunnelStatus) => {
     const option = statusOptions.find(s => s.value === status)
     return option || { label: status, color: 'text-slate-600', bg: 'bg-slate-100' }
   }
@@ -364,7 +364,7 @@ export default function PacientesPage() {
               <div>
                 <h1 className="text-xl lg:text-2xl font-bold text-slate-900">{t.patients.title}</h1>
                 <p className="text-sm text-slate-500 mt-0.5">
-                  {state.leads.length} {t.patients.totalPatients}
+                  {state.patients.length} {t.patients.totalPatients}
                 </p>
               </div>
               <button
@@ -710,7 +710,7 @@ export default function PacientesPage() {
                       {statusOptions.map((option) => (
                         <button
                           key={option.value}
-                          onClick={() => updateLeadStatus(selectedPatient.id, option.value)}
+                          onClick={() => updatePatientStatus(selectedPatient.id, option.value)}
                           className={cn(
                             'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
                             selectedPatient.status === option.value

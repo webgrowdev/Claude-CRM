@@ -31,9 +31,12 @@ import {
   CreditCard,
   Settings,
   UserX,
+  LayoutList,
+  LayoutGrid,
 } from 'lucide-react'
 import { AppShell } from '@/components/layout'
 import { Input, Card, Avatar, Badge, Modal, Button, Select, TextArea, TimeSlotPicker } from '@/components/ui'
+import { KanbanView } from '@/components/patients/KanbanView'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n/LanguageContext'
 import {
@@ -92,6 +95,10 @@ export default function PacientesPage() {
   const [isCreatingFollowUp, setIsCreatingFollowUp] = useState(false)
   const [noteContent, setNoteContent] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  
+  // View mode state
+  type ViewMode = 'list' | 'kanban'
+  const [viewMode, setViewMode] = useState<ViewMode>('list')
 
   // New patient form
   const [newPatient, setNewPatient] = useState({
@@ -468,16 +475,40 @@ export default function PacientesPage() {
                 </button>
               </div>
             )}
+
+            {/* View Toggle Buttons */}
+            <div className="flex gap-2 mt-3">
+              <Button
+                variant={viewMode === 'list' ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="flex items-center gap-2"
+              >
+                <LayoutList className="w-4 h-4" />
+                {language === 'es' ? 'Lista' : 'List'}
+              </Button>
+              <Button
+                variant={viewMode === 'kanban' ? 'primary' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('kanban')}
+                className="flex items-center gap-2"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                {language === 'es' ? 'Kanban' : 'Kanban'}
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* Content - Improved Layout */}
         <div className="flex-1 flex overflow-hidden">
-          {/* Patient List - Better Cards */}
-          <div className={cn(
-            'flex-1 overflow-y-auto',
-            selectedPatient && 'hidden lg:block lg:w-[400px] lg:flex-none lg:border-r lg:border-slate-200 lg:bg-white'
-          )}>
+          {viewMode === 'list' ? (
+            <>
+              {/* Patient List - Better Cards */}
+              <div className={cn(
+                'flex-1 overflow-y-auto',
+                selectedPatient && 'hidden lg:block lg:w-[400px] lg:flex-none lg:border-r lg:border-slate-200 lg:bg-white'
+              )}>
             {filteredPatients.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center">
                 <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center mb-4 shadow-lg">
@@ -901,6 +932,15 @@ export default function PacientesPage() {
                 </p>
               </div>
             </div>
+          )}
+            </>
+          ) : (
+            <KanbanView 
+              patients={filteredPatients}
+              onPatientClick={(patient) => {
+                setSelectedPatient(patient)
+              }}
+            />
           )}
         </div>
       </div>

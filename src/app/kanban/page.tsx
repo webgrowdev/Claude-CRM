@@ -36,10 +36,10 @@ import { Avatar } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n'
 import { formatTimeAgo, formatCurrency, getSourceLabel, cn } from '@/lib/utils'
-import { Lead, LeadStatus, LeadSource } from '@/types'
+import { Patient, FunnelStatus, LeadSource } from '@/types'
 
 // Column definitions with new design
-const columns: { id: LeadStatus; title: string; color: string; borderColor: string; bgColor: string }[] = [
+const columns: { id: FunnelStatus; title: string; color: string; borderColor: string; bgColor: string }[] = [
   { id: 'new', title: 'Nuevo', color: '#3B82F6', borderColor: 'border-t-blue-500', bgColor: 'bg-blue-50/50' },
   { id: 'contacted', title: 'Contactado', color: '#F59E0B', borderColor: 'border-t-amber-500', bgColor: 'bg-amber-50/50' },
   { id: 'scheduled', title: 'Turno Agendado', color: '#8B5CF6', borderColor: 'border-t-purple-500', bgColor: 'bg-purple-50/50' },
@@ -65,8 +65,8 @@ function getSourceIcon(source: LeadSource) {
   }
 }
 
-// Sortable Lead Card Component
-function SortableLeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }) {
+// Sortable Patient Card Component
+function SortablePatientCard({ patient, onClick }: { patient: Patient; onClick: () => void }) {
   const {
     attributes,
     listeners,
@@ -74,7 +74,7 @@ function SortableLeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: lead.id })
+  } = useSortable({ id: patient.id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -90,24 +90,24 @@ function SortableLeadCard({ lead, onClick }: { lead: Lead; onClick: () => void }
       {...listeners}
       className="touch-manipulation"
     >
-      <LeadCard lead={lead} onClick={onClick} />
+      <PatientCard patient={patient} onClick={onClick} />
     </div>
   )
 }
 
-// Lead Card Component
-function LeadCard({
-  lead,
+// Patient Card Component
+function PatientCard({
+  patient,
   overlay = false,
   onClick,
 }: {
-  lead: Lead
+  patient: Patient
   overlay?: boolean
   onClick?: () => void
 }) {
   const { t } = useLanguage()
-  const hasFollowUp = lead.followUps.some((f) => !f.completed)
-  const nextFollowUp = lead.followUps.find((f) => !f.completed)
+  const hasFollowUp = patient.followUps.some((f) => !f.completed)
+  const nextFollowUp = patient.followUps.find((f) => !f.completed)
 
   const handleClick = (e: React.MouseEvent) => {
     if (onClick && !overlay) {
@@ -129,12 +129,12 @@ function LeadCard({
     >
       {/* Header */}
       <div className="flex items-start gap-3">
-        <Avatar name={lead.name} size="md" />
+        <Avatar name={patient.name} size="md" />
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-slate-800 text-sm truncate">{lead.name}</p>
+          <p className="font-semibold text-slate-800 text-sm truncate">{patient.name}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
-            {getSourceIcon(lead.source)}
-            <span className="text-xs text-slate-500">{getSourceLabel(lead.source)}</span>
+            {getSourceIcon(patient.source)}
+            <span className="text-xs text-slate-500">{getSourceLabel(patient.source)}</span>
           </div>
         </div>
         <button
@@ -146,9 +146,9 @@ function LeadCard({
       </div>
 
       {/* Treatments */}
-      {lead.treatments.length > 0 && (
+      {patient.treatments.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1">
-          {lead.treatments.slice(0, 2).map((treatment, i) => (
+          {patient.treatments.slice(0, 2).map((treatment, i) => (
             <span
               key={i}
               className="text-xs px-2 py-0.5 bg-primary-50 text-primary-700 rounded-full font-medium"
@@ -156,9 +156,9 @@ function LeadCard({
               {treatment}
             </span>
           ))}
-          {lead.treatments.length > 2 && (
+          {patient.treatments.length > 2 && (
             <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full">
-              +{lead.treatments.length - 2}
+              +{patient.treatments.length - 2}
             </span>
           )}
         </div>
@@ -166,13 +166,13 @@ function LeadCard({
 
       {/* Value & Follow-up */}
       <div className="mt-3 flex items-center justify-between text-xs">
-        {lead.value ? (
+        {patient.value ? (
           <div className="flex items-center gap-1 text-success-600 font-medium">
             <DollarSign className="w-3.5 h-3.5" />
-            {formatCurrency(lead.value)}
+            {formatCurrency(patient.value)}
           </div>
         ) : (
-          <span className="text-slate-400">{formatTimeAgo(new Date(lead.createdAt))}</span>
+          <span className="text-slate-400">{formatTimeAgo(new Date(patient.createdAt))}</span>
         )}
 
         {hasFollowUp && nextFollowUp && (
@@ -189,8 +189,8 @@ function LeadCard({
       </div>
 
       {/* Quick indicator for urgent items */}
-      {lead.status === 'new' &&
-        new Date().getTime() - new Date(lead.createdAt).getTime() > 48 * 60 * 60 * 1000 && (
+      {patient.status === 'new' &&
+        new Date().getTime() - new Date(patient.createdAt).getTime() > 48 * 60 * 60 * 1000 && (
           <div className="mt-2 px-2 py-1 bg-error-50 rounded-lg">
             <span className="text-xs text-error-700 font-medium flex items-center gap-1">
               <Clock className="w-3 h-3" />
@@ -205,12 +205,12 @@ function LeadCard({
 // Column Component
 function Column({
   column,
-  leads,
-  onLeadClick,
+  patients,
+  onPatientClick,
 }: {
   column: (typeof columns)[0]
-  leads: Lead[]
-  onLeadClick: (id: string) => void
+  patients: Patient[]
+  onPatientClick: (id: string) => void
 }) {
   const { t } = useLanguage()
 
@@ -229,7 +229,7 @@ function Column({
             className="flex items-center justify-center min-w-[24px] h-6 px-2 text-xs font-bold rounded-full text-white"
             style={{ backgroundColor: column.color }}
           >
-            {leads.length}
+            {patients.length}
           </span>
         </div>
       </div>
@@ -242,21 +242,21 @@ function Column({
         )}
       >
         <SortableContext
-          items={leads.map((l) => l.id)}
+          items={patients.map((p) => p.id)}
           strategy={verticalListSortingStrategy}
         >
           <div className="space-y-3">
-            {leads.map((lead) => (
-              <SortableLeadCard
-                key={lead.id}
-                lead={lead}
-                onClick={() => onLeadClick(lead.id)}
+            {patients.map((patient) => (
+              <SortablePatientCard
+                key={patient.id}
+                patient={patient}
+                onClick={() => onPatientClick(patient.id)}
               />
             ))}
           </div>
         </SortableContext>
 
-        {leads.length === 0 && (
+        {patients.length === 0 && (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <div className="w-12 h-12 bg-gray-200/50 rounded-full flex items-center justify-center mb-3">
               <Users className="w-6 h-6 text-gray-400" />
@@ -273,7 +273,7 @@ function Column({
 
 export default function KanbanPage() {
   const router = useRouter()
-  const { state, updateLeadStatus } = useApp()
+  const { state, updatePatientStatus } = useApp()
   const { t } = useLanguage()
   const [activeId, setActiveId] = useState<string | null>(null)
 
@@ -286,8 +286,8 @@ export default function KanbanPage() {
     useSensor(KeyboardSensor)
   )
 
-  const leadsByStatus = useMemo(() => {
-    const grouped: Record<LeadStatus, Lead[]> = {
+  const patientsByStatus = useMemo(() => {
+    const grouped: Record<FunnelStatus, Patient[]> = {
       new: [],
       contacted: [],
       scheduled: [],
@@ -295,13 +295,13 @@ export default function KanbanPage() {
       lost: [],
     }
 
-    state.leads.forEach((lead) => {
-      grouped[lead.status].push(lead)
+    state.patients.forEach((patient) => {
+      grouped[patient.status].push(patient)
     })
 
     // Sort each group by date (newest first for new, otherwise by update)
     Object.keys(grouped).forEach((status) => {
-      grouped[status as LeadStatus].sort((a, b) => {
+      grouped[status as FunnelStatus].sort((a, b) => {
         if (status === 'new') {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         }
@@ -310,12 +310,12 @@ export default function KanbanPage() {
     })
 
     return grouped
-  }, [state.leads])
+  }, [state.patients])
 
-  const activeLead = useMemo(() => {
+  const activePatient = useMemo(() => {
     if (!activeId) return null
-    return state.leads.find((l) => l.id === activeId)
-  }, [activeId, state.leads])
+    return state.patients.find((p) => p.id === activeId)
+  }, [activeId, state.patients])
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(event.active.id as string)
@@ -327,38 +327,38 @@ export default function KanbanPage() {
 
     if (!over) return
 
-    const leadId = active.id as string
-    const lead = state.leads.find((l) => l.id === leadId)
-    if (!lead) return
+    const patientId = active.id as string
+    const patient = state.patients.find((p) => p.id === patientId)
+    if (!patient) return
 
     // Check if dropped on a column
     const overColumn = columns.find((c) => c.id === over.id)
-    if (overColumn && lead.status !== overColumn.id) {
-      updateLeadStatus(leadId, overColumn.id)
+    if (overColumn && patient.status !== overColumn.id) {
+      updatePatientStatus(patientId, overColumn.id)
       return
     }
 
-    // Check if dropped on another lead
-    const overLead = state.leads.find((l) => l.id === over.id)
-    if (overLead && lead.status !== overLead.status) {
-      updateLeadStatus(leadId, overLead.status)
+    // Check if dropped on another patient
+    const overPatient = state.patients.find((p) => p.id === over.id)
+    if (overPatient && patient.status !== overPatient.status) {
+      updatePatientStatus(patientId, overPatient.status)
     }
   }
 
-  const handleLeadClick = (id: string) => {
+  const handlePatientClick = (id: string) => {
     router.push(`/pacientes?id=${id}`)
   }
 
   // Calculate totals for header
   const totals = useMemo(() => {
-    const activeLeads = state.leads.filter(
-      (l) => l.status !== 'closed' && l.status !== 'lost'
+    const activePatients = state.patients.filter(
+      (p) => p.status !== 'closed' && p.status !== 'lost'
     ).length
-    const totalValue = state.leads
-      .filter((l) => l.status === 'closed')
-      .reduce((sum, l) => sum + (l.value || 0), 0)
-    return { activeLeads, totalValue }
-  }, [state.leads])
+    const totalValue = state.patients
+      .filter((p) => p.status === 'closed')
+      .reduce((sum, p) => sum + (p.value || 0), 0)
+    return { activePatients, totalValue }
+  }, [state.patients])
 
   return (
     <AppShell>
@@ -371,7 +371,7 @@ export default function KanbanPage() {
                 {t.nav.pipeline}
               </h1>
               <p className="text-sm text-slate-500">
-                {totals.activeLeads} {t.patients.totalPatients.replace('en total', 'activos')}
+                {totals.activePatients} {t.patients.totalPatients.replace('en total', 'activos')}
               </p>
             </div>
             {totals.totalValue > 0 && (
@@ -401,14 +401,14 @@ export default function KanbanPage() {
               <Column
                 key={column.id}
                 column={column}
-                leads={leadsByStatus[column.id]}
-                onLeadClick={handleLeadClick}
+                patients={patientsByStatus[column.id]}
+                onPatientClick={handlePatientClick}
               />
             ))}
           </div>
 
           <DragOverlay>
-            {activeLead ? <LeadCard lead={activeLead} overlay /> : null}
+            {activePatient ? <PatientCard patient={activePatient} overlay /> : null}
           </DragOverlay>
         </DndContext>
       </div>

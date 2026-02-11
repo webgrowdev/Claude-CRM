@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function SplashPage() {
   const router = useRouter()
+  const { isAuthenticated, isLoading } = useAuth()
   const [mounted, setMounted] = useState(false)
   const [showContent, setShowContent] = useState(false)
 
@@ -13,13 +15,14 @@ export default function SplashPage() {
     // Small delay before showing content for smoother appearance
     const contentTimer = setTimeout(() => setShowContent(true), 100)
 
-    // Check if user is logged in (token-based authentication)
+    // Check if user is logged in using AuthContext
     const navTimer = setTimeout(() => {
-      const token = localStorage.getItem('clinic_token') || localStorage.getItem('token')
-      if (token) {
-        router.push('/dashboard')
-      } else {
-        router.push('/login')
+      if (!isLoading) {
+        if (isAuthenticated) {
+          router.push('/dashboard')
+        } else {
+          router.push('/login')
+        }
       }
     }, 2500)
 
@@ -27,7 +30,7 @@ export default function SplashPage() {
       clearTimeout(contentTimer)
       clearTimeout(navTimer)
     }
-  }, [router])
+  }, [router, isAuthenticated, isLoading])
 
   if (!mounted) {
     return null

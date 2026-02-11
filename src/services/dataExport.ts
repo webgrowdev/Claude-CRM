@@ -1,4 +1,4 @@
-import { Lead, Payment, Appointment, ExportFormat, ExportOptions } from '@/types'
+import { Patient, Payment, Appointment, ExportFormat, ExportOptions } from '@/types'
 import { format } from 'date-fns'
 
 /**
@@ -37,24 +37,24 @@ function toCSV(data: Record<string, unknown>[], fields: string[]): string {
  * Export leads/patients to CSV
  */
 export function exportLeadsToCSV(
-  leads: Lead[],
+  patients: Patient[],
   fields: string[] = ['name', 'email', 'phone', 'status', 'source', 'treatments', 'createdAt']
 ): string {
-  const data = leads.map(lead => ({
-    name: lead.name,
-    email: lead.email || '',
-    phone: lead.phone,
-    identificationNumber: lead.identificationNumber || '',
-    status: lead.status,
-    source: lead.source,
-    treatments: lead.treatments.join(', '),
-    notes: lead.notes.length,
-    followUps: lead.followUps.length,
-    totalPaid: lead.totalPaid || 0,
-    totalPending: lead.totalPending || 0,
-    score: lead.score?.total || 0,
-    createdAt: lead.createdAt,
-    updatedAt: lead.updatedAt,
+  const data = patients.map(patient => ({
+    name: patient.name,
+    email: patient.email || '',
+    phone: patient.phone,
+    identificationNumber: patient.identificationNumber || '',
+    status: patient.status,
+    source: patient.source,
+    treatments: patient.treatments.join(', '),
+    notes: patient.notes.length,
+    followUps: patient.followUps.length,
+    totalPaid: patient.totalPaid || 0,
+    totalPending: patient.totalPending || 0,
+    score: patient.score?.total || 0,
+    createdAt: patient.createdAt,
+    updatedAt: patient.updatedAt,
   }))
 
   return toCSV(data as Record<string, unknown>[], fields)
@@ -99,8 +99,8 @@ export function downloadFile(content: string, filename: string, type: string = '
 /**
  * Export leads to CSV file and download
  */
-export function downloadLeadsCSV(leads: Lead[], filename?: string): void {
-  const csv = exportLeadsToCSV(leads)
+export function downloadLeadsCSV(patients: Patient[], filename?: string): void {
+  const csv = exportLeadsToCSV(patients)
   const dateStr = format(new Date(), 'yyyy-MM-dd')
   downloadFile(csv, filename || `patients_export_${dateStr}.csv`)
 }
@@ -175,19 +175,19 @@ function escapeXML(str: string): string {
 /**
  * Export leads to Excel-compatible XML and download
  */
-export function downloadLeadsExcel(leads: Lead[], filename?: string): void {
-  const data = leads.map(lead => ({
-    Nombre: lead.name,
-    Email: lead.email || '',
-    Teléfono: lead.phone,
-    DNI: lead.identificationNumber || '',
-    Estado: lead.status,
-    Fuente: lead.source,
-    Tratamientos: lead.treatments.join(', '),
-    'Total Pagado': lead.totalPaid || 0,
-    'Total Pendiente': lead.totalPending || 0,
-    Puntuación: lead.score?.total || 0,
-    'Fecha Creación': lead.createdAt,
+export function downloadLeadsExcel(patients: Patient[], filename?: string): void {
+  const data = patients.map(patient => ({
+    Nombre: patient.name,
+    Email: patient.email || '',
+    Teléfono: patient.phone,
+    DNI: patient.identificationNumber || '',
+    Estado: patient.status,
+    Fuente: patient.source,
+    Tratamientos: patient.treatments.join(', '),
+    'Total Pagado': patient.totalPaid || 0,
+    'Total Pendiente': patient.totalPending || 0,
+    Puntuación: patient.score?.total || 0,
+    'Fecha Creación': patient.createdAt,
   }))
 
   const xml = exportToExcelXML(data as Record<string, unknown>[], 'Pacientes')
@@ -203,13 +203,13 @@ export function downloadLeadsExcel(leads: Lead[], filename?: string): void {
  * Export report data summary
  */
 export function generateReportSummary(
-  leads: Lead[],
+  patients: Patient[],
   payments: Payment[],
   language: 'en' | 'es' = 'es'
 ): string {
-  const totalLeads = leads.length
-  const closedLeads = leads.filter(l => l.status === 'closed').length
-  const conversionRate = totalLeads > 0 ? (closedLeads / totalLeads * 100).toFixed(1) : '0'
+  const totalPatients = patients.length
+  const closedPatients = patients.filter(p => p.status === 'closed').length
+  const conversionRate = totalPatients > 0 ? (closedPatients / totalPatients * 100).toFixed(1) : '0'
   const totalRevenue = payments
     .filter(p => p.status === 'paid')
     .reduce((sum, p) => sum + p.amount, 0)
@@ -224,8 +224,8 @@ Fecha: ${format(new Date(), 'dd/MM/yyyy HH:mm')}
 
 PACIENTES
 ---------
-Total de pacientes: ${totalLeads}
-Pacientes cerrados: ${closedLeads}
+Total de pacientes: ${totalPatients}
+Pacientes cerrados: ${closedPatients}
 Tasa de conversión: ${conversionRate}%
 
 INGRESOS
@@ -236,7 +236,7 @@ Pagos pendientes: $${pendingPayments.toLocaleString()}
 POR ESTADO
 ----------
 ${['new', 'contacted', 'scheduled', 'closed', 'lost'].map(status => {
-  const count = leads.filter(l => l.status === status).length
+  const count = patients.filter(p => p.status === status).length
   return `${status}: ${count}`
 }).join('\n')}
 `
@@ -248,8 +248,8 @@ Date: ${format(new Date(), 'MM/dd/yyyy HH:mm')}
 
 PATIENTS
 --------
-Total patients: ${totalLeads}
-Closed patients: ${closedLeads}
+Total patients: ${totalPatients}
+Closed patients: ${closedPatients}
 Conversion rate: ${conversionRate}%
 
 REVENUE
@@ -260,7 +260,7 @@ Pending payments: $${pendingPayments.toLocaleString()}
 BY STATUS
 ---------
 ${['new', 'contacted', 'scheduled', 'closed', 'lost'].map(status => {
-  const count = leads.filter(l => l.status === status).length
+  const count = patients.filter(p => p.status === status).length
   return `${status}: ${count}`
 }).join('\n')}
 `
@@ -270,11 +270,11 @@ ${['new', 'contacted', 'scheduled', 'closed', 'lost'].map(status => {
  * Download summary report
  */
 export function downloadReportSummary(
-  leads: Lead[],
+  patients: Patient[],
   payments: Payment[],
   language: 'en' | 'es' = 'es'
 ): void {
-  const summary = generateReportSummary(leads, payments, language)
+  const summary = generateReportSummary(patients, payments, language)
   const dateStr = format(new Date(), 'yyyy-MM-dd')
   const filename = language === 'es'
     ? `resumen_crm_${dateStr}.txt`

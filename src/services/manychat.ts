@@ -1,7 +1,7 @@
 // ManyChat Integration Service
 // This service handles webhook integration with ManyChat for lead automation
 
-import { ManyChatWebhook, ManyChatSettings, Lead, LeadSource } from '@/types'
+import { ManyChatWebhook, ManyChatSettings, Patient, LeadSource } from '@/types'
 
 const SETTINGS_KEY = 'clinic_manychat_settings'
 
@@ -65,7 +65,7 @@ export function disconnectManyChat(): void {
 // Process incoming ManyChat webhook
 export function processManyChatWebhook(
   payload: ManyChatWebhook,
-  onLeadCreate: (leadData: Partial<Lead>) => void
+  onPatientCreate: (patientData: Partial<Patient>) => void
 ): void {
   const settings = getManyChatSettings()
 
@@ -77,9 +77,9 @@ export function processManyChatWebhook(
   switch (payload.type) {
     case 'new_subscriber':
     case 'contact_info_shared':
-      // Create a new lead from the subscriber
-      onLeadCreate({
-        name: payload.subscriber.name || 'Nuevo Lead',
+      // Create a new patient from the subscriber
+      onPatientCreate({
+        name: payload.subscriber.name || 'Nuevo Paciente',
         phone: payload.subscriber.phone || '',
         email: payload.subscriber.email,
         source: determineSource(payload.subscriber),
@@ -90,9 +90,9 @@ export function processManyChatWebhook(
       break
 
     case 'appointment_requested':
-      // Create a lead with scheduled status
-      onLeadCreate({
-        name: payload.subscriber.name || 'Nuevo Lead',
+      // Create a patient with scheduled status
+      onPatientCreate({
+        name: payload.subscriber.name || 'Nuevo Paciente',
         phone: payload.subscriber.phone || '',
         email: payload.subscriber.email,
         source: determineSource(payload.subscriber),
@@ -104,7 +104,7 @@ export function processManyChatWebhook(
 
     case 'message_received':
     case 'button_clicked':
-      // These events could update existing leads or trigger notifications
+      // These events could update existing patients or trigger notifications
       console.log('ManyChat event received:', payload.type)
       break
 
@@ -241,7 +241,7 @@ export async function getManyChatSubscriber(
 }
 
 // Webhook handler for API route
-export function createWebhookHandler(onLeadCreate: (leadData: Partial<Lead>) => void) {
+export function createWebhookHandler(onPatientCreate: (patientData: Partial<Patient>) => void) {
   return async function handler(req: Request): Promise<Response> {
     const settings = getManyChatSettings()
 
@@ -264,7 +264,7 @@ export function createWebhookHandler(onLeadCreate: (leadData: Partial<Lead>) => 
       }
 
       // Process the webhook
-      processManyChatWebhook(payload, onLeadCreate)
+      processManyChatWebhook(payload, onPatientCreate)
 
       return new Response(
         JSON.stringify({ success: true }),

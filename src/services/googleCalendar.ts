@@ -1,7 +1,7 @@
 // Google Calendar Integration Service
 // This service handles synchronization with Google Calendar and Google Meet
 
-import { CalendarEvent, FollowUp, Lead, GoogleCalendarSettings } from '@/types'
+import { CalendarEvent, FollowUp, Patient, GoogleCalendarSettings } from '@/types'
 
 // Get client ID at runtime (not at module load time)
 function getGoogleClientId(): string {
@@ -137,7 +137,7 @@ async function googleCalendarRequest<T>(
 // Create a calendar event from a follow-up
 export async function createCalendarEvent(
   followUp: FollowUp,
-  lead: Lead
+  patient: Patient
 ): Promise<CalendarEvent | null> {
   const settings = getGoogleCalendarSettings()
 
@@ -151,12 +151,12 @@ export async function createCalendarEvent(
   endTime.setMinutes(endTime.getMinutes() + duration)
 
   const eventData: any = {
-    summary: `${getFollowUpTitle(followUp.type)} - ${lead.name}`,
+    summary: `${getFollowUpTitle(followUp.type)} - ${patient.name}`,
     description: `
-Lead: ${lead.name}
-Teléfono: ${lead.phone}
-${lead.email ? `Email: ${lead.email}` : ''}
-Tratamientos de interés: ${lead.treatments.join(', ') || 'No especificado'}
+Paciente: ${patient.name}
+Teléfono: ${patient.phone}
+${patient.email ? `Email: ${patient.email}` : ''}
+Tratamientos de interés: ${patient.treatments.join(', ') || 'No especificado'}
 
 ${followUp.notes || ''}
 
@@ -171,7 +171,7 @@ Creado automáticamente por Clinic CRM
       dateTime: endTime.toISOString(),
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
-    attendees: lead.email ? [{ email: lead.email }] : [],
+    attendees: patient.email ? [{ email: patient.email }] : [],
     reminders: {
       useDefault: false,
       overrides: [
@@ -209,8 +209,8 @@ Creado automáticamente por Clinic CRM
       start: new Date(followUp.scheduledAt),
       end: endTime,
       meetLink: googleEvent.conferenceData?.entryPoints?.[0]?.uri || undefined,
-      attendees: lead.email ? [lead.email] : [],
-      leadId: lead.id,
+      attendees: patient.email ? [patient.email] : [],
+      leadId: patient.id,
       followUpId: followUp.id,
       syncedWithGoogle: true,
       googleEventId: googleEvent.id,
@@ -446,9 +446,9 @@ export async function generateMeetLink(): Promise<string | null> {
   }
 }
 
-// Create event for a meeting with a lead
+// Create event for a meeting with a patient
 export async function createMeetingEvent(
-  lead: Lead,
+  patient: Patient,
   scheduledAt: Date,
   duration: number = 30, // minutes
   notes?: string
@@ -463,12 +463,12 @@ export async function createMeetingEvent(
   endTime.setMinutes(endTime.getMinutes() + duration)
 
   const eventData = {
-    summary: `Cita - ${lead.name}`,
+    summary: `Cita - ${patient.name}`,
     description: `
-Cliente: ${lead.name}
-Teléfono: ${lead.phone}
-${lead.email ? `Email: ${lead.email}` : ''}
-Tratamientos de interés: ${lead.treatments.join(', ') || 'No especificado'}
+Paciente: ${patient.name}
+Teléfono: ${patient.phone}
+${patient.email ? `Email: ${patient.email}` : ''}
+Tratamientos de interés: ${patient.treatments.join(', ') || 'No especificado'}
 
 ${notes || ''}
 
@@ -483,10 +483,10 @@ Creado por Clinic CRM
       dateTime: endTime.toISOString(),
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     },
-    attendees: lead.email ? [{ email: lead.email }] : [],
+    attendees: patient.email ? [{ email: patient.email }] : [],
     conferenceData: {
       createRequest: {
-        requestId: `clinic-meeting-${lead.id}-${Date.now()}`,
+        requestId: `clinic-meeting-${patient.id}-${Date.now()}`,
         conferenceSolutionKey: { type: 'hangoutsMeet' },
       },
     },
@@ -518,8 +518,8 @@ Creado por Clinic CRM
       start: scheduledAt,
       end: endTime,
       meetLink,
-      attendees: lead.email ? [lead.email] : [],
-      leadId: lead.id,
+      attendees: patient.email ? [patient.email] : [],
+      leadId: patient.id,
       syncedWithGoogle: true,
       googleEventId: googleEvent.id,
     }

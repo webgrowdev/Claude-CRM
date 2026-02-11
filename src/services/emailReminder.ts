@@ -1,7 +1,7 @@
 // Email Reminder Service
 // This service handles sending reminder emails before appointments and meetings
 
-import { FollowUp, Lead } from '@/types'
+import { FollowUp, Patient } from '@/types'
 
 export interface ReminderEmailData {
   patientName: string
@@ -160,22 +160,22 @@ export function shouldSendReminder(scheduledAt: Date): boolean {
 
 // Get all follow-ups that need reminders
 export function getFollowUpsNeedingReminders(
-  leads: Lead[],
+  patients: Patient[],
   types: ('meeting' | 'appointment')[] = ['meeting', 'appointment']
-): Array<{ lead: Lead; followUp: FollowUp }> {
-  const result: Array<{ lead: Lead; followUp: FollowUp }> = []
+): Array<{ patient: Patient; followUp: FollowUp }> {
+  const result: Array<{ patient: Patient; followUp: FollowUp }> = []
 
-  leads.forEach(lead => {
-    lead.followUps.forEach(followUp => {
+  patients.forEach(patient => {
+    patient.followUps.forEach(followUp => {
       if (
         !followUp.completed &&
         !followUp.reminderSent &&
         types.includes(followUp.type as 'meeting' | 'appointment') &&
         (followUp.type === 'meeting' || followUp.type === 'appointment') &&
-        lead.email &&
+        patient.email &&
         shouldSendReminder(new Date(followUp.scheduledAt))
       ) {
-        result.push({ lead, followUp })
+        result.push({ patient, followUp })
       }
     })
   })

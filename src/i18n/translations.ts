@@ -49,6 +49,12 @@ export const translations = {
       manageInReception: 'Gestionar en Recepción',
     },
 
+    // View modes
+    views: {
+      list: 'Lista',
+      kanban: 'Kanban',
+    },
+
     // Funnel Statuses
     funnel: {
       new: 'Nuevo',
@@ -367,6 +373,7 @@ export const translations = {
       markAsNoShow: 'Marcar como No Asistió',
       markAsRescheduled: 'Reprogramar',
       viewPatientProfile: 'Ver perfil del paciente',
+      nextPatient: 'Próximo Paciente',
     },
 
     // Reports
@@ -519,6 +526,12 @@ export const translations = {
       newLead: 'New Lead',
       scheduleAppointment: 'Schedule Appointment',
       manageInReception: 'Manage in Reception',
+    },
+
+    // View modes
+    views: {
+      list: 'List',
+      kanban: 'Kanban',
     },
 
     // Funnel Statuses
@@ -836,6 +849,11 @@ export const translations = {
       markAttendance: 'Mark Attendance',
       currentStatus: 'Current status',
       markAsAttended: 'Mark as Attended',
+      markAsNoShow: 'Mark as No Show',
+      markAsRescheduled: 'Reschedule',
+      viewPatientProfile: 'View patient profile',
+      nextPatient: 'Next Patient',
+    },
       markAsNoShow: 'Mark as No Show',
       markAsRescheduled: 'Reschedule',
       viewPatientProfile: 'View patient profile',

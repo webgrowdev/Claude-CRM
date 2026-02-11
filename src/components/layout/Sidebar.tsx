@@ -13,7 +13,6 @@ import {
   LogOut,
   Plus,
   ChevronDown,
-  Kanban,
   HelpCircle,
   MapPin,
   LayoutDashboard,
@@ -53,7 +52,6 @@ export function Sidebar() {
 
   // Secondary items
   const secondaryNavItems = [
-    { href: '/kanban', label: t.nav.pipeline, icon: Kanban },
     { href: '/treatments', label: t.nav.treatments, icon: Syringe },
     { href: '/settings', label: t.nav.settings, icon: Settings },
   ]

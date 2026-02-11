@@ -153,6 +153,15 @@ export const translations = {
       identificationNumber: 'DNI / Número de Identificación',
       identificationPlaceholder: 'Ej: 12345678',
       source: 'Fuente',
+      treatmentsLabel: 'Tratamientos',
+      treatmentsPlaceholder: 'Ej: Botox, Rellenos',
+      notesLabel: 'Notas',
+      notesPlaceholder: 'Notas adicionales sobre el paciente...',
+      createPatient: 'Crear Paciente',
+      creating: 'Creando...',
+      required: 'Campo requerido',
+      invalidEmail: 'Email inválido',
+      invalidPhone: 'Teléfono inválido (mínimo 8 dígitos)',
     },
 
     // Sources
@@ -632,6 +641,15 @@ export const translations = {
       identificationNumber: 'ID / Identification Number',
       identificationPlaceholder: 'E.g.: 12345678',
       source: 'Source',
+      treatmentsLabel: 'Treatments',
+      treatmentsPlaceholder: 'E.g.: Botox, Fillers',
+      notesLabel: 'Notes',
+      notesPlaceholder: 'Additional notes about the patient...',
+      createPatient: 'Create Patient',
+      creating: 'Creating...',
+      required: 'Required field',
+      invalidEmail: 'Invalid email',
+      invalidPhone: 'Invalid phone (minimum 8 digits)',
     },
 
     // Sources
@@ -853,10 +871,6 @@ export const translations = {
       markAsRescheduled: 'Reschedule',
       viewPatientProfile: 'View patient profile',
       nextPatient: 'Next Patient',
-    },
-      markAsNoShow: 'Mark as No Show',
-      markAsRescheduled: 'Reschedule',
-      viewPatientProfile: 'View patient profile',
     },
 
     // Reports

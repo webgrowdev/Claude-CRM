@@ -609,15 +609,14 @@ export interface WhatsAppMessage {
   sentAt: Date
   status: 'sent' | 'delivered' | 'read' | 'failed'
   error?: string
-  // Backwards compatibility
-  /** @deprecated Use patientId instead */
-  leadId?: string
-}
   sentBy: string
   delivered?: boolean
   read?: boolean
   response?: string
   responseAt?: Date
+  // Backwards compatibility
+  /** @deprecated Use patientId instead */
+  leadId?: string
 }
 
 // =============================================

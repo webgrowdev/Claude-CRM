@@ -27,7 +27,7 @@ import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Card, Select } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
 import { formatCurrency, getSourceLabel } from '@/lib/utils'
-import { LeadSource } from '@/types'
+import { LeadSource, FunnelStatus } from '@/types'
 
 const COLORS = {
   instagram: '#E1306C',
@@ -72,31 +72,31 @@ export default function ReportsPage() {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1)
     }
 
-    const periodLeads = state.leads.filter(
-      (l) => new Date(l.createdAt) >= startDate
+    const periodPatients = state.patients.filter(
+      (p) => new Date(p.createdAt) >= startDate
     )
 
-    const totalLeads = periodLeads.length
-    const closedLeads = periodLeads.filter((l) => l.status === 'closed')
-    const lostLeads = periodLeads.filter((l) => l.status === 'lost')
-    const contactedLeads = periodLeads.filter(
-      (l) => l.status !== 'new'
+    const totalPatients = periodPatients.length
+    const closedPatients = periodPatients.filter((p) => p.status === 'closed')
+    const lostPatients = periodPatients.filter((p) => p.status === 'lost')
+    const contactedPatients = periodPatients.filter(
+      (p) => p.status !== 'new'
     ).length
-    const scheduledLeads = periodLeads.filter(
-      (l) => l.status === 'scheduled' || l.status === 'closed'
+    const scheduledPatients = periodPatients.filter(
+      (p) => p.status === 'scheduled' || p.status === 'closed'
     ).length
 
     const conversionRate =
-      totalLeads > 0 ? (closedLeads.length / totalLeads) * 100 : 0
+      totalPatients > 0 ? (closedPatients.length / totalPatients) * 100 : 0
 
-    const totalValue = closedLeads.reduce((sum, l) => sum + (l.value || 0), 0)
+    const totalValue = closedPatients.reduce((sum, p) => sum + (p.value || 0), 0)
 
     // Calculate average close time
-    const closeTimes = closedLeads
-      .filter((l) => l.closedAt)
-      .map((l) => {
-        const created = new Date(l.createdAt).getTime()
-        const closed = new Date(l.closedAt!).getTime()
+    const closeTimes = closedPatients
+      .filter((p) => p.closedAt)
+      .map((p) => {
+        const created = new Date(p.createdAt).getTime()
+        const closed = new Date(p.closedAt!).getTime()
         return (closed - created) / (1000 * 60 * 60 * 24) // days
       })
     const avgCloseTime =
@@ -104,11 +104,11 @@ export default function ReportsPage() {
         ? closeTimes.reduce((a, b) => a + b, 0) / closeTimes.length
         : 0
 
-    // Lead sources
+    // Patient sources
     const sourceData = Object.entries(
-      periodLeads.reduce(
-        (acc, lead) => {
-          acc[lead.source] = (acc[lead.source] || 0) + 1
+      periodPatients.reduce(
+        (acc, patient) => {
+          acc[patient.source] = (acc[patient.source] || 0) + 1
           return acc
         },
         {} as Record<LeadSource, number>
@@ -116,40 +116,40 @@ export default function ReportsPage() {
     ).map(([source, count]) => ({
       source: source as LeadSource,
       count,
-      percentage: totalLeads > 0 ? (count / totalLeads) * 100 : 0,
+      percentage: totalPatients > 0 ? (count / totalPatients) * 100 : 0,
     }))
 
     // Funnel data
     const funnelData = [
-      { stage: 'Nuevos', count: totalLeads, percentage: 100 },
+      { stage: 'Nuevos', count: totalPatients, percentage: 100 },
       {
         stage: 'Contactados',
-        count: contactedLeads,
-        percentage: totalLeads > 0 ? (contactedLeads / totalLeads) * 100 : 0,
+        count: contactedPatients,
+        percentage: totalPatients > 0 ? (contactedPatients / totalPatients) * 100 : 0,
       },
       {
         stage: 'Agendados',
-        count: scheduledLeads,
-        percentage: totalLeads > 0 ? (scheduledLeads / totalLeads) * 100 : 0,
+        count: scheduledPatients,
+        percentage: totalPatients > 0 ? (scheduledPatients / totalPatients) * 100 : 0,
       },
       {
         stage: 'Cerrados',
-        count: closedLeads.length,
+        count: closedPatients.length,
         percentage: conversionRate,
       },
     ]
 
     return {
-      totalLeads,
-      closedLeads: closedLeads.length,
-      lostLeads: lostLeads.length,
+      totalPatients,
+      closedPatients: closedPatients.length,
+      lostPatients: lostPatients.length,
       conversionRate,
       totalValue,
       avgCloseTime,
       sourceData,
       funnelData,
     }
-  }, [state.leads, period])
+  }, [state.patients, period])
 
   const getSourceIcon = (source: LeadSource) => {
     switch (source) {
@@ -183,9 +183,9 @@ export default function ReportsPage() {
           <Card>
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs text-slate-500">Total Leads</p>
+                <p className="text-xs text-slate-500">Total Pacientes</p>
                 <p className="text-2xl font-bold text-slate-800 mt-1">
-                  {stats.totalLeads}
+                  {stats.totalPatients}
                 </p>
               </div>
               <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
@@ -213,7 +213,7 @@ export default function ReportsPage() {
               <div>
                 <p className="text-xs text-slate-500">Ventas Cerradas</p>
                 <p className="text-2xl font-bold text-slate-800 mt-1">
-                  {stats.closedLeads}
+                  {stats.closedPatients}
                 </p>
               </div>
               <div className="w-10 h-10 rounded-lg bg-success-100 flex items-center justify-center">
@@ -244,11 +244,11 @@ export default function ReportsPage() {
             {formatCurrency(stats.totalValue)}
           </p>
           <div className="flex items-center gap-1 mt-2 text-primary-100 text-sm">
-            {stats.closedLeads > 0 ? (
+            {stats.closedPatients > 0 ? (
               <>
                 <TrendingUp className="w-4 h-4" />
                 <span>
-                  {stats.closedLeads} ventas cerradas
+                  {stats.closedPatients} ventas cerradas
                 </span>
               </>
             ) : (
@@ -284,10 +284,10 @@ export default function ReportsPage() {
             </div>
           </Card>
 
-          {/* Lead Sources */}
+          {/* Patient Sources */}
           <Card className="mt-4 mb-4">
             <h3 className="text-base lg:text-lg font-semibold text-slate-800 mb-4">
-              Fuentes de Leads
+              Fuentes de Pacientes
             </h3>
 
             {stats.sourceData.length === 0 ? (

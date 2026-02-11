@@ -43,7 +43,7 @@ export function Sidebar() {
       href: '/inbox',
       label: t.nav.inbox,
       icon: Inbox,
-      badge: state.leads.filter(l => l.status === 'new').length || undefined
+      badge: state.patients.filter(p => p.status === 'new').length || undefined
     },
     { href: '/appointments', label: t.nav.appointments, icon: MapPin },
     { href: '/calendar', label: t.nav.calendar, icon: CalendarDays },

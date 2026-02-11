@@ -60,7 +60,7 @@ export function BottomNav() {
   const navItems = [
     {
       href: '/dashboard',
-      label: language === 'es' ? 'Inicio' : 'Home',
+      label: t.nav.home,
       icon: LayoutDashboard,
       badge: undefined,
       accentColor: 'primary'
@@ -75,7 +75,7 @@ export function BottomNav() {
     },
     {
       href: '/appointments',
-      label: language === 'es' ? 'Citas' : 'Appointments',
+      label: t.nav.appointments,
       icon: MapPin,
       badge: todayAppointmentsCount || undefined,
       badgeColor: 'bg-purple-500',

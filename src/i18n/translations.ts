@@ -35,7 +35,9 @@ export const translations = {
       patients: 'Pacientes',
       pipeline: 'Embudo',
       calendar: 'Agenda',
-      appointments: 'Citas',
+      calendarDescription: 'Tu calendario de actividades',
+      appointments: 'Recepción',
+      appointmentsDescription: 'Gestión de citas presenciales',
       reports: 'Reportes',
       treatments: 'Tratamientos',
       settings: 'Configuración',
@@ -44,6 +46,7 @@ export const translations = {
       newPatient: 'Nuevo Paciente',
       newLead: 'Nuevo Lead',
       scheduleAppointment: 'Agendar Turno',
+      manageInReception: 'Gestionar en Recepción',
     },
 
     // Funnel Statuses
@@ -212,6 +215,7 @@ export const translations = {
     // Calendar
     calendar: {
       title: 'Agenda',
+      subtitle: 'Tu calendario de actividades',
       today: 'Hoy',
       noEventsToday: 'No hay eventos para hoy',
       upcomingEvents: 'Próximos eventos',
@@ -344,7 +348,8 @@ export const translations = {
 
     // Appointments
     appointments: {
-      title: 'Citas Presenciales',
+      title: 'Recepción',
+      subtitle: 'Gestión de citas presenciales',
       searchByNameOrId: 'Buscar por nombre o DNI...',
       pending: 'Pendiente',
       attended: 'Asistió',
@@ -501,8 +506,10 @@ export const translations = {
       inbox: 'Inbox',
       patients: 'Patients',
       pipeline: 'Funnel',
-      calendar: 'Calendar',
-      appointments: 'Appointments',
+      calendar: 'Agenda',
+      calendarDescription: 'Your activity calendar',
+      appointments: 'Reception',
+      appointmentsDescription: 'In-person appointment management',
       reports: 'Reports',
       treatments: 'Treatments',
       settings: 'Settings',
@@ -511,6 +518,7 @@ export const translations = {
       newPatient: 'New Patient',
       newLead: 'New Lead',
       scheduleAppointment: 'Schedule Appointment',
+      manageInReception: 'Manage in Reception',
     },
 
     // Funnel Statuses
@@ -678,7 +686,8 @@ export const translations = {
 
     // Calendar
     calendar: {
-      title: 'Calendar',
+      title: 'Agenda',
+      subtitle: 'Your activity calendar',
       today: 'Today',
       noEventsToday: 'No events for today',
       upcomingEvents: 'Upcoming events',
@@ -811,7 +820,8 @@ export const translations = {
 
     // Appointments
     appointments: {
-      title: 'In-Person Appointments',
+      title: 'Reception',
+      subtitle: 'In-person appointment management',
       searchByNameOrId: 'Search by name or ID...',
       pending: 'Pending',
       attended: 'Attended',

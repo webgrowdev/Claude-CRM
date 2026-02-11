@@ -41,7 +41,7 @@ import {
   getPhoneUrl,
   cn,
 } from '@/lib/utils'
-import { Lead } from '@/types'
+import { Patient, FunnelStatus } from '@/types'
 
 // ====== Colores para las cards de stats ======
 const colorClasses = {
@@ -64,7 +64,7 @@ type StatCard = {
 }
 
 export default function DashboardPage() {
-  const { state, getRecentLeads, getUpcomingFollowUps } = useApp()
+  const { state, getRecentPatients, getUpcomingFollowUps } = useApp()
   const { t, language } = useLanguage()
   const getFollowUpTypeLabel = (type: string) => {
     const key = `type${type.charAt(0).toUpperCase()}${type.slice(1)}`
@@ -72,7 +72,7 @@ export default function DashboardPage() {
     return dict[key] ?? type
   }
 
-  const recentLeads = useMemo(() => getRecentLeads(4), [getRecentLeads])
+  const recentPatients = useMemo(() => getRecentPatients(4), [getRecentPatients])
   const upcomingFollowUps = useMemo(
     () => getUpcomingFollowUps().slice(0, 3),
     [getUpcomingFollowUps]
@@ -84,24 +84,24 @@ export default function DashboardPage() {
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-    const newLeads = state.leads.filter((l) => l.status === 'new').length
+    const newLeads = state.patients.filter((p) => p.status === 'new').length
     const followUpsDue = upcomingFollowUps.filter(
       (f) => new Date(f.followUp.scheduledAt) <= now
     ).length
-    const closedThisWeek = state.leads.filter(
-      (l) =>
-        l.status === 'closed' &&
-        l.closedAt &&
-        new Date(l.closedAt) >= weekAgo
+    const closedThisWeek = state.patients.filter(
+      (p) =>
+        p.status === 'converted' &&
+        p.closedAt &&
+        new Date(p.closedAt) >= weekAgo
     ).length
-    const totalLeads = state.leads.length
-    const closedTotal = state.leads.filter((l) => l.status === 'closed').length
+    const totalLeads = state.patients.length
+    const closedTotal = state.patients.filter((p) => p.status === 'converted').length
     const conversionRate =
       totalLeads > 0 ? Math.round((closedTotal / totalLeads) * 100) : 0
 
     // Turnos / citas de HOY
-    const todayAppointments = state.leads.reduce((count, lead) => {
-      const todayFollowUps = lead.followUps.filter((fu) => {
+    const todayAppointments = state.patients.reduce((count, patient) => {
+      const todayFollowUps = patient.followUps.filter((fu) => {
         const fuDate = new Date(fu.scheduledAt)
         return (
           fuDate >= today &&
@@ -113,7 +113,7 @@ export default function DashboardPage() {
     }, 0)
 
     return { newLeads, followUpsDue, closedThisWeek, conversionRate, todayAppointments }
-  }, [state.leads, upcomingFollowUps])
+  }, [state.patients, upcomingFollowUps])
 
   // ====== Cards de stats que se muestran arriba ======
   const statsCards: StatCard[] = [
@@ -186,24 +186,24 @@ export default function DashboardPage() {
     const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000)
 
     // Hot leads (new or contacted leads)
-    const hotLeads = state.leads
-      .filter((l) => l.status === 'new' || l.status === 'contacted')
+    const hotLeads = state.patients
+      .filter((p) => p.status === 'new' || p.status === 'contacted')
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 3)
 
     // Leads sin contactar por más de 48h
-    const urgentLeads = state.leads
+    const urgentLeads = state.patients
       .filter(
-        (l) =>
-          l.status === 'new' &&
-          new Date(l.createdAt) < fortyEightHoursAgo
+        (p) =>
+          p.status === 'new' &&
+          new Date(p.createdAt) < fortyEightHoursAgo
       )
       .slice(0, 3)
 
     // Citas sin confirmar
-    const unconfirmedAppointments = state.leads
-      .reduce((acc, lead) => {
-        const unconfirmed = lead.followUps.filter(
+    const unconfirmedAppointments = state.patients
+      .reduce((acc, patient) => {
+        const unconfirmed = patient.followUps.filter(
           (fu) =>
             (fu.type === 'meeting' || fu.type === 'appointment') &&
             !fu.completed &&
@@ -212,28 +212,28 @@ export default function DashboardPage() {
         )
         return [
           ...acc,
-          ...unconfirmed.map((fu) => ({ lead, followUp: fu })),
+          ...unconfirmed.map((fu) => ({ patient, followUp: fu })),
         ]
-      }, [] as { lead: Lead; followUp: any }[])
+      }, [] as { patient: Patient; followUp: any }[])
       .slice(0, 3)
 
     // Seguimientos vencidos
-    const overdueFollowUps = state.leads
-      .reduce((acc, lead) => {
-        const overdue = lead.followUps.filter(
+    const overdueFollowUps = state.patients
+      .reduce((acc, patient) => {
+        const overdue = patient.followUps.filter(
           (fu) =>
             !fu.completed &&
             new Date(fu.scheduledAt) < now
         )
         return [
           ...acc,
-          ...overdue.map((fu) => ({ lead, followUp: fu })),
+          ...overdue.map((fu) => ({ patient, followUp: fu })),
         ]
-      }, [] as { lead: Lead; followUp: any }[])
+      }, [] as { patient: Patient; followUp: any }[])
       .slice(0, 3)
 
     return { hotLeads, urgentLeads, unconfirmedAppointments, overdueFollowUps }
-  }, [state.leads, state.treatments])
+  }, [state.patients, state.treatments])
 
   const getSourceIcon = (source: string) => {
     switch (source) {
@@ -305,20 +305,20 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    {insights.hotLeads.map((lead) => (
+                    {insights.hotLeads.map((patient) => (
                       <div
-                        key={lead.id}
+                        key={patient.id}
                         className="flex items-center justify-between bg-white/60 rounded-xl p-3"
                       >
                         <div className="flex items-center gap-3">
-                          <Avatar name={lead.name} size="sm" />
+                          <Avatar name={patient.name} size="sm" />
                           <div>
                             <p className="font-medium text-slate-800 text-sm">
-                              {lead.name}
+                              {patient.name}
                             </p>
                             <div className="flex items-center gap-2">
                               <span className="text-xs text-slate-500">
-                                {lead.treatments[0] ||
+                                {patient.treatments[0] ||
                                   (language === 'es'
                                     ? 'Sin tratamiento'
                                     : 'No treatment')}
@@ -328,7 +328,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="flex items-center gap-1">
                           <a
-                            href={getWhatsAppUrl(lead.phone)}
+                            href={getWhatsAppUrl(patient.phone)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="p-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors"
@@ -337,7 +337,7 @@ export default function DashboardPage() {
                             <MessageCircle className="w-4 h-4" />
                           </a>
                           <a
-                            href={getPhoneUrl(lead.phone)}
+                            href={getPhoneUrl(patient.phone)}
                             className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
                             onClick={(e) => e.stopPropagation()}
                           >
@@ -379,25 +379,25 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    {insights.urgentLeads.map((lead) => (
+                    {insights.urgentLeads.map((patient) => (
                       <div
-                        key={lead.id}
+                        key={patient.id}
                         className="flex items-center justify-between bg-white/60 rounded-xl p-3"
                       >
                         <div className="flex items-center gap-3">
-                          <Avatar name={lead.name} size="sm" />
+                          <Avatar name={patient.name} size="sm" />
                           <div>
                             <p className="font-medium text-slate-800 text-sm">
-                              {lead.name}
+                              {patient.name}
                             </p>
                             <p className="text-xs text-red-500">
-                              {formatTimeAgo(new Date(lead.createdAt))}
+                              {formatTimeAgo(new Date(patient.createdAt))}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-1">
                           <a
-                            href={getWhatsAppUrl(lead.phone)}
+                            href={getWhatsAppUrl(patient.phone)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="p-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors"
@@ -405,7 +405,7 @@ export default function DashboardPage() {
                             <MessageCircle className="w-4 h-4" />
                           </a>
                           <a
-                            href={getPhoneUrl(lead.phone)}
+                            href={getPhoneUrl(patient.phone)}
                             className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
                           >
                             <Phone className="w-4 h-4" />
@@ -448,10 +448,10 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    {insights.overdueFollowUps.map(({ lead, followUp }) => (
+                    {insights.overdueFollowUps.map(({ patient, followUp }) => (
                       <Link
                         key={followUp.id}
-                        href={`/pacientes?selected=${lead.id}`}
+                        href={`/pacientes?selected=${patient.id}`}
                         className="flex items-center justify-between bg-white/60 rounded-xl p-3 hover:bg-white/80 transition-colors"
                       >
                         <div className="flex items-center gap-3">
@@ -460,7 +460,7 @@ export default function DashboardPage() {
                           </div>
                           <div>
                             <p className="font-medium text-slate-800 text-sm">
-                              {lead.name}
+                              {patient.name}
                             </p>
                             <p className="text-xs text-amber-600">
                               {language === 'es'
@@ -511,16 +511,16 @@ export default function DashboardPage() {
                   </div>
                   <div className="space-y-2">
                     {insights.unconfirmedAppointments.map(
-                      ({ lead, followUp }) => (
+                      ({ patient, followUp }) => (
                         <div
                           key={followUp.id}
                           className="flex items-center justify-between bg-white/60 rounded-xl p-3"
                         >
                           <div className="flex items-center gap-3">
-                            <Avatar name={lead.name} size="sm" />
+                            <Avatar name={patient.name} size="sm" />
                             <div>
                               <p className="font-medium text-slate-800 text-sm">
-                                {lead.name}
+                                {patient.name}
                               </p>
                               <p className="text-xs text-purple-600">
                                 {formatRelativeDate(
@@ -531,10 +531,10 @@ export default function DashboardPage() {
                           </div>
                           <a
                             href={getWhatsAppUrl(
-                              lead.phone,
+                              patient.phone,
                               language === 'es'
-                                ? `Hola ${lead.name}, te escribo para confirmar tu cita.`
-                                : `Hi ${lead.name}, I'm writing to confirm your appointment.`
+                                ? `Hola ${patient.name}, te escribo para confirmar tu cita.`
+                                : `Hi ${patient.name}, I'm writing to confirm your appointment.`
                             )}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -622,7 +622,7 @@ export default function DashboardPage() {
             </div>
 
             <Card padding="none">
-              {recentLeads.length === 0 ? (
+              {recentPatients.length === 0 ? (
                 <div className="py-8 text-center">
                   <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
                     <UserPlus className="w-8 h-8 text-slate-300" />
@@ -643,43 +643,43 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">
-                  {recentLeads.map((lead) => (
+                  {recentPatients.map((patient) => (
                     <Link
-                      key={lead.id}
-                      href={`/pacientes?selected=${lead.id}`}
+                      key={patient.id}
+                      href={`/pacientes?selected=${patient.id}`}
                       className="flex items-center gap-3 p-4 hover:bg-slate-50 transition-colors"
                     >
-                      <Avatar name={lead.name} size="md" />
+                      <Avatar name={patient.name} size="md" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="font-medium text-slate-800 truncate">
-                            {lead.name}
+                            {patient.name}
                           </p>
                           <Badge
                             variant={
-                              lead.status === 'new'
+                              patient.status === 'new'
                                 ? 'primary'
-                                : lead.status === 'contacted'
+                                : patient.status === 'contacted'
                                   ? 'warning'
-                                  : lead.status === 'scheduled'
+                                  : patient.status === 'appointment'
                                     ? 'default'
-                                    : lead.status === 'closed'
+                                    : patient.status === 'converted'
                                       ? 'success'
                                       : 'error'
                             }
                             size="sm"
                           >
-                            {t.status[lead.status] || lead.status}
+                            {t.status[patient.status] || patient.status}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="flex items-center gap-1 text-xs text-slate-500">
-                            {getSourceIcon(lead.source)}
-                            {t.sources[lead.source] || lead.source}
+                            {getSourceIcon(patient.source)}
+                            {t.sources[patient.source] || patient.source}
                           </span>
                           <span className="text-slate-300">•</span>
                           <span className="text-xs text-slate-400">
-                            {formatTimeAgo(new Date(lead.createdAt))}
+                            {formatTimeAgo(new Date(patient.createdAt))}
                           </span>
                         </div>
                       </div>
@@ -727,10 +727,10 @@ export default function DashboardPage() {
               </div>
             ) : (
               <div className="divide-y divide-slate-100">
-                {upcomingFollowUps.map(({ lead, followUp }) => (
+                {upcomingFollowUps.map(({ patient, followUp }) => (
                   <Link
                     key={followUp.id}
-                    href={`/pacientes?selected=${lead.id}`}
+                    href={`/pacientes?selected=${patient.id}`}
                     className="flex items-center gap-3 p-4 hover:bg-slate-50 transition-colors"
                   >
                     <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
@@ -738,7 +738,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-slate-800 truncate">
-                        {lead.name}
+                        {patient.name}
                       </p>
                         <p className="text-sm text-slate-500">
                           {getFollowUpTypeLabel(followUp.type)}
@@ -770,9 +770,9 @@ export default function DashboardPage() {
               </p>
               <p className="text-2xl lg:text-4xl font-bold mt-1">
                 {formatCurrency(
-                  state.leads
-                    .filter((l) => l.status === 'closed' && l.value)
-                    .reduce((sum, l) => sum + (l.value || 0), 0)
+                  state.patients
+                    .filter((p) => p.status === 'converted' && p.value)
+                    .reduce((sum, p) => sum + (p.value || 0), 0)
                 )}
               </p>
             </div>
@@ -783,7 +783,7 @@ export default function DashboardPage() {
           <div className="mt-4 pt-4 border-t border-white/20">
             <div className="flex justify-between text-sm lg:text-base">
               <span className="text-primary-100">
-                {state.leads.filter((l) => l.status === 'closed').length}{' '}
+                {state.patients.filter((p) => p.status === 'converted').length}{' '}
                 {language === 'es'
                   ? 'ventas cerradas'
                   : 'closed sales'}

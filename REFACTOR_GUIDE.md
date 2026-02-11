@@ -372,6 +372,8 @@ This document outlines the remaining work for the comprehensive CRM refactor to 
 
 1. **Add Type Indicators** (`src/app/calendar/page.tsx`)
    ```typescript
+   import { cn } from '@/lib/utils'
+   
    const eventTypeConfig = {
      call: { icon: Phone, color: 'border-blue-500', bgColor: 'bg-blue-50', textColor: 'text-blue-700', label: '🔵 Llamada' },
      message: { icon: MessageCircle, color: 'border-purple-500', bgColor: 'bg-purple-50', textColor: 'text-purple-700', label: '💬 Mensaje' },

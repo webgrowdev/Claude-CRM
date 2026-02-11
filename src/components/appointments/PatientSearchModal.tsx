@@ -4,7 +4,7 @@ import React, { useState, useMemo } from 'react'
 import { Search, User, Phone, Calendar, Clock, X } from 'lucide-react'
 import { Modal, Input, Button, Avatar, Badge, Select } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
-import { Lead, Treatment, AppointmentStatus } from '@/types'
+import { Patient, Treatment, AppointmentStatus } from '@/types'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { es, enUS } from 'date-fns/locale'
@@ -20,7 +20,7 @@ export function PatientSearchModal({ isOpen, onClose, language = 'es' }: Patient
   const locale = language === 'es' ? es : enUS
   
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedPatient, setSelectedPatient] = useState<Lead | null>(null)
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [showAppointmentForm, setShowAppointmentForm] = useState(false)
   
   // Appointment form state
@@ -35,15 +35,15 @@ export function PatientSearchModal({ isOpen, onClose, language = 'es' }: Patient
     if (!searchQuery.trim()) return []
     
     const query = searchQuery.toLowerCase()
-    return state.leads.filter((lead) => {
-      const matchName = lead.name.toLowerCase().includes(query)
-      const matchPhone = lead.phone.toLowerCase().includes(query)
-      const matchId = lead.identificationNumber?.toLowerCase().includes(query)
+    return state.patients.filter((patient) => {
+      const matchName = patient.name.toLowerCase().includes(query)
+      const matchPhone = patient.phone.toLowerCase().includes(query)
+      const matchId = patient.identificationNumber?.toLowerCase().includes(query)
       return matchName || matchPhone || matchId
     })
-  }, [state.leads, searchQuery])
+  }, [state.patients, searchQuery])
 
-  const handlePatientSelect = (patient: Lead) => {
+  const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient)
     setShowAppointmentForm(true)
   }

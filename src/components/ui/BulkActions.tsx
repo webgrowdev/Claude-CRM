@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { Button, Modal, Select } from '@/components/ui'
 import { useLanguage } from '@/i18n/LanguageContext'
-import { LeadStatus } from '@/types'
+import { FunnelStatus } from '@/types'
 import { cn } from '@/lib/utils'
 
 interface BulkActionsBarProps {
@@ -23,7 +23,7 @@ interface BulkActionsBarProps {
   onSelectAll: () => void
   onDeselectAll: () => void
   isAllSelected: boolean
-  onChangeStatus?: (status: LeadStatus) => void
+  onChangeStatus?: (status: FunnelStatus) => void
   onDelete?: () => void
   onExport?: () => void
   onSendMessage?: () => void
@@ -45,7 +45,7 @@ export function BulkActionsBar({
   const { language } = useLanguage()
   const [showStatusModal, setShowStatusModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [selectedStatus, setSelectedStatus] = useState<LeadStatus>('contacted')
+  const [selectedStatus, setSelectedStatus] = useState<FunnelStatus>('contacted')
 
   const t = {
     selected: language === 'es' ? 'seleccionados' : 'selected',
@@ -177,7 +177,7 @@ export function BulkActionsBar({
           <Select
             label={t.newStatus}
             value={selectedStatus}
-            onChange={(value) => setSelectedStatus(value as LeadStatus)}
+            onChange={(value) => setSelectedStatus(value as FunnelStatus)}
             options={[
               { value: 'new', label: t.statuses.new },
               { value: 'contacted', label: t.statuses.contacted },

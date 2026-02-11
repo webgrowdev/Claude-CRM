@@ -6,12 +6,12 @@ import { format, addDays, setHours, setMinutes, startOfDay } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { Card, Button, Avatar } from '@/components/ui'
 import { SlotPicker, TimeSlot } from './SlotPicker'
-import { Lead, FollowUpType, FollowUp } from '@/types'
+import { Patient, FollowUpType, FollowUp } from '@/types'
 import { useApp } from '@/contexts/AppContext'
 import { generateId } from '@/lib/utils'
 
 interface QuickBookingBarProps {
-  onBookingComplete?: (leadId: string, followUp: FollowUp) => void
+  onBookingComplete?: (patientId: string, followUp: FollowUp) => void
   language?: 'es' | 'en'
 }
 
@@ -19,7 +19,7 @@ export function QuickBookingBar({ onBookingComplete, language = 'es' }: QuickBoo
   const { state, addFollowUp } = useApp()
   const [searchQuery, setSearchQuery] = useState('')
   const [showResults, setShowResults] = useState(false)
-  const [selectedPatient, setSelectedPatient] = useState<Lead | null>(null)
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [selectedType, setSelectedType] = useState<FollowUpType>('appointment')
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null)
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -49,20 +49,20 @@ export function QuickBookingBar({ onBookingComplete, language = 'es' }: QuickBoo
     if (!searchQuery.trim()) return []
 
     const query = searchQuery.toLowerCase()
-    return state.leads.filter(
-      (lead) =>
-        lead.name.toLowerCase().includes(query) ||
-        lead.phone.includes(query) ||
-        lead.identificationNumber?.toLowerCase().includes(query) ||
-        lead.email?.toLowerCase().includes(query)
+    return state.patients.filter(
+      (patient) =>
+        patient.name.toLowerCase().includes(query) ||
+        patient.phone.includes(query) ||
+        patient.identificationNumber?.toLowerCase().includes(query) ||
+        patient.email?.toLowerCase().includes(query)
     ).slice(0, 5) // Limit to 5 results
-  }, [searchQuery, state.leads])
+  }, [searchQuery, state.patients])
 
   // Get occupied slots for selected date
   const occupiedSlots = useMemo(() => {
     const slots: TimeSlot[] = []
-    state.leads.forEach((lead) => {
-      lead.followUps
+    state.patients.forEach((patient) => {
+      patient.followUps
         .filter((fu) => !fu.completed && fu.type === 'appointment')
         .forEach((fu) => {
           const fuDate = new Date(fu.scheduledAt)
@@ -77,7 +77,7 @@ export function QuickBookingBar({ onBookingComplete, language = 'es' }: QuickBoo
         })
     })
     return slots
-  }, [state.leads, selectedDate])
+  }, [state.patients, selectedDate])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -90,7 +90,7 @@ export function QuickBookingBar({ onBookingComplete, language = 'es' }: QuickBoo
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const handlePatientSelect = (patient: Lead) => {
+  const handlePatientSelect = (patient: Patient) => {
     setSelectedPatient(patient)
     setSearchQuery(patient.name)
     setShowResults(false)
@@ -114,7 +114,7 @@ export function QuickBookingBar({ onBookingComplete, language = 'es' }: QuickBoo
         appointmentDate = setMinutes(setHours(startOfDay(selectedDate), 9), 0)
       }
 
-      const followUpData: Omit<FollowUp, 'id' | 'leadId' | 'completed'> = {
+      const followUpData: Omit<FollowUp, 'id' | 'patientId' | 'completed'> = {
         type: selectedType,
         scheduledAt: appointmentDate,
         duration: 30,

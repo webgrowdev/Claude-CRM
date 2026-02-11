@@ -373,17 +373,17 @@ This document outlines the remaining work for the comprehensive CRM refactor to 
 1. **Add Type Indicators** (`src/app/calendar/page.tsx`)
    ```typescript
    const eventTypeConfig = {
-     call: { icon: Phone, color: 'blue', label: '🔵 Llamada' },
-     message: { icon: MessageCircle, color: 'purple', label: '💬 Mensaje' },
-     meeting: { icon: Video, color: 'violet', label: '🟣 Videollamada' },
-     appointment: { icon: MapPin, color: 'green', label: '🟢 Cita presencial' }
+     call: { icon: Phone, color: 'border-blue-500', bgColor: 'bg-blue-50', textColor: 'text-blue-700', label: '🔵 Llamada' },
+     message: { icon: MessageCircle, color: 'border-purple-500', bgColor: 'bg-purple-50', textColor: 'text-purple-700', label: '💬 Mensaje' },
+     meeting: { icon: Video, color: 'border-violet-500', bgColor: 'bg-violet-50', textColor: 'text-violet-700', label: '🟣 Videollamada' },
+     appointment: { icon: MapPin, color: 'border-green-500', bgColor: 'bg-green-50', textColor: 'text-green-700', label: '🟢 Cita presencial' }
    }
    
-   // Use in rendering:
+   // Use in rendering with complete class names:
    const config = eventTypeConfig[item.type]
-   <div className={`border-l-4 border-${config.color}-500`}>
+   <div className={cn('border-l-4', config.color)}>
      <config.icon className="w-4 h-4" />
-     <span>{config.label}</span>
+     <span className={config.textColor}>{config.label}</span>
    </div>
    ```
 

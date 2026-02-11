@@ -373,19 +373,55 @@ This document outlines the remaining work for the comprehensive CRM refactor to 
 1. **Add Type Indicators** (`src/app/calendar/page.tsx`)
    ```typescript
    import { cn } from '@/lib/utils'
+   import { useLanguage } from '@/i18n'
+   
+   // Inside component:
+   const { t } = useLanguage()
    
    const eventTypeConfig = {
-     call: { icon: Phone, color: 'border-blue-500', bgColor: 'bg-blue-50', textColor: 'text-blue-700', label: '🔵 Llamada' },
-     message: { icon: MessageCircle, color: 'border-purple-500', bgColor: 'bg-purple-50', textColor: 'text-purple-700', label: '💬 Mensaje' },
-     meeting: { icon: Video, color: 'border-violet-500', bgColor: 'bg-violet-50', textColor: 'text-violet-700', label: '🟣 Videollamada' },
-     appointment: { icon: MapPin, color: 'border-green-500', bgColor: 'bg-green-50', textColor: 'text-green-700', label: '🟢 Cita presencial' }
+     call: { 
+       icon: Phone, 
+       color: 'border-blue-500', 
+       bgColor: 'bg-blue-50', 
+       textColor: 'text-blue-700', 
+       labelKey: 'call' as const 
+     },
+     message: { 
+       icon: MessageCircle, 
+       color: 'border-purple-500', 
+       bgColor: 'bg-purple-50', 
+       textColor: 'text-purple-700', 
+       labelKey: 'message' as const 
+     },
+     meeting: { 
+       icon: Video, 
+       color: 'border-violet-500', 
+       bgColor: 'bg-violet-50', 
+       textColor: 'text-violet-700', 
+       labelKey: 'meeting' as const 
+     },
+     appointment: { 
+       icon: MapPin, 
+       color: 'border-green-500', 
+       bgColor: 'bg-green-50', 
+       textColor: 'text-green-700', 
+       labelKey: 'appointment' as const 
+     }
    }
    
-   // Use in rendering with complete class names:
+   // Add to translations.ts (calendar section):
+   // eventTypes: {
+   //   call: '🔵 Llamada' / '🔵 Call',
+   //   message: '💬 Mensaje' / '💬 Message',
+   //   meeting: '🟣 Videollamada' / '🟣 Video Call',
+   //   appointment: '🟢 Cita presencial' / '🟢 In-person Appointment'
+   // }
+   
+   // Use in rendering with translation keys:
    const config = eventTypeConfig[item.type]
    <div className={cn('border-l-4', config.color)}>
      <config.icon className="w-4 h-4" />
-     <span className={config.textColor}>{config.label}</span>
+     <span className={config.textColor}>{t.calendar.eventTypes[config.labelKey]}</span>
    </div>
    ```
 

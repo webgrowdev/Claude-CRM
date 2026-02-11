@@ -13,8 +13,8 @@ export type FunnelStatus =
   | 'lost'          // Perdido - No interesado
   | 'noshow'        // No asistió - Faltó a la cita
 
-// Legacy support - maps to new statuses
-// @deprecated Use appointment-based status model instead. Patient status should be derived from their appointments.
+// Legacy support - maps to new statuses (kept for backwards compatibility)
+// @deprecated Use FunnelStatus instead
 export type LeadStatus = 'new' | 'contacted' | 'scheduled' | 'closed' | 'lost'
 
 // Lead Source Types
@@ -44,7 +44,7 @@ export interface User {
 // PATIENT / LEAD TYPES
 // =============================================
 
-export interface Lead {
+export interface Patient {
   id: string
   name: string
   email?: string
@@ -52,9 +52,7 @@ export interface Lead {
   identificationNumber?: string // DNI, passport, or other ID
   identificationType?: 'dni' | 'passport' | 'other' // Type of ID document
   source: LeadSource
-  /** @deprecated Use appointment-based status model instead. Patient status should be derived from their appointments. */
-  status: LeadStatus
-  funnelStatus?: FunnelStatus // New expanded status
+  status: FunnelStatus // Unified status field using FunnelStatus
   treatments: string[]
   notes: Note[]
   followUps: FollowUp[]
@@ -83,8 +81,9 @@ export interface Lead {
   npsScore?: number
 }
 
-// Alias for clarity
-export type Patient = Lead
+// Backwards compatibility alias
+// @deprecated Use Patient instead
+export type Lead = Patient
 
 // =============================================
 // NOTE TYPES
@@ -101,13 +100,13 @@ export interface Note {
 // FOLLOW-UP TYPES
 // =============================================
 
-// Attendance status for in-person appointments (deprecated - use AppointmentStatus)
-export type AttendanceStatus = 'pending' | 'attended' | 'noshow' | 'cancelled' | 'rescheduled'
-
 // Appointment status type - used for both FollowUp and Appointment
 export type AppointmentStatus = 'pending' | 'confirmed' | 'completed' | 'no-show' | 'cancelled'
 
-// Alias for compatibility
+// Deprecated types - kept for backwards compatibility only
+// @deprecated Use AppointmentStatus instead
+export type AttendanceStatus = 'pending' | 'attended' | 'noshow' | 'cancelled' | 'rescheduled'
+// @deprecated Use AppointmentStatus instead
 export type AppointmentLevelStatus = AppointmentStatus
 
 // Treatment phase tracking
@@ -123,7 +122,7 @@ export interface TreatmentOutcome {
 
 export interface FollowUp {
   id: string
-  leadId: string
+  patientId: string // Changed from leadId to patientId
   type: FollowUpType
   scheduledAt: Date
   completed: boolean
@@ -151,6 +150,9 @@ export interface FollowUp {
   treatmentOutcome?: TreatmentOutcome
   sessionNumber?: number // e.g., 1 of 3
   totalSessions?: number // e.g., 3
+  // Backwards compatibility
+  /** @deprecated Use patientId instead */
+  leadId?: string
 }
 
 // =============================================
@@ -215,12 +217,15 @@ export type ActivityType =
 
 export interface Activity {
   id: string
-  leadId: string
+  patientId: string // Changed from leadId to patientId
   type: ActivityType
   description: string
   createdAt: Date
   createdBy: string
   metadata?: Record<string, unknown>
+  // Backwards compatibility
+  /** @deprecated Use patientId instead */
+  leadId?: string
 }
 
 // =============================================
@@ -251,8 +256,11 @@ export interface KanbanColumn {
   id: FunnelStatus
   title: string
   color: string
-  leads: Lead[]
+  patients: Patient[] // Changed from leads to patients
   count?: number
+  // Backwards compatibility
+  /** @deprecated Use patients instead */
+  leads?: Lead[]
 }
 
 // =============================================
@@ -318,9 +326,12 @@ export interface Notification {
   type: NotificationType
   read: boolean
   createdAt: Date
-  leadId?: string
+  patientId?: string // Changed from leadId to patientId
   appointmentId?: string
   actionUrl?: string
+  // Backwards compatibility
+  /** @deprecated Use patientId instead */
+  leadId?: string
 }
 
 // =============================================
@@ -467,7 +478,7 @@ export type PaymentStatus = 'pending' | 'partial' | 'paid' | 'refunded' | 'cance
 
 export interface Payment {
   id: string
-  leadId: string
+  patientId: string // Changed from leadId to patientId
   treatmentId?: string
   treatmentName?: string
   amount: number
@@ -482,11 +493,14 @@ export interface Payment {
   installmentNumber?: number
   totalInstallments?: number
   parentPaymentId?: string // Links installments together
+  // Backwards compatibility
+  /** @deprecated Use patientId instead */
+  leadId?: string
 }
 
 export interface PaymentPlan {
   id: string
-  leadId: string
+  patientId: string // Changed from leadId to patientId
   treatmentId: string
   totalAmount: number
   downPayment: number
@@ -495,6 +509,9 @@ export interface PaymentPlan {
   startDate: Date
   payments: Payment[]
   status: 'active' | 'completed' | 'defaulted' | 'cancelled'
+  // Backwards compatibility
+  /** @deprecated Use patientId instead */
+  leadId?: string
 }
 
 // =============================================
@@ -509,7 +526,7 @@ export interface SurveyQuestion {
 
 export interface SurveyResponse {
   id: string
-  leadId: string
+  patientId: string // Changed from leadId to patientId
   appointmentId?: string
   treatmentId?: string
   responses: {
@@ -522,6 +539,9 @@ export interface SurveyResponse {
   createdAt: Date
   sentAt?: Date
   completedAt?: Date
+  // Backwards compatibility
+  /** @deprecated Use patientId instead */
+  leadId?: string
 }
 
 // =============================================
@@ -583,10 +603,16 @@ export interface WhatsAppTemplate {
 
 export interface WhatsAppMessage {
   id: string
-  leadId: string
+  patientId: string // Changed from leadId to patientId
   templateId?: string
   content: string
   sentAt: Date
+  status: 'sent' | 'delivered' | 'read' | 'failed'
+  error?: string
+  // Backwards compatibility
+  /** @deprecated Use patientId instead */
+  leadId?: string
+}
   sentBy: string
   delivered?: boolean
   read?: boolean

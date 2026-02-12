@@ -46,10 +46,7 @@ import { useLanguage } from '@/i18n'
 import { cn } from '@/lib/utils'
 import { FollowUp, Patient, AttendanceStatus, AppointmentStatus } from '@/types'
 
-interface AppointmentWithPatient {
-  patient: Patient
-  followUp: FollowUp
-}
+import { Appointment, Patient, AttendanceStatus, AppointmentStatus } from '@/types'
 
 export default function AppointmentsPage() {
   const router = useRouter()
@@ -63,37 +60,23 @@ export default function AppointmentsPage() {
   const [showAttendanceModal, setShowAttendanceModal] = useState(false)
   const [showRescheduleModal, setShowRescheduleModal] = useState(false)
   const [showPatientSearchModal, setShowPatientSearchModal] = useState(false)
-  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithPatient | null>(null)
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'attended' | 'noshow'>('all')
   const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null)
   const [rescheduleTime, setRescheduleTime] = useState<string | null>(null)
   const [showCalendar, setShowCalendar] = useState(true)
 
-  // Get all in-person appointments (type === 'appointment')
+  // Get all in-person appointments from state.appointments (not from followUps)
   const allAppointments = useMemo(() => {
-    const appointments: AppointmentWithPatient[] = []
-    state.patients.forEach((patient) => {
-      patient.followUps
-        .filter((fu) => fu.type === 'appointment')
-        .forEach((followUp) => {
-          appointments.push({ patient, followUp })
-        })
-    })
-    return appointments.sort(
-      (a, b) => new Date(a.followUp.scheduledAt).getTime() - new Date(b.followUp.scheduledAt).getTime()
+    return state.appointments.sort(
+      (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
     )
-  }, [state.patients])
+  }, [state.appointments])
 
-  // Get all appointments and meetings for conflict checking in reschedule
+  // Get all appointments for conflict checking in reschedule
   const allScheduledEvents = useMemo(() => {
-    const events: FollowUp[] = []
-    state.patients.forEach((patient) => {
-      patient.followUps
-        .filter((fu) => (fu.type === 'appointment' || fu.type === 'meeting') && !fu.completed)
-        .forEach((fu) => events.push(fu))
-    })
-    return events
-  }, [state.patients])
+    return state.appointments.filter(apt => apt.status !== 'cancelled' && apt.status !== 'completed')
+  }, [state.appointments])
 
   // Filter appointments by search (name or DNI)
   const filteredAppointments = useMemo(() => {
@@ -102,18 +85,21 @@ export default function AppointmentsPage() {
     // Filter by search query (name or DNI)
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        ({ patient }) =>
-          patient.name.toLowerCase().includes(query) ||
-          patient.identificationNumber?.toLowerCase().includes(query) ||
-          patient.phone.includes(query)
-      )
+      // Need to look up patient by ID since Appointment has patientId
+      filtered = filtered.filter((apt) => {
+        const patient = state.patients.find(p => p.id === apt.patientId)
+        return (
+          apt.patientName.toLowerCase().includes(query) ||
+          patient?.identificationNumber?.toLowerCase().includes(query) ||
+          patient?.phone.includes(query)
+        )
+      })
     }
 
     // Filter by appointment status
     if (filterStatus !== 'all') {
-      filtered = filtered.filter(({ followUp }) => {
-        const status = followUp.appointmentStatus || 'pending'
+      filtered = filtered.filter((apt) => {
+        const status = apt.status || 'pending'
         // Map old filter values to new status
         if (filterStatus === 'attended') return status === 'completed'
         if (filterStatus === 'noshow') return status === 'no-show'
@@ -122,39 +108,39 @@ export default function AppointmentsPage() {
     }
 
     return filtered
-  }, [allAppointments, searchQuery, filterStatus])
+  }, [allAppointments, searchQuery, filterStatus, state.patients])
 
   // Get appointments for selected date
   const selectedDateAppointments = useMemo(() => {
     return filteredAppointments
-      .filter(({ followUp }) => isSameDay(new Date(followUp.scheduledAt), selectedDate))
+      .filter((apt) => isSameDay(new Date(apt.scheduledAt), selectedDate))
       .sort(
         (a, b) =>
-          new Date(a.followUp.scheduledAt).getTime() - new Date(b.followUp.scheduledAt).getTime()
+          new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
       )
   }, [filteredAppointments, selectedDate])
 
   // Today's stats
   const todayAppointments = useMemo(() => {
-    return allAppointments.filter(({ followUp }) => isSameDay(new Date(followUp.scheduledAt), new Date()))
+    return allAppointments.filter((apt) => isSameDay(new Date(apt.scheduledAt), new Date()))
   }, [allAppointments])
 
   const todayStats = useMemo(() => {
     const total = todayAppointments.length
-    const completed = todayAppointments.filter(a => a.followUp.appointmentStatus === 'completed').length
-    const noshow = todayAppointments.filter(a => a.followUp.appointmentStatus === 'no-show').length
-    const pending = todayAppointments.filter(a => !a.followUp.appointmentStatus || a.followUp.appointmentStatus === 'pending' || a.followUp.appointmentStatus === 'confirmed').length
+    const completed = todayAppointments.filter(a => a.status === 'completed').length
+    const noshow = todayAppointments.filter(a => a.status === 'no-show').length
+    const pending = todayAppointments.filter(a => !a.status || a.status === 'pending' || a.status === 'confirmed').length
     return { total, attended: completed, noshow, pending }
   }, [todayAppointments])
 
   // Days with appointments
   const daysWithAppointments = useMemo(() => {
     const days = new Map<string, { total: number; pending: number; attended: number; noshow: number }>()
-    allAppointments.forEach(({ followUp }) => {
-      const key = format(new Date(followUp.scheduledAt), 'yyyy-MM-dd')
+    allAppointments.forEach((apt) => {
+      const key = format(new Date(apt.scheduledAt), 'yyyy-MM-dd')
       const current = days.get(key) || { total: 0, pending: 0, attended: 0, noshow: 0 }
       current.total++
-      const status = followUp.appointmentStatus || 'pending'
+      const status = apt.status || 'pending'
       if (status === 'completed') current.attended++
       else if (status === 'no-show') current.noshow++
       else current.pending++

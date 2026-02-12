@@ -449,7 +449,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           patients = patientsWithData
         }
 
-        // Load appointments from API and merge into patients
+        // Load appointments from API (keep separate, do NOT merge into followUps)
         const appointmentsResponse = await fetch('/api/appointments?limit=1000', { headers })
         if (appointmentsResponse.ok) {
           const appointmentsData = await appointmentsResponse.json()
@@ -472,32 +472,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             color: a.doctor?.color,
           }))
           dispatch({ type: 'SET_APPOINTMENTS', payload: appointments })
-
-          // Merge appointments into patients as followUps
-          patients = patients.map(patient => {
-            const patientAppointments = appointments
-              .filter((apt: any) => apt.patientId === patient.id)
-              .map((apt: any) => ({
-                id: apt.id,
-                patientId: patient.id,
-                type: 'appointment' as const,
-                scheduledAt: apt.scheduledAt,
-                completed: apt.status === 'completed',
-                completedAt: apt.completedAt,
-                notes: apt.notes,
-                googleEventId: apt.googleEventId,
-                meetLink: apt.meetLink,
-                duration: apt.duration,
-                treatmentId: apt.treatmentId,
-                treatmentName: apt.treatmentName,
-                assignedTo: apt.doctorId,
-                appointmentStatus: apt.status as AppointmentStatus,
-              }))
-            return {
-              ...patient,
-              followUps: [...(patient.followUps || []), ...patientAppointments],
-            }
-          })
+          
+          // NOTE: Appointments are now kept separate in state.appointments
+          // They are NOT merged into patient.followUps anymore
+          // This allows proper separation between:
+          // - Appointments (in-person clinic visits) → managed in Recepción
+          // - FollowUps (calls, messages, meetings) → managed in Agenda
         }
 
         dispatch({ type: 'SET_PATIENTS', payload: patients })
@@ -1009,7 +989,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const upcoming: { patient: Patient; followUp: FollowUp }[] = []
     state.patients.forEach((patient) => {
       patient.followUps
-        .filter((fu) => !fu.completed)
+        .filter((fu) => !fu.completed && fu.type !== 'appointment') // Exclude appointments
         .forEach((followUp) => {
           upcoming.push({ patient, followUp })
         })

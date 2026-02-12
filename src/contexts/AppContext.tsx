@@ -988,7 +988,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const upcoming: { patient: Patient; followUp: FollowUp }[] = []
     state.patients.forEach((patient) => {
       patient.followUps
-        .filter((fu) => !fu.completed && fu.type !== 'appointment') // Exclude appointments
+        .filter((fu) => !fu.completed)
+        // Note: patient.followUps should NOT contain appointments anymore
+        // Appointments are stored separately in state.appointments
         .forEach((followUp) => {
           upcoming.push({ patient, followUp })
         })

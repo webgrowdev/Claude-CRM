@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { format, formatDistanceToNow, isToday, isYesterday, isTomorrow } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { LeadStatus, LeadSource } from '@/types'
+import { FunnelStatus, LeadSource } from '@/types'
 
 // Merge Tailwind classes
 export function cn(...inputs: ClassValue[]) {
@@ -42,37 +42,46 @@ export function formatPercentage(value: number): string {
 }
 
 // Get status display name
-export function getStatusLabel(status: LeadStatus): string {
-  const labels: Record<LeadStatus, string> = {
+export function getStatusLabel(status: FunnelStatus): string {
+  const labels: Record<FunnelStatus, string> = {
     new: 'Nuevo',
     contacted: 'Contactado',
-    scheduled: 'Agendado',
+    appointment: 'Turno agendado',
+    attended: 'Asistió',
     closed: 'Cerrado',
+    followup: 'Seguimiento',
     lost: 'Perdido',
+    noshow: 'No asistió',
   }
   return labels[status]
 }
 
 // Get status color
-export function getStatusColor(status: LeadStatus): string {
-  const colors: Record<LeadStatus, string> = {
+export function getStatusColor(status: FunnelStatus): string {
+  const colors: Record<FunnelStatus, string> = {
     new: 'bg-primary-100 text-primary-700',
     contacted: 'bg-warning-100 text-warning-700',
-    scheduled: 'bg-purple-100 text-purple-700',
+    appointment: 'bg-purple-100 text-purple-700',
+    attended: 'bg-blue-100 text-blue-700',
     closed: 'bg-success-100 text-success-700',
+    followup: 'bg-teal-100 text-teal-700',
     lost: 'bg-error-100 text-error-700',
+    noshow: 'bg-orange-100 text-orange-700',
   }
   return colors[status]
 }
 
 // Get status dot color
-export function getStatusDotColor(status: LeadStatus): string {
-  const colors: Record<LeadStatus, string> = {
+export function getStatusDotColor(status: FunnelStatus): string {
+  const colors: Record<FunnelStatus, string> = {
     new: 'bg-primary-500',
     contacted: 'bg-warning-500',
-    scheduled: 'bg-purple-500',
+    appointment: 'bg-purple-500',
+    attended: 'bg-blue-500',
     closed: 'bg-success-500',
+    followup: 'bg-teal-500',
     lost: 'bg-error-500',
+    noshow: 'bg-orange-500',
   }
   return colors[status]
 }

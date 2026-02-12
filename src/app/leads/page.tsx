@@ -1,52 +1,23 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import Link from 'next/link'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import {
-  Search,
-  Plus,
-  ChevronRight,
-  Instagram,
-  MessageCircle,
-  Phone,
-  Globe,
-  Users,
-  HelpCircle
-} from 'lucide-react'
-import { Header, PageContainer, AppShell } from '@/components/layout'
-import { Input, Card, Avatar, Badge, Tabs, EmptyState, Modal, Button, Select, TextArea } from '@/components/ui'
-import { useApp } from '@/contexts/AppContext'
-import { formatTimeAgo, getStatusLabel, getSourceLabel } from '@/lib/utils'
-import { FunnelStatus, LeadSource } from '@/types'
-
-const statusTabs = [
-  { id: 'all', label: 'Todos' },
-  { id: 'new', label: 'Nuevos', color: '#6366F1' },
-  { id: 'contacted', label: 'Contactados', color: '#F59E0B' },
-  { id: 'appointment', label: 'Agendados', color: '#8B5CF6' },
-  { id: 'closed', label: 'Cerrados', color: '#10B981' },
-  { id: 'lost', label: 'Perdidos', color: '#EF4444' },
-]
 
 export default function LeadsPage() {
   const router = useRouter()
-  const { state, addPatient } = useApp()
-  const [searchQuery, setSearchQuery] = useState('')
-  const [activeTab, setActiveTab] = useState('all')
-  const [showAddModal, setShowAddModal] = useState(false)
 
-  // New patient form state
-  const [newPatient, setNewPatient] = useState({
-    name: '',
-    phone: '',
-    email: '',
-    source: 'instagram' as LeadSource,
-    treatments: [] as string[],
-  })
+  useEffect(() => {
+    router.replace('/pacientes')
+  }, [router])
 
-  const filteredPatients = useMemo(() => {
-    let patients = [...state.patients]
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <p className="text-slate-600">Redirigiendo a Pacientes...</p>
+      </div>
+    </div>
+  )
+}
 
     // Filter by status
     if (activeTab !== 'all') {

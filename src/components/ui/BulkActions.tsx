@@ -68,9 +68,12 @@ export function BulkActionsBar({
     statuses: {
       new: language === 'es' ? 'Nuevo' : 'New',
       contacted: language === 'es' ? 'Contactado' : 'Contacted',
-      scheduled: language === 'es' ? 'Agendado' : 'Scheduled',
+      appointment: language === 'es' ? 'Turno agendado' : 'Appointment',
+      attended: language === 'es' ? 'Asistió' : 'Attended',
       closed: language === 'es' ? 'Cerrado' : 'Closed',
+      followup: language === 'es' ? 'Seguimiento' : 'Follow-up',
       lost: language === 'es' ? 'Perdido' : 'Lost',
+      noshow: language === 'es' ? 'No asistió' : 'No Show',
     },
   }
 
@@ -181,9 +184,12 @@ export function BulkActionsBar({
             options={[
               { value: 'new', label: t.statuses.new },
               { value: 'contacted', label: t.statuses.contacted },
-              { value: 'scheduled', label: t.statuses.scheduled },
+              { value: 'appointment', label: t.statuses.appointment },
+              { value: 'attended', label: t.statuses.attended },
               { value: 'closed', label: t.statuses.closed },
+              { value: 'followup', label: t.statuses.followup },
               { value: 'lost', label: t.statuses.lost },
+              { value: 'noshow', label: t.statuses.noshow },
             ]}
           />
           <div className="flex gap-3">

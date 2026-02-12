@@ -140,6 +140,12 @@ export default function PacientesPage() {
       setShowAddModal(true)
     }
 
+    // Handle view mode from URL
+    const viewParam = searchParams.get('view')
+    if (viewParam === 'kanban') {
+      setViewMode('kanban')
+    }
+
     // Handle patient selection from other pages (id or selected param)
     const patientId = searchParams.get('id') || searchParams.get('selected')
     if (patientId && state.patients.length > 0) {

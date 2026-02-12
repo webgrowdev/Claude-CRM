@@ -1,52 +1,25 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import {
-  Phone,
-  MessageCircle,
-  Mail,
-  Calendar,
-  Clock,
-  FileText,
-  CheckCircle,
-  Instagram,
-  Globe,
-  Users,
-  Trash2,
-  Edit,
-  Video,
-  Loader2,
-  ExternalLink,
-} from 'lucide-react'
-
-import { Header, PageContainer } from '@/components/layout'
-import { Card, Avatar, Badge, Button, Modal, Input, TextArea, Select } from '@/components/ui'
-import { useApp } from '@/contexts/AppContext'
-import {
-  formatTimeAgo,
-  formatRelativeDate,
-  getSourceLabel,
-  getWhatsAppUrl,
-  getPhoneUrl,
-  getEmailUrl,
-} from '@/lib/utils'
-import { FunnelStatus, FollowUpType } from '@/types'
-
-const statusOptions: { value: FunnelStatus; label: string; color: string }[] = [
-  { value: 'new', label: 'Nuevo', color: 'bg-primary-500' },
-  { value: 'contacted', label: 'Contactado', color: 'bg-warning-500' },
-  { value: 'scheduled', label: 'Agendado', color: 'bg-purple-500' },
-  { value: 'closed', label: 'Cerrado', color: 'bg-success-500' },
-  { value: 'lost', label: 'Perdido', color: 'bg-error-500' },
-]
 
 export default function LeadDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const { getPatientById, updatePatientStatus, addNote, addFollowUp, deletePatient, state, isCalendarConnected } = useApp()
 
-  const patient = useMemo(() => getPatientById(params.id as string), [params.id, getPatientById, state.patients])
+  useEffect(() => {
+    // Redirect to pacientes with the patient ID as a query parameter
+    router.replace(`/pacientes?id=${params.id}`)
+  }, [router, params.id])
+
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <p className="text-slate-600">Redirigiendo a Pacientes...</p>
+      </div>
+    </div>
+  )
+}
 
   const [showMenu, setShowMenu] = useState(false)
   const [showNoteModal, setShowNoteModal] = useState(false)

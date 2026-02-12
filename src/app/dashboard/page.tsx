@@ -127,7 +127,7 @@ export default function DashboardPage() {
           : 'Leads that came in today',
       colorKey: 'primary',
       icon: Inbox,
-      href: '/leads?filter=new',
+      href: '/inbox',
     },
     {
       label: language === 'es' ? 'Seguimientos' : 'Follow-ups',

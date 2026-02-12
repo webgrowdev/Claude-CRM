@@ -23,11 +23,11 @@ export function BottomNav() {
   }, [])
 
   // Siempre usar arrays seguros aunque state o las propiedades no estén aún
-  const leads = state?.leads ?? []
+  const patients = state?.patients ?? []
   const appointments = (state?.appointments ?? []) as AppointmentLike[]
 
   // Count new leads for badge
-  const newLeadsCount = leads.filter(l => l.status === 'new').length
+  const newLeadsCount = patients.filter(p => p.status === 'new').length
 
   // Count today's appointments
   const today = new Date()
@@ -51,10 +51,10 @@ export function BottomNav() {
 
   // Count urgent leads (48h+ waiting)
   const fortyEightHoursAgo = new Date(Date.now() - 48 * 60 * 60 * 1000)
-  const urgentCount = leads.filter(l =>
-    l.status === 'new' &&
-    l.createdAt &&
-    new Date(l.createdAt) < fortyEightHoursAgo
+  const urgentCount = patients.filter(p =>
+    p.status === 'new' &&
+    p.createdAt &&
+    new Date(p.createdAt) < fortyEightHoursAgo
   ).length
 
   const navItems = [

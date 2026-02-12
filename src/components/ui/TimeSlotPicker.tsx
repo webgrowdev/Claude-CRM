@@ -18,7 +18,7 @@ import { es, enUS } from 'date-fns/locale'
 import { ChevronLeft, ChevronRight, Clock, Check, Calendar, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useLanguage } from '@/i18n'
-import { FollowUp } from '@/types'
+import { FollowUp, Appointment } from '@/types'
 import { getCalendarBusyTimes, getGoogleCalendarSettings, BusyTime } from '@/services/googleCalendar'
 
 interface TimeSlot {
@@ -34,7 +34,7 @@ interface TimeSlotPickerProps {
   selectedDate: Date | null
   selectedTime: string | null
   onSelectDateTime: (date: Date, time: string) => void
-  existingAppointments: FollowUp[]
+  existingAppointments: (FollowUp | Appointment)[]
   duration?: number // appointment duration in minutes
   workingHours?: {
     start: string // "09:00"
@@ -123,7 +123,9 @@ export function TimeSlotPicker({
 
       // Check for conflicts with existing appointments (local)
       const conflict = existingAppointments.find(apt => {
-        if (apt.completed) return false
+        // Check if appointment is completed - handle both FollowUp and Appointment types
+        const isCompleted = 'completed' in apt ? apt.completed : apt.status === 'completed'
+        if (isCompleted) return false
         const aptDate = new Date(apt.scheduledAt)
         if (!isSameDay(aptDate, internalSelectedDate)) return false
 
@@ -193,7 +195,9 @@ export function TimeSlotPicker({
       const slotEnd = addMinutes(currentTime, duration)
 
       const conflict = existingAppointments.find(apt => {
-        if (apt.completed) return false
+        // Check if appointment is completed - handle both FollowUp and Appointment types
+        const isCompleted = 'completed' in apt ? apt.completed : apt.status === 'completed'
+        if (isCompleted) return false
         const aptDate = new Date(apt.scheduledAt)
         if (!isSameDay(aptDate, date)) return false
         const aptStart = aptDate

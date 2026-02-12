@@ -13,10 +13,6 @@ export type FunnelStatus =
   | 'lost'          // Perdido - No interesado
   | 'noshow'        // No asistió - Faltó a la cita
 
-// Legacy support - maps to new statuses (kept for backwards compatibility)
-// @deprecated Use FunnelStatus instead
-export type LeadStatus = 'new' | 'contacted' | 'scheduled' | 'closed' | 'lost'
-
 // Lead Source Types
 export type LeadSource = 'instagram' | 'whatsapp' | 'phone' | 'website' | 'referral' | 'other'
 
@@ -302,7 +298,7 @@ export interface ReportData {
 // =============================================
 
 export interface LeadFilters {
-  status?: LeadStatus | FunnelStatus | 'all'
+  status?: FunnelStatus | 'all'
   source?: LeadSource | 'all'
   search?: string
   assignedTo?: string

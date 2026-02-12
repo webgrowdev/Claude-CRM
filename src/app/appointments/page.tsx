@@ -44,12 +44,7 @@ import { QuickBookingBar, AppointmentStatusBadge, PatientSearchModal } from '@/c
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n'
 import { cn } from '@/lib/utils'
-import { FollowUp, Patient, AttendanceStatus, AppointmentStatus } from '@/types'
-
-interface AppointmentWithPatient {
-  patient: Patient
-  followUp: FollowUp
-}
+import { Appointment, Patient, AppointmentStatus } from '@/types'
 
 export default function AppointmentsPage() {
   const router = useRouter()
@@ -63,37 +58,23 @@ export default function AppointmentsPage() {
   const [showAttendanceModal, setShowAttendanceModal] = useState(false)
   const [showRescheduleModal, setShowRescheduleModal] = useState(false)
   const [showPatientSearchModal, setShowPatientSearchModal] = useState(false)
-  const [selectedAppointment, setSelectedAppointment] = useState<AppointmentWithPatient | null>(null)
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'attended' | 'noshow'>('all')
   const [rescheduleDate, setRescheduleDate] = useState<Date | null>(null)
   const [rescheduleTime, setRescheduleTime] = useState<string | null>(null)
   const [showCalendar, setShowCalendar] = useState(true)
 
-  // Get all in-person appointments (type === 'appointment')
+  // Get all in-person appointments from state.appointments (not from followUps)
   const allAppointments = useMemo(() => {
-    const appointments: AppointmentWithPatient[] = []
-    state.patients.forEach((patient) => {
-      patient.followUps
-        .filter((fu) => fu.type === 'appointment')
-        .forEach((followUp) => {
-          appointments.push({ patient, followUp })
-        })
-    })
-    return appointments.sort(
-      (a, b) => new Date(a.followUp.scheduledAt).getTime() - new Date(b.followUp.scheduledAt).getTime()
+    return state.appointments.sort(
+      (a, b) => new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
     )
-  }, [state.patients])
+  }, [state.appointments])
 
-  // Get all appointments and meetings for conflict checking in reschedule
+  // Get all appointments for conflict checking in reschedule
   const allScheduledEvents = useMemo(() => {
-    const events: FollowUp[] = []
-    state.patients.forEach((patient) => {
-      patient.followUps
-        .filter((fu) => (fu.type === 'appointment' || fu.type === 'meeting') && !fu.completed)
-        .forEach((fu) => events.push(fu))
-    })
-    return events
-  }, [state.patients])
+    return state.appointments.filter(apt => apt.status !== 'cancelled' && apt.status !== 'completed')
+  }, [state.appointments])
 
   // Filter appointments by search (name or DNI)
   const filteredAppointments = useMemo(() => {
@@ -102,18 +83,21 @@ export default function AppointmentsPage() {
     // Filter by search query (name or DNI)
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        ({ patient }) =>
-          patient.name.toLowerCase().includes(query) ||
-          patient.identificationNumber?.toLowerCase().includes(query) ||
-          patient.phone.includes(query)
-      )
+      // Need to look up patient by ID since Appointment has patientId
+      filtered = filtered.filter((apt) => {
+        const patient = state.patients.find(p => p.id === apt.patientId)
+        return (
+          apt.patientName.toLowerCase().includes(query) ||
+          patient?.identificationNumber?.toLowerCase().includes(query) ||
+          patient?.phone.includes(query)
+        )
+      })
     }
 
     // Filter by appointment status
     if (filterStatus !== 'all') {
-      filtered = filtered.filter(({ followUp }) => {
-        const status = followUp.appointmentStatus || 'pending'
+      filtered = filtered.filter((apt) => {
+        const status = apt.status || 'pending'
         // Map old filter values to new status
         if (filterStatus === 'attended') return status === 'completed'
         if (filterStatus === 'noshow') return status === 'no-show'
@@ -122,39 +106,39 @@ export default function AppointmentsPage() {
     }
 
     return filtered
-  }, [allAppointments, searchQuery, filterStatus])
+  }, [allAppointments, searchQuery, filterStatus, state.patients])
 
   // Get appointments for selected date
   const selectedDateAppointments = useMemo(() => {
     return filteredAppointments
-      .filter(({ followUp }) => isSameDay(new Date(followUp.scheduledAt), selectedDate))
+      .filter((apt) => isSameDay(new Date(apt.scheduledAt), selectedDate))
       .sort(
         (a, b) =>
-          new Date(a.followUp.scheduledAt).getTime() - new Date(b.followUp.scheduledAt).getTime()
+          new Date(a.scheduledAt).getTime() - new Date(b.scheduledAt).getTime()
       )
   }, [filteredAppointments, selectedDate])
 
   // Today's stats
   const todayAppointments = useMemo(() => {
-    return allAppointments.filter(({ followUp }) => isSameDay(new Date(followUp.scheduledAt), new Date()))
+    return allAppointments.filter((apt) => isSameDay(new Date(apt.scheduledAt), new Date()))
   }, [allAppointments])
 
   const todayStats = useMemo(() => {
     const total = todayAppointments.length
-    const completed = todayAppointments.filter(a => a.followUp.appointmentStatus === 'completed').length
-    const noshow = todayAppointments.filter(a => a.followUp.appointmentStatus === 'no-show').length
-    const pending = todayAppointments.filter(a => !a.followUp.appointmentStatus || a.followUp.appointmentStatus === 'pending' || a.followUp.appointmentStatus === 'confirmed').length
+    const completed = todayAppointments.filter(a => a.status === 'completed').length
+    const noshow = todayAppointments.filter(a => a.status === 'no-show').length
+    const pending = todayAppointments.filter(a => !a.status || a.status === 'pending' || a.status === 'confirmed').length
     return { total, attended: completed, noshow, pending }
   }, [todayAppointments])
 
   // Days with appointments
   const daysWithAppointments = useMemo(() => {
     const days = new Map<string, { total: number; pending: number; attended: number; noshow: number }>()
-    allAppointments.forEach(({ followUp }) => {
-      const key = format(new Date(followUp.scheduledAt), 'yyyy-MM-dd')
+    allAppointments.forEach((apt) => {
+      const key = format(new Date(apt.scheduledAt), 'yyyy-MM-dd')
       const current = days.get(key) || { total: 0, pending: 0, attended: 0, noshow: 0 }
       current.total++
-      const status = followUp.appointmentStatus || 'pending'
+      const status = apt.status || 'pending'
       if (status === 'completed') current.attended++
       else if (status === 'no-show') current.noshow++
       else current.pending++
@@ -173,24 +157,15 @@ export default function AppointmentsPage() {
   }, [currentMonth, locale])
 
   // Quick check-in
-  const handleQuickCheckIn = (item: AppointmentWithPatient, status: AppointmentStatus) => {
-    const { patient, followUp } = item
-    const updatedFollowUp: FollowUp = {
-      ...followUp,
-      appointmentStatus: status,
-      attendanceMarkedAt: new Date(),
-      completed: status === 'completed',
-      completedAt: status === 'completed' ? new Date() : undefined,
+  const handleQuickCheckIn = (appointment: Appointment, status: AppointmentStatus) => {
+    const updatedAppointment: Appointment = {
+      ...appointment,
+      status,
+      completedAt: status === 'completed' ? new Date() : appointment.completedAt,
+      confirmedAt: status === 'confirmed' ? new Date() : appointment.confirmedAt,
     }
 
-    const updatedPatient: Patient = {
-      ...patient,
-      followUps: patient.followUps.map((fu) =>
-        fu.id === followUp.id ? updatedFollowUp : fu
-      ),
-    }
-
-    dispatch({ type: 'UPDATE_PATIENT', payload: updatedPatient })
+    dispatch({ type: 'UPDATE_APPOINTMENT', payload: updatedAppointment })
   }
 
   const handleMarkAttendance = (status: AppointmentStatus) => {
@@ -204,35 +179,26 @@ export default function AppointmentsPage() {
   const handleReschedule = () => {
     if (!selectedAppointment || !rescheduleDate || !rescheduleTime) return
 
-    const { patient, followUp } = selectedAppointment
     const [hours, minutes] = rescheduleTime.split(':').map(Number)
     const newDate = new Date(rescheduleDate)
     newDate.setHours(hours, minutes, 0, 0)
 
-    const updatedFollowUp: FollowUp = {
-      ...followUp,
+    const updatedAppointment: Appointment = {
+      ...selectedAppointment,
       scheduledAt: newDate,
-      appointmentStatus: 'pending',
-      attendanceMarkedAt: undefined,
-      completed: false,
+      status: 'pending',
+      confirmedAt: undefined,
       completedAt: undefined,
     }
 
-    const updatedPatient: Patient = {
-      ...patient,
-      followUps: patient.followUps.map((fu) =>
-        fu.id === followUp.id ? updatedFollowUp : fu
-      ),
-    }
-
-    dispatch({ type: 'UPDATE_PATIENT', payload: updatedPatient })
+    dispatch({ type: 'UPDATE_APPOINTMENT', payload: updatedAppointment })
     setShowRescheduleModal(false)
     setSelectedAppointment(null)
     setRescheduleDate(null)
     setRescheduleTime(null)
   }
 
-  const openAttendanceModal = (item: AppointmentWithPatient) => {
+  const openAttendanceModal = (item: Appointment) => {
     setSelectedAppointment(item)
     setShowAttendanceModal(true)
   }
@@ -527,14 +493,15 @@ export default function AppointmentsPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {selectedDateAppointments.map(({ patient, followUp }) => {
-                    const isPast = isBefore(new Date(followUp.scheduledAt), new Date())
-                    const needsAttention = isPast && !followUp.appointmentStatus
-                    const status = followUp.appointmentStatus || 'pending'
+                  {selectedDateAppointments.map((apt) => {
+                    const isPast = isBefore(new Date(apt.scheduledAt), new Date())
+                    const needsAttention = isPast && !apt.status
+                    const status = apt.status || 'pending'
+                    const patient = state.patients.find(p => p.id === apt.patientId)
 
                     return (
                       <div
-                        key={followUp.id}
+                        key={apt.id}
                         className={cn(
                           'bg-white rounded-2xl border transition-all overflow-hidden',
                           needsAttention
@@ -545,7 +512,7 @@ export default function AppointmentsPage() {
                         {/* Time indicator */}
                         <div className={cn(
                           'h-1',
-                          getStatusColor(followUp.appointmentStatus)
+                          getStatusColor(apt.status)
                         )} />
 
                         <div className="p-4">
@@ -570,21 +537,21 @@ export default function AppointmentsPage() {
                                   status === 'no-show' ? 'text-red-700' :
                                   'text-slate-700'
                                 )}>
-                                  {format(new Date(followUp.scheduledAt), 'HH:mm')}
+                                  {format(new Date(apt.scheduledAt), 'HH:mm')}
                                 </span>
                               </div>
-                              {followUp.duration && (
-                                <span className="text-xs text-slate-400 mt-1">{followUp.duration}min</span>
+                              {apt.duration && (
+                                <span className="text-xs text-slate-400 mt-1">{apt.duration}min</span>
                               )}
                             </div>
 
                             {/* Patient Info */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
-                                <Avatar name={patient.name} size="sm" />
+                                <Avatar name={apt.patientName} size="sm" />
                                 <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-slate-900 truncate">{patient.name}</p>
-                                  {patient.identificationNumber && (
+                                  <p className="font-semibold text-slate-900 truncate">{apt.patientName}</p>
+                                  {patient?.identificationNumber && (
                                     <p className="text-xs text-slate-400 flex items-center gap-1">
                                       <CreditCard className="w-3 h-3" />
                                       {patient.identificationNumber}
@@ -592,15 +559,15 @@ export default function AppointmentsPage() {
                                   )}
                                 </div>
                                 <div className="flex flex-col gap-1">
-                                  {getStatusBadge(followUp.appointmentStatus)}
+                                  {getStatusBadge(apt.status)}
                                 </div>
                               </div>
 
-                              {followUp.treatmentName && (
+                              {apt.treatmentName && (
                                 <div className="mt-2 flex items-center gap-1.5">
                                   <Syringe className="w-3.5 h-3.5 text-primary-500" />
                                   <span className="text-sm text-primary-700 font-medium">
-                                    {followUp.treatmentName}
+                                    {apt.treatmentName}
                                   </span>
                                 </div>
                               )}
@@ -618,7 +585,7 @@ export default function AppointmentsPage() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      handleQuickCheckIn({ patient, followUp }, 'completed')
+                                      handleQuickCheckIn(apt, 'completed')
                                     }}
                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium transition-colors"
                                   >
@@ -628,7 +595,7 @@ export default function AppointmentsPage() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      handleQuickCheckIn({ patient, followUp }, 'no-show')
+                                      handleQuickCheckIn(apt, 'no-show')
                                     }}
                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-medium transition-colors"
                                   >
@@ -638,7 +605,7 @@ export default function AppointmentsPage() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      openAttendanceModal({ patient, followUp })
+                                      openAttendanceModal(apt)
                                     }}
                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-medium transition-colors"
                                   >
@@ -651,7 +618,7 @@ export default function AppointmentsPage() {
                               {status !== 'pending' && (
                                 <div className="flex gap-2 mt-3">
                                   <a
-                                    href={`tel:${patient.phone}`}
+                                    href={`tel:${patient?.phone || ''}`}
                                     onClick={(e) => e.stopPropagation()}
                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-xs font-medium transition-colors"
                                   >
@@ -661,7 +628,7 @@ export default function AppointmentsPage() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation()
-                                      router.push(`/pacientes?id=${patient.id}`)
+                                      router.push(`/pacientes?id=${apt.patientId}`)
                                     }}
                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-medium transition-colors"
                                   >
@@ -692,26 +659,29 @@ export default function AppointmentsPage() {
           <div className="space-y-4">
             {/* Patient Info */}
             <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl">
-              <Avatar name={selectedAppointment.patient.name} size="lg" />
+              <Avatar name={selectedAppointment.patientName} size="lg" />
               <div>
-                <p className="font-semibold text-slate-800">{selectedAppointment.patient.name}</p>
-                {selectedAppointment.patient.identificationNumber && (
-                  <p className="text-sm text-slate-500">
-                    {t.appointments.idNumber}: {selectedAppointment.patient.identificationNumber}
-                  </p>
-                )}
+                <p className="font-semibold text-slate-800">{selectedAppointment.patientName}</p>
+                {(() => {
+                  const patient = state.patients.find(p => p.id === selectedAppointment.patientId)
+                  return patient?.identificationNumber && (
+                    <p className="text-sm text-slate-500">
+                      {t.appointments.idNumber}: {patient.identificationNumber}
+                    </p>
+                  )
+                })()}
                 <p className="text-sm text-slate-500">
-                  {format(new Date(selectedAppointment.followUp.scheduledAt), "d MMM yyyy 'a las' HH:mm", { locale })}
+                  {format(new Date(selectedAppointment.scheduledAt), "d MMM yyyy 'a las' HH:mm", { locale })}
                 </p>
               </div>
             </div>
 
             {/* Treatment */}
-            {selectedAppointment.followUp.treatmentName && (
+            {selectedAppointment.treatmentName && (
               <div className="p-3 bg-primary-50 rounded-xl flex items-center gap-2">
                 <Syringe className="w-4 h-4 text-primary-600" />
                 <p className="text-sm font-medium text-primary-800">
-                  {selectedAppointment.followUp.treatmentName}
+                  {selectedAppointment.treatmentName}
                 </p>
               </div>
             )}
@@ -719,7 +689,7 @@ export default function AppointmentsPage() {
             {/* Current Status */}
             <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl">
               <span className="text-sm text-slate-600">{t.appointments.currentStatus}:</span>
-              {getStatusBadge(selectedAppointment.followUp.appointmentStatus)}
+              {getStatusBadge(selectedAppointment.status)}
             </div>
 
             {/* Action Buttons */}
@@ -776,7 +746,7 @@ export default function AppointmentsPage() {
               variant="ghost"
               onClick={() => {
                 setShowAttendanceModal(false)
-                router.push(`/pacientes?id=${selectedAppointment.patient.id}`)
+                router.push(`/pacientes?id=${selectedAppointment.patientId}`)
               }}
             >
               {t.appointments.viewPatientProfile}
@@ -799,21 +769,21 @@ export default function AppointmentsPage() {
           <div className="space-y-4">
             {/* Patient Info */}
             <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-              <Avatar name={selectedAppointment.patient.name} size="md" />
+              <Avatar name={selectedAppointment.patientName} size="md" />
               <div>
-                <p className="font-medium text-slate-800">{selectedAppointment.patient.name}</p>
+                <p className="font-medium text-slate-800">{selectedAppointment.patientName}</p>
                 <p className="text-sm text-slate-500">
                   {language === 'es' ? 'Cita anterior:' : 'Previous appointment:'}{' '}
-                  {format(new Date(selectedAppointment.followUp.scheduledAt), "d MMM yyyy 'a las' HH:mm", { locale })}
+                  {format(new Date(selectedAppointment.scheduledAt), "d MMM yyyy 'a las' HH:mm", { locale })}
                 </p>
               </div>
             </div>
 
             {/* Treatment */}
-            {selectedAppointment.followUp.treatmentName && (
+            {selectedAppointment.treatmentName && (
               <div className="p-3 bg-primary-50 rounded-lg">
                 <p className="text-sm font-medium text-primary-800">
-                  {t.followUp.selectTreatment}: {selectedAppointment.followUp.treatmentName}
+                  {t.followUp.selectTreatment}: {selectedAppointment.treatmentName}
                 </p>
               </div>
             )}
@@ -831,9 +801,9 @@ export default function AppointmentsPage() {
                   setRescheduleTime(time)
                 }}
                 existingAppointments={allScheduledEvents.filter(
-                  fu => fu.id !== selectedAppointment.followUp.id
+                  fu => fu.id !== selectedAppointment.id
                 )}
-                duration={selectedAppointment.followUp.duration || 30}
+                duration={selectedAppointment.duration || 30}
               />
 
               {rescheduleDate && rescheduleTime && (

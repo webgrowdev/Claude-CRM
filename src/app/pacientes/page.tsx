@@ -55,7 +55,7 @@ const getStatusOptions = (t: any): { value: FunnelStatus; label: string; color: 
   { value: 'new', label: t.status.new, color: 'text-primary-600', bg: 'bg-primary-100' },
   { value: 'contacted', label: t.status.contacted, color: 'text-amber-600', bg: 'bg-amber-100' },
   { value: 'appointment', label: t.status.scheduled, color: 'text-purple-600', bg: 'bg-purple-100' },
-  { value: 'treatment', label: t.status.closed, color: 'text-emerald-600', bg: 'bg-emerald-100' },
+  { value: 'closed', label: t.status.closed, color: 'text-emerald-600', bg: 'bg-emerald-100' },
   { value: 'lost', label: t.status.lost, color: 'text-red-600', bg: 'bg-red-100' },
 ]
 

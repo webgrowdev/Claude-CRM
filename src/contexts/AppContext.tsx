@@ -58,7 +58,7 @@ const initialUser: User = {
   id: '',
   name: '',
   email: '',
-  role: 'agent',
+  role: 'owner',
 }
 
 const initialState: AppState = {
@@ -530,7 +530,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
           identification_type: patientData.identificationType,
           source: patientData.source,
           status: patientData.status,
-          funnel_status: patientData.funnelStatus,
           instagram_handle: patientData.instagram,
           preferred_time: patientData.preferredTime,
           campaign: patientData.campaign,

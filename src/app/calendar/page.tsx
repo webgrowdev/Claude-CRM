@@ -40,13 +40,13 @@ import { ScheduleFollowUpModal } from '@/components/calendar'
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n'
 import { cn, formatRelativeDate } from '@/lib/utils'
-import { FollowUp, Lead, FollowUpType } from '@/types'
+import { FollowUp, Patient, FollowUpType } from '@/types'
 
 type ViewMode = 'day' | 'week' | 'month'
 
-// Follow-up with lead info
-interface FollowUpWithLead {
-  lead: Lead
+// Follow-up with patient info
+interface FollowUpWithPatient {
+  patient: Patient
   followUp: FollowUp
 }
 
@@ -59,12 +59,12 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [viewMode, setViewMode] = useState<ViewMode>('day')
   const [showActionModal, setShowActionModal] = useState(false)
-  const [selectedFollowUp, setSelectedFollowUp] = useState<FollowUpWithLead | null>(null)
+  const [selectedFollowUp, setSelectedFollowUp] = useState<FollowUpWithPatient | null>(null)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
 
   const allFollowUps = useMemo(
     () => getUpcomingFollowUps(),
-    [getUpcomingFollowUps, state.leads]
+    [getUpcomingFollowUps, state.patients]
   )
 
   // Get days with follow-ups
@@ -145,19 +145,19 @@ export default function CalendarPage() {
     return configs[type] || configs.call
   }
 
-  const handleCompleteFollowUp = (leadId: string, followUpId: string) => {
-    completeFollowUp(leadId, followUpId)
+  const handleCompleteFollowUp = (patientId: string, followUpId: string) => {
+    completeFollowUp(patientId, followUpId)
     setShowActionModal(false)
     setSelectedFollowUp(null)
   }
 
-  const handleFollowUpClick = (item: FollowUpWithLead) => {
+  const handleFollowUpClick = (item: FollowUpWithPatient) => {
     setSelectedFollowUp(item)
     setShowActionModal(true)
   }
 
-  const goToPatient = (leadId: string) => {
-    router.push(`/pacientes?id=${leadId}`)
+  const goToPatient = (patientId: string) => {
+    router.push(`/pacientes?id=${patientId}`)
   }
 
   // Today's stats
@@ -368,7 +368,7 @@ export default function CalendarPage() {
               </Card>
             ) : (
               <div className="space-y-3">
-                {selectedDateFollowUps.map(({ lead, followUp }) => {
+                {selectedDateFollowUps.map(({ patient, followUp }) => {
                   const typeConfig = getFollowUpTypeConfig(followUp.type)
                   const Icon = typeConfig.icon
                   const isPast =
@@ -382,7 +382,7 @@ export default function CalendarPage() {
                         'overflow-hidden cursor-pointer transition-all hover:shadow-card-hover',
                         isPast && !followUp.completed && 'border-l-4 border-l-amber-500'
                       )}
-                      onClick={() => handleFollowUpClick({ lead, followUp })}
+                      onClick={() => handleFollowUpClick({ patient, followUp })}
                     >
                       <div className="flex items-start gap-4 p-4">
                         {/* Time */}
@@ -411,7 +411,7 @@ export default function CalendarPage() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="font-semibold text-slate-800 truncate">
-                              {lead.name}
+                              {patient.name}
                             </p>
                             {followUp.meetLink && (
                               <Badge variant="secondary" size="sm">
@@ -424,9 +424,9 @@ export default function CalendarPage() {
                             {typeConfig.label}
                             {followUp.notes && ` - ${followUp.notes}`}
                           </p>
-                          {lead.treatments.length > 0 && (
+                          {patient.treatments.length > 0 && (
                             <p className="text-xs text-slate-400 mt-1">
-                              {lead.treatments.slice(0, 2).join(', ')}
+                              {patient.treatments.slice(0, 2).join(', ')}
                             </p>
                           )}
                         </div>
@@ -447,7 +447,7 @@ export default function CalendarPage() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
-                              handleCompleteFollowUp(lead.id, followUp.id)
+                              handleCompleteFollowUp(patient.id, followUp.id)
                             }}
                             className="p-2 bg-success-100 text-success-600 rounded-lg hover:bg-success-200 transition-colors"
                             title={t.calendar.markComplete}
@@ -470,14 +470,14 @@ export default function CalendarPage() {
                 </h3>
                 <Card padding="none">
                   <div className="divide-y divide-gray-100">
-                    {allFollowUps.slice(0, 5).map(({ lead, followUp }) => {
+                    {allFollowUps.slice(0, 5).map(({ patient, followUp }) => {
                       const typeConfig = getFollowUpTypeConfig(followUp.type)
                       const Icon = typeConfig.icon
 
                       return (
                         <div
                           key={followUp.id}
-                          onClick={() => goToPatient(lead.id)}
+                          onClick={() => goToPatient(patient.id)}
                           className="flex items-center gap-3 p-4 hover:bg-gray-50 cursor-pointer transition-colors"
                         >
                           <div
@@ -490,7 +490,7 @@ export default function CalendarPage() {
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-slate-800 truncate">
-                              {lead.name}
+                              {patient.name}
                             </p>
                             <p className="text-sm text-slate-500">{typeConfig.label}</p>
                           </div>
@@ -520,7 +520,7 @@ export default function CalendarPage() {
           setShowActionModal(false)
           setSelectedFollowUp(null)
         }}
-        title={selectedFollowUp ? selectedFollowUp.lead.name : ''}
+        title={selectedFollowUp ? selectedFollowUp.patient.name : ''}
       >
         {selectedFollowUp && (
           <div className="p-4 space-y-4">
@@ -564,7 +564,7 @@ export default function CalendarPage() {
                 variant="primary"
                 onClick={() =>
                   handleCompleteFollowUp(
-                    selectedFollowUp.lead.id,
+                    selectedFollowUp.patient.id,
                     selectedFollowUp.followUp.id
                   )
                 }
@@ -574,7 +574,7 @@ export default function CalendarPage() {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => goToPatient(selectedFollowUp.lead.id)}
+                onClick={() => goToPatient(selectedFollowUp.patient.id)}
               >
                 <Users className="w-4 h-4 mr-2" />
                 Ver Paciente

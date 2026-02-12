@@ -28,7 +28,7 @@ import { Avatar, Card, Badge, Button, Modal, LeadScoreBadge, InboxFAB } from '@/
 import { useApp } from '@/contexts/AppContext'
 import { useLanguage } from '@/i18n'
 import { cn, formatTimeAgo, formatRelativeDate, getSourceLabel, getWhatsAppUrl, getPhoneUrl } from '@/lib/utils'
-import { Lead, LeadSource, LeadStatus } from '@/types'
+import { Patient, LeadSource, FunnelStatus } from '@/types'
 import { calculateLeadScore } from '@/services/leadScoring'
 import { format, isAfter, subHours, addHours, isToday, startOfDay, endOfDay } from 'date-fns'
 
@@ -36,85 +36,85 @@ type InboxFilter = 'all' | 'new' | 'urgent' | 'today' | 'hot'
 
 export default function InboxPage() {
   const router = useRouter()
-  const { state, updateLeadStatus, addFollowUp } = useApp()
+  const { state, updatePatientStatus, addFollowUp } = useApp()
   const { t, language } = useLanguage()
 
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<InboxFilter>('all')
   const [channelFilter, setChannelFilter] = useState<LeadSource | 'all'>('all')
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null)
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
   const [showFilterMenu, setShowFilterMenu] = useState(false)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['urgent', 'hot', 'new']))
 
-  // Calculate scores for all leads
-  const leadsWithScores = useMemo(() => {
-    return state.leads.map(lead => ({
-      ...lead,
-      calculatedScore: calculateLeadScore(lead, state.treatments)
+  // Calculate scores for all patients
+  const patientsWithScores = useMemo(() => {
+    return state.patients.map(patient => ({
+      ...patient,
+      calculatedScore: calculateLeadScore(patient, state.treatments)
     }))
-  }, [state.leads, state.treatments])
+  }, [state.patients, state.treatments])
 
-  // Categorize leads by priority
-  const categorizedLeads = useMemo(() => {
+  // Categorize patients by priority
+  const categorizedPatients = useMemo(() => {
     const now = new Date()
     const fortyEightHoursAgo = subHours(now, 48)
 
-    // Urgent: New leads waiting 48+ hours
-    const urgent = leadsWithScores.filter(
-      lead => lead.status === 'new' && new Date(lead.createdAt) < fortyEightHoursAgo
+    // Urgent: New patients waiting 48+ hours
+    const urgent = patientsWithScores.filter(
+      patient => patient.status === 'new' && new Date(patient.createdAt) < fortyEightHoursAgo
     ).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
 
-    // Hot leads: High score (70+), not closed/lost
-    const hot = leadsWithScores.filter(
-      lead => lead.calculatedScore.total >= 70 &&
-              lead.status !== 'closed' &&
-              lead.status !== 'lost' &&
-              !urgent.some(u => u.id === lead.id)
+    // Hot patients: High score (70+), not closed/lost
+    const hot = patientsWithScores.filter(
+      patient => patient.calculatedScore.total >= 70 &&
+              patient.status !== 'closed' &&
+              patient.status !== 'lost' &&
+              !urgent.some(u => u.id === patient.id)
     ).sort((a, b) => b.calculatedScore.total - a.calculatedScore.total)
 
-    // New leads (not urgent)
-    const newLeads = leadsWithScores.filter(
-      lead => lead.status === 'new' &&
-              !urgent.some(u => u.id === lead.id)
+    // New patients (not urgent)
+    const newPatients = patientsWithScores.filter(
+      patient => patient.status === 'new' &&
+              !urgent.some(u => u.id === patient.id)
     ).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
     // Today's follow-ups
-    const todayFollowUps = leadsWithScores.filter(lead =>
-      lead.followUps.some(f => !f.completed && isToday(new Date(f.scheduledAt)))
+    const todayFollowUps = patientsWithScores.filter(patient =>
+      patient.followUps.some(f => !f.completed && isToday(new Date(f.scheduledAt)))
     )
 
-    // All other active leads
-    const other = leadsWithScores.filter(
-      lead => lead.status !== 'closed' &&
-              lead.status !== 'lost' &&
-              !urgent.some(u => u.id === lead.id) &&
-              !hot.some(h => h.id === lead.id) &&
-              !newLeads.some(n => n.id === lead.id)
+    // All other active patients
+    const other = patientsWithScores.filter(
+      patient => patient.status !== 'closed' &&
+              patient.status !== 'lost' &&
+              !urgent.some(u => u.id === patient.id) &&
+              !hot.some(h => h.id === patient.id) &&
+              !newPatients.some(n => n.id === patient.id)
     )
 
-    return { urgent, hot, new: newLeads, today: todayFollowUps, other }
-  }, [leadsWithScores])
+    return { urgent, hot, new: newPatients, today: todayFollowUps, other }
+  }, [patientsWithScores])
 
-  // Get filtered leads based on current filter and search
-  const filteredLeads = useMemo(() => {
-    let leads = [...leadsWithScores]
+  // Get filtered patients based on current filter and search
+  const filteredPatients = useMemo(() => {
+    let patients = [...patientsWithScores]
 
     // Search filter
     if (search) {
       const searchLower = search.toLowerCase()
-      leads = leads.filter(
-        (lead) =>
-          lead.name.toLowerCase().includes(searchLower) ||
-          lead.phone.includes(search) ||
-          lead.email?.toLowerCase().includes(searchLower) ||
-          lead.treatments.some((t) => t.toLowerCase().includes(searchLower))
+      patients = patients.filter(
+        (patient) =>
+          patient.name.toLowerCase().includes(searchLower) ||
+          patient.phone.includes(search) ||
+          patient.email?.toLowerCase().includes(searchLower) ||
+          patient.treatments.some((t) => t.toLowerCase().includes(searchLower))
       )
     }
 
     // Channel filter
     if (channelFilter !== 'all') {
-      leads = leads.filter((lead) => lead.source === channelFilter)
+      patients = patients.filter((patient) => patient.source === channelFilter)
     }
 
     // Status/time filter
@@ -123,26 +123,26 @@ export default function InboxPage() {
 
     switch (filter) {
       case 'new':
-        leads = leads.filter((lead) => lead.status === 'new')
+        patients = patients.filter((patient) => patient.status === 'new')
         break
       case 'urgent':
-        leads = leads.filter(
-          (lead) =>
-            lead.status === 'new' &&
-            new Date(lead.createdAt) < fortyEightHoursAgo
+        patients = patients.filter(
+          (patient) =>
+            patient.status === 'new' &&
+            new Date(patient.createdAt) < fortyEightHoursAgo
         )
         break
       case 'hot':
-        leads = leads.filter(
-          (lead) =>
-            lead.calculatedScore.total >= 70 &&
-            lead.status !== 'closed' &&
-            lead.status !== 'lost'
+        patients = patients.filter(
+          (patient) =>
+            patient.calculatedScore.total >= 70 &&
+            patient.status !== 'closed' &&
+            patient.status !== 'lost'
         )
         break
       case 'today':
-        leads = leads.filter((lead) =>
-          lead.followUps.some(
+        patients = patients.filter((patient) =>
+          patient.followUps.some(
             (f) =>
               !f.completed &&
               isToday(new Date(f.scheduledAt))
@@ -150,29 +150,29 @@ export default function InboxPage() {
         )
         break
       default:
-        leads = leads.filter(l => l.status !== 'closed' && l.status !== 'lost')
+        patients = patients.filter(p => p.status !== 'closed' && p.status !== 'lost')
     }
 
     // Sort by score for most filters
     if (filter === 'hot' || filter === 'all') {
-      return leads.sort((a, b) => b.calculatedScore.total - a.calculatedScore.total)
+      return patients.sort((a, b) => b.calculatedScore.total - a.calculatedScore.total)
     }
 
-    return leads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  }, [leadsWithScores, search, filter, channelFilter])
+    return patients.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  }, [patientsWithScores, search, filter, channelFilter])
 
   // Stats
   const stats = useMemo(() => {
     return {
-      urgentCount: categorizedLeads.urgent.length,
-      hotCount: categorizedLeads.hot.length,
-      newCount: categorizedLeads.new.length,
-      todayCount: categorizedLeads.today.length,
-      totalActive: leadsWithScores.filter(
-        (l) => l.status !== 'closed' && l.status !== 'lost'
+      urgentCount: categorizedPatients.urgent.length,
+      hotCount: categorizedPatients.hot.length,
+      newCount: categorizedPatients.new.length,
+      todayCount: categorizedPatients.today.length,
+      totalActive: patientsWithScores.filter(
+        (p) => p.status !== 'closed' && p.status !== 'lost'
       ).length,
     }
-  }, [categorizedLeads, leadsWithScores])
+  }, [categorizedPatients, patientsWithScores])
 
   // Get channel icon
   const getChannelIcon = (source: LeadSource) => {
@@ -189,11 +189,11 @@ export default function InboxPage() {
   }
 
   // Get status badge
-  const getStatusBadge = (lead: Lead & { calculatedScore: any }) => {
+  const getStatusBadge = (patient: Patient & { calculatedScore: any }) => {
     const now = new Date()
     const fortyEightHoursAgo = subHours(now, 48)
     const isUrgent =
-      lead.status === 'new' && new Date(lead.createdAt) < fortyEightHoursAgo
+      patient.status === 'new' && new Date(patient.createdAt) < fortyEightHoursAgo
 
     if (isUrgent) {
       return (
@@ -204,15 +204,15 @@ export default function InboxPage() {
       )
     }
 
-    const statusConfig: Record<LeadStatus, { variant: string; label: string }> = {
+    const statusConfig: Record<FunnelStatus, { variant: string; label: string }> = {
       new: { variant: 'primary', label: t.funnel.new },
       contacted: { variant: 'warning', label: t.funnel.contacted },
-      scheduled: { variant: 'secondary', label: t.funnel.appointment },
+      appointment: { variant: 'secondary', label: t.funnel.appointment },
       closed: { variant: 'success', label: t.funnel.closed },
       lost: { variant: 'default', label: t.funnel.lost },
     }
 
-    const config = statusConfig[lead.status]
+    const config = statusConfig[patient.status]
     return (
       <Badge variant={config.variant as any} size="sm">
         {config.label}
@@ -221,33 +221,33 @@ export default function InboxPage() {
   }
 
   // Quick actions
-  const handleCall = (lead: Lead, e: React.MouseEvent) => {
+  const handleCall = (patient: Patient, e: React.MouseEvent) => {
     e.stopPropagation()
-    window.open(getPhoneUrl(lead.phone), '_self')
+    window.open(getPhoneUrl(patient.phone), '_self')
   }
 
-  const handleWhatsApp = (lead: Lead, e: React.MouseEvent) => {
+  const handleWhatsApp = (patient: Patient, e: React.MouseEvent) => {
     e.stopPropagation()
-    window.open(getWhatsAppUrl(lead.phone), '_blank')
+    window.open(getWhatsAppUrl(patient.phone), '_blank')
   }
 
-  const handleEmail = (lead: Lead, e: React.MouseEvent) => {
+  const handleEmail = (patient: Patient, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (lead.email) {
-      window.open(`mailto:${lead.email}`, '_self')
+    if (patient.email) {
+      window.open(`mailto:${patient.email}`, '_self')
     }
   }
 
-  const handleSchedule = (lead: Lead, e: React.MouseEvent) => {
+  const handleSchedule = (patient: Patient, e: React.MouseEvent) => {
     e.stopPropagation()
-    setSelectedLead(lead)
+    setSelectedPatient(patient)
     setShowScheduleModal(true)
   }
 
-  const handleMarkContacted = async (lead: Lead, e: React.MouseEvent) => {
+  const handleMarkContacted = async (patient: Patient, e: React.MouseEvent) => {
     e.stopPropagation()
-    if (lead.status === 'new') {
-      await updateLeadStatus(lead.id, 'contacted')
+    if (patient.status === 'new') {
+      await updatePatientStatus(patient.id, 'contacted')
     }
   }
 
@@ -278,45 +278,45 @@ export default function InboxPage() {
     { value: 'referral', label: getSourceLabel('referral') },
   ]
 
-  // Lead card component
-  const LeadCard = ({ lead }: { lead: Lead & { calculatedScore: any } }) => (
+  // Patient card component
+  const PatientCard = ({ patient }: { patient: Patient & { calculatedScore: any } }) => (
     <div
-      onClick={() => router.push(`/pacientes?id=${lead.id}`)}
+      onClick={() => router.push(`/pacientes?id=${patient.id}`)}
       className={cn(
         'flex items-start gap-4 p-4 bg-white hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100',
-        lead.status === 'new' && 'border-l-4 border-l-blue-500'
+        patient.status === 'new' && 'border-l-4 border-l-blue-500'
       )}
     >
-      <Avatar name={lead.name} size="lg" />
+      <Avatar name={patient.name} size="lg" />
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-1">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-slate-800 truncate">
-              {lead.name}
+              {patient.name}
             </h3>
-            <LeadScoreBadge score={lead.calculatedScore.total} size="sm" showLabel={false} />
-            {getChannelIcon(lead.source)}
+            <LeadScoreBadge score={patient.calculatedScore.total} size="sm" showLabel={false} />
+            {getChannelIcon(patient.source)}
           </div>
-          {getStatusBadge(lead)}
+          {getStatusBadge(patient)}
         </div>
 
-        {lead.treatments.length > 0 && (
+        {patient.treatments.length > 0 && (
           <p className="text-sm text-slate-600 truncate mb-1">
-            {lead.treatments.join(', ')}
+            {patient.treatments.join(', ')}
           </p>
         )}
 
         <div className="flex items-center gap-3 text-xs text-slate-500">
           <span className="flex items-center gap-1">
             <Clock className="w-3.5 h-3.5" />
-            {formatTimeAgo(new Date(lead.createdAt))}
+            {formatTimeAgo(new Date(patient.createdAt))}
           </span>
-          {lead.followUps.some((f) => !f.completed) && (
+          {patient.followUps.some((f) => !f.completed) && (
             <span className="flex items-center gap-1 text-primary-600">
               <Calendar className="w-3.5 h-3.5" />
               {formatRelativeDate(
-                new Date(lead.followUps.find((f) => !f.completed)!.scheduledAt)
+                new Date(patient.followUps.find((f) => !f.completed)!.scheduledAt)
               )}
             </span>
           )}
@@ -325,7 +325,7 @@ export default function InboxPage() {
         {/* Quick Actions */}
         <div className="flex items-center gap-2 mt-3">
           <a
-            href={getPhoneUrl(lead.phone)}
+            href={getPhoneUrl(patient.phone)}
             onClick={(e) => e.stopPropagation()}
             className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
             title={language === 'es' ? 'Llamar' : 'Call'}
@@ -333,7 +333,7 @@ export default function InboxPage() {
             <Phone className="w-4 h-4" />
           </a>
           <a
-            href={getWhatsAppUrl(lead.phone)}
+            href={getWhatsAppUrl(patient.phone)}
             target="_blank"
             rel="noopener noreferrer"
             onClick={(e) => e.stopPropagation()}
@@ -342,9 +342,9 @@ export default function InboxPage() {
           >
             <MessageCircle className="w-4 h-4" />
           </a>
-          {lead.email && (
+          {patient.email && (
             <a
-              href={`mailto:${lead.email}`}
+              href={`mailto:${patient.email}`}
               onClick={(e) => e.stopPropagation()}
               className="p-2 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors"
               title="Email"
@@ -353,15 +353,15 @@ export default function InboxPage() {
             </a>
           )}
           <button
-            onClick={(e) => handleSchedule(lead, e)}
+            onClick={(e) => handleSchedule(patient, e)}
             className="p-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg transition-colors"
             title={language === 'es' ? 'Agendar' : 'Schedule'}
           >
             <Calendar className="w-4 h-4" />
           </button>
-          {lead.status === 'new' && (
+          {patient.status === 'new' && (
             <button
-              onClick={(e) => handleMarkContacted(lead, e)}
+              onClick={(e) => handleMarkContacted(patient, e)}
               className="flex items-center gap-1 px-3 py-1.5 bg-success-50 text-success-700 rounded-lg text-xs font-medium hover:bg-success-100 transition-colors ml-auto"
             >
               <CheckCircle2 className="w-3.5 h-3.5" />
@@ -380,7 +380,7 @@ export default function InboxPage() {
     id,
     title,
     subtitle,
-    leads,
+    patients,
     icon: Icon,
     bgColor,
     borderColor,
@@ -389,13 +389,13 @@ export default function InboxPage() {
     id: string
     title: string
     subtitle: string
-    leads: (Lead & { calculatedScore: any })[]
+    patients: (Patient & { calculatedScore: any })[]
     icon: any
     bgColor: string
     borderColor: string
     iconColor: string
   }) => {
-    if (leads.length === 0) return null
+    if (patients.length === 0) return null
     const isExpanded = expandedSections.has(id)
 
     return (
@@ -410,7 +410,7 @@ export default function InboxPage() {
             </div>
             <div className="text-left">
               <h3 className="font-semibold text-slate-800">
-                {leads.length} {title}
+                {patients.length} {title}
               </h3>
               <p className="text-xs text-slate-500">{subtitle}</p>
             </div>
@@ -423,8 +423,8 @@ export default function InboxPage() {
         </button>
         {isExpanded && (
           <div className="bg-white">
-            {leads.map(lead => (
-              <LeadCard key={lead.id} lead={lead} />
+            {patients.map(patient => (
+              <PatientCard key={patient.id} patient={patient} />
             ))}
           </div>
         )}
@@ -555,7 +555,7 @@ export default function InboxPage() {
                 id="urgent"
                 title={language === 'es' ? 'Urgentes' : 'Urgent'}
                 subtitle={language === 'es' ? '+48h sin contactar' : '48+ hours not contacted'}
-                leads={categorizedLeads.urgent}
+                patients={categorizedPatients.urgent}
                 icon={AlertCircle}
                 bgColor="bg-red-50"
                 borderColor="border-red-200"
@@ -564,9 +564,9 @@ export default function InboxPage() {
 
               <PrioritySection
                 id="hot"
-                title={language === 'es' ? 'Leads Calientes' : 'Hot Leads'}
+                title={language === 'es' ? 'Pacientes Calientes' : 'Hot Patients'}
                 subtitle={language === 'es' ? 'Alta probabilidad de conversión' : 'High conversion probability'}
-                leads={categorizedLeads.hot}
+                patients={categorizedPatients.hot}
                 icon={Flame}
                 bgColor="bg-orange-50"
                 borderColor="border-orange-200"
@@ -577,19 +577,19 @@ export default function InboxPage() {
                 id="new"
                 title={language === 'es' ? 'Nuevos' : 'New'}
                 subtitle={language === 'es' ? 'Recién llegados' : 'Just arrived'}
-                leads={categorizedLeads.new}
+                patients={categorizedPatients.new}
                 icon={Sparkles}
                 bgColor="bg-blue-50"
                 borderColor="border-blue-200"
                 iconColor="text-blue-600"
               />
 
-              {categorizedLeads.other.length > 0 && (
+              {categorizedPatients.other.length > 0 && (
                 <PrioritySection
                   id="other"
                   title={language === 'es' ? 'En Seguimiento' : 'In Progress'}
-                  subtitle={language === 'es' ? 'Leads activos' : 'Active leads'}
-                  leads={categorizedLeads.other}
+                  subtitle={language === 'es' ? 'Pacientes activos' : 'Active patients'}
+                  patients={categorizedPatients.other}
                   icon={Users}
                   bgColor="bg-slate-50"
                   borderColor="border-slate-200"
@@ -618,7 +618,7 @@ export default function InboxPage() {
           ) : (
             // Show flat list when filtering or searching
             <div className="bg-white rounded-2xl overflow-hidden border border-gray-200">
-              {filteredLeads.length === 0 ? (
+              {filteredPatients.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 px-4">
                   <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                     <Users className="w-8 h-8 text-gray-400" />
@@ -638,8 +638,8 @@ export default function InboxPage() {
                   )}
                 </div>
               ) : (
-                filteredLeads.map((lead) => (
-                  <LeadCard key={lead.id} lead={lead} />
+                filteredPatients.map((patient) => (
+                  <PatientCard key={patient.id} patient={patient} />
                 ))
               )}
             </div>
@@ -660,21 +660,21 @@ export default function InboxPage() {
         isOpen={showScheduleModal}
         onClose={() => {
           setShowScheduleModal(false)
-          setSelectedLead(null)
+          setSelectedPatient(null)
         }}
         title={t.nav.scheduleAppointment}
       >
-        {selectedLead && (
+        {selectedPatient && (
           <div className="p-4">
             <p className="text-slate-600 mb-4">
-              {t.nav.scheduleAppointment}: <strong>{selectedLead.name}</strong>
+              {t.nav.scheduleAppointment}: <strong>{selectedPatient.name}</strong>
             </p>
             <div className="flex gap-2">
               <Button
                 variant="primary"
                 className="flex-1"
                 onClick={() => {
-                  router.push(`/pacientes?id=${selectedLead.id}&action=schedule`)
+                  router.push(`/pacientes?id=${selectedPatient.id}&action=schedule`)
                   setShowScheduleModal(false)
                 }}
               >

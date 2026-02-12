@@ -1,11 +1,11 @@
-import { Lead, LeadScore, Treatment } from '@/types'
+import { Patient, LeadScore, Treatment } from '@/types'
 import { differenceInDays } from 'date-fns'
 
 /**
- * Calculate lead score based on various factors
+ * Calculate patient score based on various factors
  * Score ranges from 0-100
  */
-export function calculateLeadScore(lead: Lead, treatments: Treatment[]): LeadScore {
+export function calculatePatientScore(patient: Patient, treatments: Treatment[]): LeadScore {
   let engagement = 0
   let value = 0
   let timing = 0
@@ -14,24 +14,24 @@ export function calculateLeadScore(lead: Lead, treatments: Treatment[]): LeadSco
   // === ENGAGEMENT SCORE (max 30) ===
 
   // Responded to messages/follow-ups
-  const completedFollowUps = lead.followUps.filter(f => f.completed).length
+  const completedFollowUps = patient.followUps.filter(f => f.completed).length
   engagement += Math.min(completedFollowUps * 5, 15)
 
   // Attended appointments
-  const attendedAppointments = lead.followUps.filter(
+  const attendedAppointments = patient.followUps.filter(
     f => f.type === 'appointment' && f.attendanceStatus === 'attended'
   ).length
   engagement += Math.min(attendedAppointments * 10, 20)
 
   // Penalty for no-shows
-  const noShows = lead.followUps.filter(
+  const noShows = patient.followUps.filter(
     f => f.type === 'appointment' && f.attendanceStatus === 'noshow'
   ).length
   engagement -= Math.min(noShows * 10, 20)
 
   // Has notes (indicates conversations)
-  if (lead.notes.length > 0) {
-    engagement += Math.min(lead.notes.length * 2, 10)
+  if (patient.notes.length > 0) {
+    engagement += Math.min(patient.notes.length * 2, 10)
   }
 
   engagement = Math.max(0, Math.min(30, engagement))
@@ -40,7 +40,7 @@ export function calculateLeadScore(lead: Lead, treatments: Treatment[]): LeadSco
 
   // Check treatment interest value
   const interestedTreatments = treatments.filter(t =>
-    lead.treatments.includes(t.name) || lead.treatments.includes(t.id)
+    patient.treatments.includes(t.name) || patient.treatments.includes(t.id)
   )
 
   if (interestedTreatments.length > 0) {
@@ -53,7 +53,7 @@ export function calculateLeadScore(lead: Lead, treatments: Treatment[]): LeadSco
   }
 
   // Already paid something
-  if (lead.totalPaid && lead.totalPaid > 0) {
+  if (patient.totalPaid && patient.totalPaid > 0) {
     value += 10
   }
 
@@ -62,11 +62,11 @@ export function calculateLeadScore(lead: Lead, treatments: Treatment[]): LeadSco
   // === TIMING SCORE (max 25) ===
 
   // Recent activity
-  const daysSinceCreation = differenceInDays(new Date(), new Date(lead.createdAt))
-  const lastActivity = lead.lastContactAt || lead.updatedAt || lead.createdAt
+  const daysSinceCreation = differenceInDays(new Date(), new Date(patient.createdAt))
+  const lastActivity = patient.lastContactAt || patient.updatedAt || patient.createdAt
   const daysSinceLastActivity = differenceInDays(new Date(), new Date(lastActivity))
 
-  // Fresh leads get bonus
+  // Fresh patients get bonus
   if (daysSinceCreation <= 1) timing += 15
   else if (daysSinceCreation <= 3) timing += 12
   else if (daysSinceCreation <= 7) timing += 8
@@ -79,7 +79,7 @@ export function calculateLeadScore(lead: Lead, treatments: Treatment[]): LeadSco
   else if (daysSinceLastActivity > 30) timing -= 10
 
   // Has upcoming appointments
-  const upcomingAppointments = lead.followUps.filter(
+  const upcomingAppointments = patient.followUps.filter(
     f => !f.completed && new Date(f.scheduledAt) > new Date()
   ).length
   if (upcomingAppointments > 0) timing += 5
@@ -89,17 +89,17 @@ export function calculateLeadScore(lead: Lead, treatments: Treatment[]): LeadSco
   // === FIT SCORE (max 20) ===
 
   // Profile completeness
-  if (lead.email) fit += 3
-  if (lead.phone) fit += 3
-  if (lead.identificationNumber) fit += 4
-  if (lead.instagram) fit += 2
-  if (lead.treatments.length > 0) fit += 3
+  if (patient.email) fit += 3
+  if (patient.phone) fit += 3
+  if (patient.identificationNumber) fit += 4
+  if (patient.instagram) fit += 2
+  if (patient.treatments.length > 0) fit += 3
 
   // Source quality
-  if (lead.source === 'referral') fit += 5
-  else if (lead.source === 'instagram') fit += 3
-  else if (lead.source === 'whatsapp') fit += 3
-  else if (lead.source === 'website') fit += 2
+  if (patient.source === 'referral') fit += 5
+  else if (patient.source === 'instagram') fit += 3
+  else if (patient.source === 'whatsapp') fit += 3
+  else if (patient.source === 'website') fit += 2
 
   fit = Math.min(20, fit)
 
@@ -115,6 +115,11 @@ export function calculateLeadScore(lead: Lead, treatments: Treatment[]): LeadSco
     lastCalculated: new Date(),
   }
 }
+
+/**
+ * @deprecated Use calculatePatientScore instead
+ */
+export const calculateLeadScore = calculatePatientScore
 
 /**
  * Get score category label
@@ -151,10 +156,10 @@ export function getScoreLabelES(score: number): { label: string; color: string; 
 }
 
 /**
- * Sort leads by score (highest first)
+ * Sort patients by score (highest first)
  */
-export function sortLeadsByScore(leads: Lead[]): Lead[] {
-  return [...leads].sort((a, b) => {
+export function sortPatientsByScore(patients: Patient[]): Patient[] {
+  return [...patients].sort((a, b) => {
     const scoreA = a.score?.total || 0
     const scoreB = b.score?.total || 0
     return scoreB - scoreA
@@ -162,22 +167,37 @@ export function sortLeadsByScore(leads: Lead[]): Lead[] {
 }
 
 /**
- * Get high-priority leads (score >= 60)
+ * @deprecated Use sortPatientsByScore instead
  */
-export function getHighPriorityLeads(leads: Lead[]): Lead[] {
-  return leads.filter(lead => (lead.score?.total || 0) >= 60)
+export const sortLeadsByScore = sortPatientsByScore
+
+/**
+ * Get high-priority patients (score >= 60)
+ */
+export function getHighPriorityPatients(patients: Patient[]): Patient[] {
+  return patients.filter(patient => (patient.score?.total || 0) >= 60)
 }
 
 /**
- * Get leads needing attention (low score but recent)
+ * @deprecated Use getHighPriorityPatients instead
  */
-export function getLeadsNeedingAttention(leads: Lead[]): Lead[] {
+export const getHighPriorityLeads = getHighPriorityPatients
+
+/**
+ * Get patients needing attention (low score but recent)
+ */
+export function getPatientsNeedingAttention(patients: Patient[]): Patient[] {
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-  return leads.filter(lead => {
-    const score = lead.score?.total || 0
-    const createdAt = new Date(lead.createdAt)
-    return score < 40 && createdAt > sevenDaysAgo && lead.status !== 'closed' && lead.status !== 'lost'
+  return patients.filter(patient => {
+    const score = patient.score?.total || 0
+    const createdAt = new Date(patient.createdAt)
+    return score < 40 && createdAt > sevenDaysAgo && patient.status !== 'closed' && patient.status !== 'lost'
   })
 }
+
+/**
+ * @deprecated Use getPatientsNeedingAttention instead
+ */
+export const getLeadsNeedingAttention = getPatientsNeedingAttention

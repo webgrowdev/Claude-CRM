@@ -31,9 +31,9 @@ import {
   getPhoneUrl,
   getEmailUrl,
 } from '@/lib/utils'
-import { LeadStatus, FollowUpType } from '@/types'
+import { FunnelStatus, FollowUpType } from '@/types'
 
-const statusOptions: { value: LeadStatus; label: string; color: string }[] = [
+const statusOptions: { value: FunnelStatus; label: string; color: string }[] = [
   { value: 'new', label: 'Nuevo', color: 'bg-primary-500' },
   { value: 'contacted', label: 'Contactado', color: 'bg-warning-500' },
   { value: 'scheduled', label: 'Agendado', color: 'bg-purple-500' },
@@ -44,9 +44,9 @@ const statusOptions: { value: LeadStatus; label: string; color: string }[] = [
 export default function LeadDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const { getLeadById, updateLeadStatus, addNote, addFollowUp, deleteLead, state, isCalendarConnected } = useApp()
+  const { getPatientById, updatePatientStatus, addNote, addFollowUp, deletePatient, state, isCalendarConnected } = useApp()
 
-  const lead = useMemo(() => getLeadById(params.id as string), [params.id, getLeadById, state.leads])
+  const patient = useMemo(() => getPatientById(params.id as string), [params.id, getPatientById, state.patients])
 
   const [showMenu, setShowMenu] = useState(false)
   const [showNoteModal, setShowNoteModal] = useState(false)
@@ -85,9 +85,9 @@ export default function LeadDetailPage() {
   }
 
   // ✅ FIX: Hook must NOT be after a conditional return.
-  // Make it safe when `lead` is null.
+  // Make it safe when `patient` is null.
   const timeline = useMemo(() => {
-    if (!lead) return []
+    if (!patient) return []
 
     const items: Array<{
       id: string
@@ -99,7 +99,7 @@ export default function LeadDetailPage() {
       followUpType?: string
     }> = []
 
-    lead.notes.forEach((note) => {
+    patient.notes.forEach((note) => {
       items.push({
         id: note.id,
         type: 'note',
@@ -108,7 +108,7 @@ export default function LeadDetailPage() {
       })
     })
 
-    lead.followUps.forEach((fu) => {
+    patient.followUps.forEach((fu) => {
       items.push({
         id: fu.id,
         type: 'followup',
@@ -123,17 +123,17 @@ export default function LeadDetailPage() {
     })
 
     return items.sort((a, b) => b.date.getTime() - a.date.getTime())
-  }, [lead])
+  }, [patient])
 
-  if (!lead) {
+  if (!patient) {
     return (
       <>
-        <Header title="Lead no encontrado" showBack />
+        <Header title="Paciente no encontrado" showBack />
         <PageContainer>
           <div className="text-center py-12">
-            <p className="text-slate-500">Este lead no existe o fue eliminado</p>
+            <p className="text-slate-500">Este paciente no existe o fue eliminado</p>
             <Button onClick={() => router.push('/leads')} className="mt-4">
-              Volver a Leads
+              Volver a Pacientes
             </Button>
           </div>
         </PageContainer>
@@ -143,7 +143,7 @@ export default function LeadDetailPage() {
 
   const handleAddNote = () => {
     if (!noteContent.trim()) return
-    addNote(lead.id, noteContent)
+    addNote(patient.id, noteContent)
     setNoteContent('')
     setShowNoteModal(false)
   }
@@ -151,7 +151,7 @@ export default function LeadDetailPage() {
   const handleAddFollowUp = async () => {
     setIsCreatingFollowUp(true)
     try {
-      await addFollowUp(lead.id, {
+      await addFollowUp(patient.id, {
         type: followUp.type,
         scheduledAt: new Date(followUp.scheduledAt),
         notes: followUp.notes,
@@ -172,30 +172,30 @@ export default function LeadDetailPage() {
   }
 
   const handleDelete = () => {
-    deleteLead(lead.id)
+    deletePatient(patient.id)
     router.push('/leads')
   }
 
   return (
     <>
-      <Header title={lead.name} showBack showMenu onMenuClick={() => setShowMenu(true)} />
+      <Header title={patient.name} showBack showMenu onMenuClick={() => setShowMenu(true)} />
 
       <PageContainer withBottomNav={false} className="pb-8">
         {/* Profile Section */}
         <Card className="text-center">
-          <Avatar name={lead.name} size="xl" className="mx-auto" />
-          <h2 className="text-xl font-bold text-slate-800 mt-3">{lead.name}</h2>
+          <Avatar name={patient.name} size="xl" className="mx-auto" />
+          <h2 className="text-xl font-bold text-slate-800 mt-3">{patient.name}</h2>
           <div className="flex items-center justify-center gap-1 mt-1 text-slate-500">
-            {getSourceIcon(lead.source)}
-            <span className="text-sm">Vía {getSourceLabel(lead.source)}</span>
+            {getSourceIcon(patient.source)}
+            <span className="text-sm">Vía {getSourceLabel(patient.source)}</span>
           </div>
-          <p className="text-xs text-slate-400 mt-1">Agregado {formatTimeAgo(new Date(lead.createdAt))}</p>
+          <p className="text-xs text-slate-400 mt-1">Agregado {formatTimeAgo(new Date(patient.createdAt))}</p>
         </Card>
 
         {/* Quick Actions */}
         <div className="grid grid-cols-4 gap-3 mt-4">
           <a
-            href={getPhoneUrl(lead.phone)}
+            href={getPhoneUrl(patient.phone)}
             className="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-card hover:shadow-card-hover transition-shadow"
           >
             <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center mb-1">
@@ -205,7 +205,7 @@ export default function LeadDetailPage() {
           </a>
 
           <a
-            href={getWhatsAppUrl(lead.phone)}
+            href={getWhatsAppUrl(patient.phone)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-card hover:shadow-card-hover transition-shadow"
@@ -216,9 +216,9 @@ export default function LeadDetailPage() {
             <span className="text-xs text-slate-600">WhatsApp</span>
           </a>
 
-          {lead.email && (
+          {patient.email && (
             <a
-              href={getEmailUrl(lead.email)}
+              href={getEmailUrl(patient.email)}
               className="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-card hover:shadow-card-hover transition-shadow"
             >
               <div className="w-10 h-10 rounded-lg bg-warning-100 flex items-center justify-center mb-1">
@@ -246,14 +246,14 @@ export default function LeadDetailPage() {
             {statusOptions.map((option) => (
               <button
                 key={option.value}
-                onClick={() => updateLeadStatus(lead.id, option.value)}
+                onClick={() => updatePatientStatus(patient.id, option.value)}
                 className={`flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium transition-all ${
-                  lead.status === option.value
+                  patient.status === option.value
                     ? `${option.color} text-white`
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${lead.status === option.value ? 'bg-white' : option.color}`} />
+                <span className={`w-2 h-2 rounded-full ${patient.status === option.value ? 'bg-white' : option.color}`} />
                 {option.label}
               </button>
             ))}
@@ -270,18 +270,18 @@ export default function LeadDetailPage() {
               </div>
               <div>
                 <p className="text-xs text-slate-500">Teléfono</p>
-                <p className="text-sm text-slate-800">{lead.phone}</p>
+                <p className="text-sm text-slate-800">{patient.phone}</p>
               </div>
             </div>
 
-            {lead.email && (
+            {patient.email && (
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
                   <Mail className="w-4 h-4 text-slate-500" />
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Email</p>
-                  <p className="text-sm text-slate-800">{lead.email}</p>
+                  <p className="text-sm text-slate-800">{patient.email}</p>
                 </div>
               </div>
             )}
@@ -289,11 +289,11 @@ export default function LeadDetailPage() {
         </Card>
 
         {/* Treatments */}
-        {lead.treatments.length > 0 && (
+        {patient.treatments.length > 0 && (
           <Card className="mt-4">
             <p className="text-sm font-medium text-slate-700 mb-3">Tratamientos de Interés</p>
             <div className="flex flex-wrap gap-2">
-              {lead.treatments.map((treatment, i) => (
+              {patient.treatments.map((treatment, i) => (
                 <Badge key={`${treatment}-${i}`} variant="outline">
                   {treatment}
                 </Badge>
@@ -383,7 +383,7 @@ export default function LeadDetailPage() {
             className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-slate-100 transition-colors"
           >
             <Edit className="w-5 h-5 text-slate-500" />
-            <span className="text-slate-700">Editar lead</span>
+            <span className="text-slate-700">Editar paciente</span>
           </button>
 
           <button
@@ -394,7 +394,7 @@ export default function LeadDetailPage() {
             className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-error-50 transition-colors text-error-600"
           >
             <Trash2 className="w-5 h-5" />
-            <span>Eliminar lead</span>
+            <span>Eliminar paciente</span>
           </button>
         </div>
       </Modal>
@@ -403,7 +403,7 @@ export default function LeadDetailPage() {
       <Modal isOpen={showNoteModal} onClose={() => setShowNoteModal(false)} title="Agregar Nota">
         <div className="space-y-4">
           <TextArea
-            placeholder="Escribe una nota sobre este lead..."
+            placeholder="Escribe una nota sobre este paciente..."
             value={noteContent}
             onChange={(e) => setNoteContent(e.target.value)}
             className="min-h-[120px]"
@@ -513,9 +513,9 @@ export default function LeadDetailPage() {
       </Modal>
 
       {/* Delete Confirmation Modal */}
-      <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} title="Eliminar Lead" size="sm">
+      <Modal isOpen={showDeleteConfirm} onClose={() => setShowDeleteConfirm(false)} title="Eliminar Paciente" size="sm">
         <p className="text-slate-600 mb-6">
-          ¿Estás seguro de que deseas eliminar a <strong>{lead.name}</strong>? Esta acción no se puede deshacer.
+          ¿Estás seguro de que deseas eliminar a <strong>{patient.name}</strong>? Esta acción no se puede deshacer.
         </p>
         <div className="flex gap-3">
           <Button variant="outline" fullWidth onClick={() => setShowDeleteConfirm(false)}>

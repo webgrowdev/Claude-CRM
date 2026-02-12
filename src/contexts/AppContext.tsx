@@ -1,7 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react'
-import { Lead, LeadStatus, Treatment, User, Notification, Note, FollowUp, Settings, Appointment, AppointmentStatus } from '@/types'
+import { Patient, FunnelStatus, Treatment, User, Notification, Note, FollowUp, Settings, Appointment, AppointmentStatus } from '@/types'
 import { generateId } from '@/lib/utils'
 import {
   getGoogleCalendarSettings,
@@ -11,26 +11,25 @@ import {
 
 // State interface
 interface AppState {
-  leads: Lead[]
+  patients: Patient[]
   treatments: Treatment[]
   user: User
   notifications: Notification[]
   settings: Settings
   isLoading: boolean
-  appointments: Appointment[]   // 👈 agregar
-
+  appointments: Appointment[]
 }
 
 // Action types
 type AppAction =
-  | { type: 'SET_LEADS'; payload: Lead[] }
-  | { type: 'ADD_LEAD'; payload: Lead }
-  | { type: 'UPDATE_LEAD'; payload: Lead }
-  | { type: 'DELETE_LEAD'; payload: string }
-  | { type: 'UPDATE_LEAD_STATUS'; payload: { id: string; status: LeadStatus } }
-  | { type: 'ADD_NOTE'; payload: { leadId: string; note: Note } }
-  | { type: 'ADD_FOLLOWUP'; payload: { leadId: string; followUp: FollowUp } }
-  | { type: 'COMPLETE_FOLLOWUP'; payload: { leadId: string; followUpId: string } }
+  | { type: 'SET_PATIENTS'; payload: Patient[] }
+  | { type: 'ADD_PATIENT'; payload: Patient }
+  | { type: 'UPDATE_PATIENT'; payload: Patient }
+  | { type: 'DELETE_PATIENT'; payload: string }
+  | { type: 'UPDATE_PATIENT_STATUS'; payload: { id: string; status: FunnelStatus } }
+  | { type: 'ADD_NOTE'; payload: { patientId: string; note: Note } }
+  | { type: 'ADD_FOLLOWUP'; payload: { patientId: string; followUp: FollowUp } }
+  | { type: 'COMPLETE_FOLLOWUP'; payload: { patientId: string; followUpId: string } }
   | { type: 'SET_TREATMENTS'; payload: Treatment[] }
   | { type: 'ADD_TREATMENT'; payload: Treatment }
   | { type: 'UPDATE_TREATMENT'; payload: Treatment }
@@ -63,7 +62,7 @@ const initialUser: User = {
 }
 
 const initialState: AppState = {
-  leads: [],
+  patients: [],
   treatments: [],
   appointments: [],
   user: initialUser,
@@ -75,52 +74,52 @@ const initialState: AppState = {
 // Reducer
 function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
-    case 'SET_LEADS':
-      return { ...state, leads: action.payload }
+    case 'SET_PATIENTS':
+      return { ...state, patients: action.payload }
 
-    case 'ADD_LEAD':
-      return { ...state, leads: [action.payload, ...state.leads] }
+    case 'ADD_PATIENT':
+      return { ...state, patients: [action.payload, ...state.patients] }
 
-    case 'UPDATE_LEAD':
+    case 'UPDATE_PATIENT':
       return {
         ...state,
-        leads: state.leads.map((lead) =>
-          lead.id === action.payload.id ? { ...action.payload, updatedAt: new Date() } : lead
+        patients: state.patients.map((patient) =>
+          patient.id === action.payload.id ? { ...action.payload, updatedAt: new Date() } : patient
         ),
       }
 
-    case 'DELETE_LEAD':
+    case 'DELETE_PATIENT':
       return {
         ...state,
-        leads: state.leads.filter((lead) => lead.id !== action.payload),
+        patients: state.patients.filter((patient) => patient.id !== action.payload),
       }
 
-    case 'UPDATE_LEAD_STATUS':
+    case 'UPDATE_PATIENT_STATUS':
       return {
         ...state,
-        leads: state.leads.map((lead) =>
-          lead.id === action.payload.id
+        patients: state.patients.map((patient) =>
+          patient.id === action.payload.id
             ? {
-                ...lead,
+                ...patient,
                 status: action.payload.status,
                 updatedAt: new Date(),
-                closedAt: action.payload.status === 'closed' ? new Date() : lead.closedAt,
+                closedAt: action.payload.status === 'closed' ? new Date() : patient.closedAt,
               }
-            : lead
+            : patient
         ),
       }
 
     case 'ADD_NOTE':
       return {
         ...state,
-        leads: state.leads.map((lead) =>
-          lead.id === action.payload.leadId
+        patients: state.patients.map((patient) =>
+          patient.id === action.payload.patientId
             ? {
-                ...lead,
-                notes: [action.payload.note, ...lead.notes],
+                ...patient,
+                notes: [action.payload.note, ...patient.notes],
                 updatedAt: new Date(),
               }
-            : lead
+            : patient
         ),
       }
       
@@ -147,32 +146,32 @@ function appReducer(state: AppState, action: AppAction): AppState {
     case 'ADD_FOLLOWUP':
       return {
         ...state,
-        leads: state.leads.map((lead) =>
-          lead.id === action.payload.leadId
+        patients: state.patients.map((patient) =>
+          patient.id === action.payload.patientId
             ? {
-                ...lead,
-                followUps: [...lead.followUps, action.payload.followUp],
+                ...patient,
+                followUps: [...patient.followUps, action.payload.followUp],
                 updatedAt: new Date(),
               }
-            : lead
+            : patient
         ),
       }
 
     case 'COMPLETE_FOLLOWUP':
       return {
         ...state,
-        leads: state.leads.map((lead) =>
-          lead.id === action.payload.leadId
+        patients: state.patients.map((patient) =>
+          patient.id === action.payload.patientId
             ? {
-                ...lead,
-                followUps: lead.followUps.map((fu) =>
+                ...patient,
+                followUps: patient.followUps.map((fu) =>
                   fu.id === action.payload.followUpId
                     ? { ...fu, completed: true, completedAt: new Date() }
                     : fu
                 ),
                 updatedAt: new Date(),
               }
-            : lead
+            : patient
         ),
       }
 
@@ -234,15 +233,15 @@ function appReducer(state: AppState, action: AppAction): AppState {
 interface AppContextType {
   state: AppState
   dispatch: React.Dispatch<AppAction>
-  // Lead actions
-  addLead: (lead: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'notes' | 'followUps'>) => void
-  updateLead: (lead: Lead) => void
-  deleteLead: (id: string) => void
-  updateLeadStatus: (id: string, status: LeadStatus) => void
-  addNote: (leadId: string, content: string) => void
-  addFollowUp: (leadId: string, followUp: Omit<FollowUp, 'id' | 'leadId' | 'completed'>, syncWithCalendar?: boolean) => Promise<FollowUp | null>
-  completeFollowUp: (leadId: string, followUpId: string) => void
-  getLeadById: (id: string) => Lead | undefined
+  // Patient actions (renamed from Lead actions)
+  addPatient: (patient: Omit<Patient, 'id' | 'createdAt' | 'updatedAt' | 'notes' | 'followUps'>) => void
+  updatePatient: (patient: Patient) => void
+  deletePatient: (id: string) => void
+  updatePatientStatus: (id: string, status: FunnelStatus) => void
+  addNote: (patientId: string, content: string) => void
+  addFollowUp: (patientId: string, followUp: Omit<FollowUp, 'id' | 'patientId' | 'completed'>, syncWithCalendar?: boolean) => Promise<FollowUp | null>
+  completeFollowUp: (patientId: string, followUpId: string) => void
+  getPatientById: (id: string) => Patient | undefined
   // Treatment actions
   addTreatment: (treatment: Omit<Treatment, 'id'>) => void
   updateTreatment: (treatment: Treatment) => void
@@ -255,18 +254,18 @@ interface AppContextType {
   // User actions
   updateUser: (user: User) => void
   // Computed values
-  getLeadsByStatus: (status: LeadStatus) => Lead[]
-  getUpcomingFollowUps: () => { lead: Lead; followUp: FollowUp }[]
-  getRecentLeads: (count: number) => Lead[]
+  getPatientsByStatus: (status: FunnelStatus) => Patient[]
+  getUpcomingFollowUps: () => { patient: Patient; followUp: FollowUp }[]
+  getRecentPatients: (count: number) => Patient[]
   getUnreadNotificationsCount: () => number
   // Calendar integration
   isCalendarConnected: () => boolean
   // Appointment helpers
-  getPatientCurrentStatus: (leadId: string) => 'active' | 'inactive' | 'scheduled' | 'completed'
+  getPatientCurrentStatus: (patientId: string) => 'active' | 'inactive' | 'scheduled' | 'completed'
   getAvailableSlots: (date: Date, durationMinutes?: number) => { time: string; available: boolean }[]
   // NEW: Appointment-based status derivation
-  getDerivedPatientStatus: (leadId: string) => 'new' | 'scheduled' | 'active' | 'inactive' | 'lost'
-  getPatientAppointmentCounts: (leadId: string) => {
+  getDerivedPatientStatus: (patientId: string) => 'new' | 'scheduled' | 'active' | 'inactive' | 'lost'
+  getPatientAppointmentCounts: (patientId: string) => {
     pending: number
     confirmed: number
     completed: number
@@ -298,7 +297,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (!token) {
         console.warn('No authentication token found')
-        dispatch({ type: 'SET_LEADS', payload: [] })
+        dispatch({ type: 'SET_PATIENTS', payload: [] })
         dispatch({ type: 'SET_TREATMENTS', payload: [] })
         dispatch({ type: 'SET_APPOINTMENTS', payload: [] })
         dispatch({ type: 'UPDATE_USER', payload: initialUser })
@@ -353,17 +352,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }
         }
 
-        // Load patients/leads from API
+        // Load patients from API
         const patientsResponse = await fetch('/api/patients?limit=1000', { headers })
-        let leads: Lead[] = []
+        let patients: Patient[] = []
         
         if (patientsResponse.ok) {
           const patientsData = await patientsResponse.json()
-          const patients = patientsData.patients || []
+          const patientsFromApi = patientsData.patients || []
           
           // Load notes and follow-ups for each patient
-          const leadsWithData = await Promise.all(
-            patients.map(async (p: any) => {
+          const patientsWithData = await Promise.all(
+            patientsFromApi.map(async (p: any) => {
               // Load notes for this patient
               let notes: Note[] = []
               try {
@@ -389,7 +388,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                   const followUpsData = await followUpsResponse.json()
                   followUps = (followUpsData.followUps || []).map((f: any) => ({
                     id: f.id,
-                    leadId: p.id,
+                    patientId: p.id,
                     type: f.type,
                     scheduledAt: new Date(f.scheduled_at),
                     completed: f.completed,
@@ -402,6 +401,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 console.error(`Error loading follow-ups for patient ${p.id}:`, error)
               }
 
+              // Map old status values to new FunnelStatus
+              let mappedStatus: FunnelStatus = 'new'
+              if (p.funnel_status) {
+                mappedStatus = p.funnel_status
+              } else if (p.status) {
+                // Map old status values
+                if (p.status === 'scheduled') {
+                  mappedStatus = 'appointment'
+                } else {
+                  mappedStatus = p.status
+                }
+              }
+
               return {
                 id: p.id,
                 name: p.name,
@@ -410,7 +422,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 identificationNumber: p.identification_number,
                 identificationType: p.identification_type,
                 source: p.source || 'other',
-                status: p.status || 'new',
+                status: mappedStatus,
                 funnelStatus: p.funnel_status,
                 treatments: [],
                 notes,
@@ -434,10 +446,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
             })
           )
           
-          leads = leadsWithData
+          patients = patientsWithData
         }
 
-        // Load appointments from API and merge into leads
+        // Load appointments from API and merge into patients
         const appointmentsResponse = await fetch('/api/appointments?limit=1000', { headers })
         if (appointmentsResponse.ok) {
           const appointmentsData = await appointmentsResponse.json()
@@ -461,13 +473,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           }))
           dispatch({ type: 'SET_APPOINTMENTS', payload: appointments })
 
-          // Merge appointments into leads as followUps
-          leads = leads.map(lead => {
-            const leadAppointments = appointments
-              .filter((apt: any) => apt.patientId === lead.id)
+          // Merge appointments into patients as followUps
+          patients = patients.map(patient => {
+            const patientAppointments = appointments
+              .filter((apt: any) => apt.patientId === patient.id)
               .map((apt: any) => ({
                 id: apt.id,
-                leadId: lead.id,
+                patientId: patient.id,
                 type: 'appointment' as const,
                 scheduledAt: apt.scheduledAt,
                 completed: apt.status === 'completed',
@@ -482,16 +494,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 appointmentStatus: apt.status as AppointmentStatus,
               }))
             return {
-              ...lead,
-              followUps: [...(lead.followUps || []), ...leadAppointments],
+              ...patient,
+              followUps: [...(patient.followUps || []), ...patientAppointments],
             }
           })
         }
 
-        dispatch({ type: 'SET_LEADS', payload: leads })
+        dispatch({ type: 'SET_PATIENTS', payload: patients })
       } catch (error) {
         console.error('Error loading data from APIs:', error)
-        dispatch({ type: 'SET_LEADS', payload: [] })
+        dispatch({ type: 'SET_PATIENTS', payload: [] })
         dispatch({ type: 'SET_TREATMENTS', payload: [] })
         dispatch({ type: 'SET_APPOINTMENTS', payload: [] })
       } finally {
@@ -505,20 +517,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
 
   // Actions
-  const addLead = async (leadData: Omit<Lead, 'id' | 'createdAt' | 'updatedAt' | 'notes' | 'followUps'>) => {
+  const addPatient = async (patientData: Omit<Patient, 'id' | 'createdAt' | 'updatedAt' | 'notes' | 'followUps'>) => {
     const token = getAuthToken()
     
     if (!token) {
       console.warn('No token, using local-only mode')
-      const newLead: Lead = {
-        ...leadData,
-        id: `lead-${generateId()}`,
+      const newPatient: Patient = {
+        ...patientData,
+        id: `patient-${generateId()}`,
         notes: [],
         followUps: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       }
-      dispatch({ type: 'ADD_LEAD', payload: newLead })
+      dispatch({ type: 'ADD_PATIENT', payload: newPatient })
       return
     }
 
@@ -531,27 +543,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: leadData.name,
-          email: leadData.email,
-          phone: leadData.phone,
-          identification_number: leadData.identificationNumber,
-          identification_type: leadData.identificationType,
-          source: leadData.source,
-          status: leadData.status,
-          funnel_status: leadData.funnelStatus,
-          instagram_handle: leadData.instagram,
-          preferred_time: leadData.preferredTime,
-          campaign: leadData.campaign,
-          tags: leadData.tags,
-          assigned_to: leadData.assignedTo,
-          value: leadData.value,
+          name: patientData.name,
+          email: patientData.email,
+          phone: patientData.phone,
+          identification_number: patientData.identificationNumber,
+          identification_type: patientData.identificationType,
+          source: patientData.source,
+          status: patientData.status,
+          funnel_status: patientData.funnelStatus,
+          instagram_handle: patientData.instagram,
+          preferred_time: patientData.preferredTime,
+          campaign: patientData.campaign,
+          tags: patientData.tags,
+          assigned_to: patientData.assignedTo,
+          value: patientData.value,
         }),
       })
 
       if (response.ok) {
         const data = await response.json()
         const patient = data.patient
-        const newLead: Lead = {
+        const newPatient: Patient = {
           id: patient.id,
           name: patient.name,
           email: patient.email || '',
@@ -561,7 +573,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           source: patient.source,
           status: patient.status,
           funnelStatus: patient.funnel_status,
-          treatments: leadData.treatments || [],
+          treatments: patientData.treatments || [],
           notes: [],
           followUps: [],
           assignedTo: patient.assigned_to,
@@ -576,40 +588,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
           totalPaid: patient.total_paid,
           totalPending: patient.total_pending,
         }
-        dispatch({ type: 'ADD_LEAD', payload: newLead })
+        dispatch({ type: 'ADD_PATIENT', payload: newPatient })
       } else {
         console.error('Failed to create patient via API')
         // Fallback to local-only
-        const newLead: Lead = {
-          ...leadData,
-          id: `lead-${generateId()}`,
+        const newPatient: Patient = {
+          ...patientData,
+          id: `patient-${generateId()}`,
           notes: [],
           followUps: [],
           createdAt: new Date(),
           updatedAt: new Date(),
         }
-        dispatch({ type: 'ADD_LEAD', payload: newLead })
+        dispatch({ type: 'ADD_PATIENT', payload: newPatient })
       }
     } catch (error) {
       console.error('Error calling API:', error)
       // Fallback to local-only
-      const newLead: Lead = {
-        ...leadData,
-        id: `lead-${generateId()}`,
+      const newPatient: Patient = {
+        ...patientData,
+        id: `patient-${generateId()}`,
         notes: [],
         followUps: [],
         createdAt: new Date(),
         updatedAt: new Date(),
       }
-      dispatch({ type: 'ADD_LEAD', payload: newLead })
+      dispatch({ type: 'ADD_PATIENT', payload: newPatient })
     }
   }
 
-  const updateLead = async (lead: Lead) => {
+  const updatePatient = async (patient: Patient) => {
     const token = getAuthToken()
     
     // Update local state immediately
-    dispatch({ type: 'UPDATE_LEAD', payload: lead })
+    dispatch({ type: 'UPDATE_PATIENT', payload: patient })
 
     if (!token) {
       console.warn('No token, local-only update')
@@ -618,30 +630,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     try {
       // Call API to update patient
-      await fetch(`/api/patients?id=${lead.id}`, {
+      await fetch(`/api/patients?id=${patient.id}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: lead.name,
-          email: lead.email,
-          phone: lead.phone,
-          identification_number: lead.identificationNumber,
-          identification_type: lead.identificationType,
-          source: lead.source,
-          status: lead.status,
-          funnel_status: lead.funnelStatus,
-          instagram_handle: lead.instagram,
-          preferred_time: lead.preferredTime,
-          campaign: lead.campaign,
-          tags: lead.tags,
-          assigned_to: lead.assignedTo,
-          value: lead.value,
-          last_contact_at: lead.lastContactAt,
-          next_action_at: lead.nextActionAt,
-          next_action: lead.nextAction,
+          name: patient.name,
+          email: patient.email,
+          phone: patient.phone,
+          identification_number: patient.identificationNumber,
+          identification_type: patient.identificationType,
+          source: patient.source,
+          status: patient.status,
+          funnel_status: patient.funnelStatus,
+          instagram_handle: patient.instagram,
+          preferred_time: patient.preferredTime,
+          campaign: patient.campaign,
+          tags: patient.tags,
+          assigned_to: patient.assignedTo,
+          value: patient.value,
+          last_contact_at: patient.lastContactAt,
+          next_action_at: patient.nextActionAt,
+          next_action: patient.nextAction,
         }),
       })
     } catch (error) {
@@ -649,11 +661,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const deleteLead = async (id: string) => {
+  const deletePatient = async (id: string) => {
     const token = getAuthToken()
     
     // Update local state immediately
-    dispatch({ type: 'DELETE_LEAD', payload: id })
+    dispatch({ type: 'DELETE_PATIENT', payload: id })
 
     if (!token) {
       console.warn('No token, local-only delete')
@@ -673,11 +685,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const updateLeadStatus = async (id: string, status: LeadStatus) => {
+  const updatePatientStatus = async (id: string, status: FunnelStatus) => {
     const token = getAuthToken()
     
     // Update local state immediately
-    dispatch({ type: 'UPDATE_LEAD_STATUS', payload: { id, status } })
+    dispatch({ type: 'UPDATE_PATIENT_STATUS', payload: { id, status } })
 
     if (!token) {
       console.warn('No token, local-only status update')
@@ -702,7 +714,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const addNote = async (leadId: string, content: string) => {
+  const addNote = async (patientId: string, content: string) => {
     const token = getAuthToken()
     
     const note: Note = {
@@ -713,7 +725,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
     
     // Update local state immediately
-    dispatch({ type: 'ADD_NOTE', payload: { leadId, note } })
+    dispatch({ type: 'ADD_NOTE', payload: { patientId, note } })
 
     if (!token) {
       console.warn('No token, local-only note')
@@ -729,7 +741,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          patient_id: leadId,
+          patient_id: patientId,
           content: content,
         }),
       })
@@ -743,7 +755,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           createdAt: new Date(data.note.created_at),
           createdBy: data.note.created_by,
         }
-        dispatch({ type: 'ADD_NOTE', payload: { leadId, note: apiNote } })
+        dispatch({ type: 'ADD_NOTE', payload: { patientId, note: apiNote } })
       }
     } catch (error) {
       console.error('Error creating note via API:', error)
@@ -751,18 +763,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   const addFollowUp = async (
-    leadId: string,
-    followUpData: Omit<FollowUp, 'id' | 'leadId' | 'completed'>,
+    patientId: string,
+    followUpData: Omit<FollowUp, 'id' | 'patientId' | 'completed'>,
     syncWithCalendar: boolean = true
   ): Promise<FollowUp | null> => {
     const token = getAuthToken()
-    const lead = state.leads.find(l => l.id === leadId)
-    if (!lead) return null
+    const patient = state.patients.find(p => p.id === patientId)
+    if (!patient) return null
 
     const followUp: FollowUp = {
       ...followUpData,
       id: `fu-${generateId()}`,
-      leadId,
+      patientId,
       completed: false,
       duration: followUpData.duration || 30,
     }
@@ -771,7 +783,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const calendarSettings = getGoogleCalendarSettings()
     if (syncWithCalendar && calendarSettings.connected && followUpData.type === 'meeting') {
       try {
-        const calendarEvent = await createCalendarEvent(followUp, lead)
+        const calendarEvent = await createCalendarEvent(followUp, patient)
         if (calendarEvent) {
           followUp.googleEventId = calendarEvent.googleEventId
           followUp.meetLink = calendarEvent.meetLink
@@ -783,12 +795,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
 
     // Update local state immediately
-    dispatch({ type: 'ADD_FOLLOWUP', payload: { leadId, followUp } })
+    dispatch({ type: 'ADD_FOLLOWUP', payload: { patientId, followUp } })
 
-    // Automatically change status to 'scheduled' if it's a meeting or call and status is new/contacted
+    // Automatically change status to 'appointment' if it's a meeting or call and status is new/contacted
     if ((followUpData.type === 'meeting' || followUpData.type === 'call') &&
-        (lead.status === 'new' || lead.status === 'contacted')) {
-      dispatch({ type: 'UPDATE_LEAD_STATUS', payload: { id: leadId, status: 'scheduled' } })
+        (patient.status === 'new' || patient.status === 'contacted')) {
+      dispatch({ type: 'UPDATE_PATIENT_STATUS', payload: { id: patientId, status: 'appointment' } })
     }
 
     if (!token) {
@@ -805,7 +817,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          patient_id: leadId,
+          patient_id: patientId,
           type: followUpData.type,
           scheduled_at: followUpData.scheduledAt,
           notes: followUpData.notes,
@@ -820,7 +832,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ...followUp,
           id: data.followUp.id,
         }
-        dispatch({ type: 'ADD_FOLLOWUP', payload: { leadId, followUp: apiFollowUp } })
+        dispatch({ type: 'ADD_FOLLOWUP', payload: { patientId, followUp: apiFollowUp } })
         return apiFollowUp
       }
     } catch (error) {
@@ -835,11 +847,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return settings.connected
   }
 
-  const completeFollowUp = async (leadId: string, followUpId: string) => {
+  const completeFollowUp = async (patientId: string, followUpId: string) => {
     const token = getAuthToken()
     
     // Update local state immediately
-    dispatch({ type: 'COMPLETE_FOLLOWUP', payload: { leadId, followUpId } })
+    dispatch({ type: 'COMPLETE_FOLLOWUP', payload: { patientId, followUpId } })
 
     if (!token) {
       console.warn('No token, local-only complete')
@@ -863,8 +875,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const getLeadById = (id: string) => {
-    return state.leads.find((lead) => lead.id === id)
+  const getPatientById = (id: string) => {
+    return state.patients.find((patient) => patient.id === id)
   }
 
   const addTreatment = async (treatmentData: Omit<Treatment, 'id'>) => {
@@ -989,17 +1001,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'UPDATE_USER', payload: user })
   }
 
-  const getLeadsByStatus = (status: LeadStatus) => {
-    return state.leads.filter((lead) => lead.status === status)
+  const getPatientsByStatus = (status: FunnelStatus) => {
+    return state.patients.filter((patient) => patient.status === status)
   }
 
   const getUpcomingFollowUps = () => {
-    const upcoming: { lead: Lead; followUp: FollowUp }[] = []
-    state.leads.forEach((lead) => {
-      lead.followUps
+    const upcoming: { patient: Patient; followUp: FollowUp }[] = []
+    state.patients.forEach((patient) => {
+      patient.followUps
         .filter((fu) => !fu.completed)
         .forEach((followUp) => {
-          upcoming.push({ lead, followUp })
+          upcoming.push({ patient, followUp })
         })
     })
     return upcoming.sort(
@@ -1007,8 +1019,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     )
   }
 
-  const getRecentLeads = (count: number) => {
-    return [...state.leads]
+  const getRecentPatients = (count: number) => {
+    return [...state.patients]
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, count)
   }
@@ -1018,12 +1030,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   // Helper: Derive patient current status from their appointments
-  const getPatientCurrentStatus = (leadId: string): 'active' | 'inactive' | 'scheduled' | 'completed' => {
-    const lead = state.leads.find((l) => l.id === leadId)
-    if (!lead || lead.followUps.length === 0) return 'inactive'
+  const getPatientCurrentStatus = (patientId: string): 'active' | 'inactive' | 'scheduled' | 'completed' => {
+    const patient = state.patients.find((p) => p.id === patientId)
+    if (!patient || patient.followUps.length === 0) return 'inactive'
 
     const now = new Date()
-    const appointments = lead.followUps.filter((fu) => fu.type === 'appointment' || fu.type === 'meeting')
+    const appointments = patient.followUps.filter((fu) => fu.type === 'appointment' || fu.type === 'meeting')
 
     // Check for upcoming appointments
     const upcomingAppointments = appointments.filter(
@@ -1060,8 +1072,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     // Get all appointments for the selected date
     const appointmentsOnDate: Date[] = []
-    state.leads.forEach((lead) => {
-      lead.followUps
+    state.patients.forEach((patient) => {
+      patient.followUps
         .filter((fu) => !fu.completed && (fu.type === 'appointment' || fu.type === 'meeting'))
         .forEach((fu) => {
           const fuDate = new Date(fu.scheduledAt)
@@ -1107,13 +1119,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   // Helper: Get appointment counts for a patient
-  const getPatientAppointmentCounts = (leadId: string) => {
-    const lead = state.leads.find((l) => l.id === leadId)
-    if (!lead) {
+  const getPatientAppointmentCounts = (patientId: string) => {
+    const patient = state.patients.find((p) => p.id === patientId)
+    if (!patient) {
       return { pending: 0, confirmed: 0, completed: 0, noShow: 0, cancelled: 0, total: 0 }
     }
 
-    const appointments = lead.followUps.filter((fu) => fu.type === 'appointment' || fu.type === 'meeting')
+    const appointments = patient.followUps.filter((fu) => fu.type === 'appointment' || fu.type === 'meeting')
     
     return {
       pending: appointments.filter((fu) => fu.appointmentStatus === 'pending').length,
@@ -1126,16 +1138,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }
 
   // Helper: Derive patient status from their appointments
-  const getDerivedPatientStatus = (leadId: string): 'new' | 'scheduled' | 'active' | 'inactive' | 'lost' => {
-    const lead = state.leads.find((l) => l.id === leadId)
-    if (!lead) return 'new'
+  const getDerivedPatientStatus = (patientId: string): 'new' | 'scheduled' | 'active' | 'inactive' | 'lost' => {
+    const patient = state.patients.find((p) => p.id === patientId)
+    if (!patient) return 'new'
 
-    const appointments = lead.followUps.filter((fu) => fu.type === 'appointment' || fu.type === 'meeting')
+    const appointments = patient.followUps.filter((fu) => fu.type === 'appointment' || fu.type === 'meeting')
     
     // No appointments = New patient
     if (appointments.length === 0) return 'new'
 
-    const counts = getPatientAppointmentCounts(leadId)
+    const counts = getPatientAppointmentCounts(patientId)
     const now = new Date()
 
     // Has pending or confirmed appointments = Scheduled
@@ -1174,7 +1186,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const data = await response.json()
-        // Reload leads after sync
+        // Reload patients after sync
         // In production, this would refetch from the API
         console.log('ManyChat sync completed:', data.results)
         return data.results
@@ -1237,14 +1249,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value: AppContextType = {
     state,
     dispatch,
-    addLead,
-    updateLead,
-    deleteLead,
-    updateLeadStatus,
+    addPatient,
+    updatePatient,
+    deletePatient,
+    updatePatientStatus,
     addNote,
     addFollowUp,
     completeFollowUp,
-    getLeadById,
+    getPatientById,
     addTreatment,
     updateTreatment,
     deleteTreatment,
@@ -1252,9 +1264,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     clearNotifications,
     updateSettings,
     updateUser,
-    getLeadsByStatus,
+    getPatientsByStatus,
     getUpcomingFollowUps,
-    getRecentLeads,
+    getRecentPatients,
     getUnreadNotificationsCount,
     isCalendarConnected,
     getPatientCurrentStatus,

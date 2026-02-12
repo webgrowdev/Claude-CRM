@@ -13,7 +13,6 @@ import {
   LogOut,
   Plus,
   ChevronDown,
-  Kanban,
   HelpCircle,
   MapPin,
   LayoutDashboard,
@@ -43,7 +42,7 @@ export function Sidebar() {
       href: '/inbox',
       label: t.nav.inbox,
       icon: Inbox,
-      badge: state.leads.filter(l => l.status === 'new').length || undefined
+      badge: state.patients.filter(p => p.status === 'new').length || undefined
     },
     { href: '/appointments', label: t.nav.appointments, icon: MapPin },
     { href: '/calendar', label: t.nav.calendar, icon: CalendarDays },
@@ -53,7 +52,6 @@ export function Sidebar() {
 
   // Secondary items
   const secondaryNavItems = [
-    { href: '/kanban', label: t.nav.pipeline, icon: Kanban },
     { href: '/treatments', label: t.nav.treatments, icon: Syringe },
     { href: '/settings', label: t.nav.settings, icon: Settings },
   ]

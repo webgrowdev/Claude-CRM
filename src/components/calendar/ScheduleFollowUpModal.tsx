@@ -32,7 +32,7 @@ export function ScheduleFollowUpModal({ isOpen, onClose, language = 'es' }: Sche
   const [isCreating, setIsCreating] = useState(false)
 
   // Follow-up type options
-  const followUpTypeOptions: { value: FollowUpType; label: string; labelEs: string; icon: any }[] = [
+  const followUpTypeOptions: { value: FollowUpType; label: string; labelEs: string; icon: React.ElementType }[] = [
     { value: 'appointment', label: 'In-person Appointment', labelEs: 'Cita Presencial', icon: CalendarCheck },
     { value: 'meeting', label: 'Video Call (Meet)', labelEs: 'Videollamada (Meet)', icon: Video },
     { value: 'call', label: 'Phone Call', labelEs: 'Llamada Telefónica', icon: Phone },

@@ -300,7 +300,8 @@ export default function InboxPage() {
       }
       
       if (mostRecentFollowUp.appointmentStatus) {
-        const statusLabels: Record<string, { es: string; en: string; variant: any }> = {
+        type BadgeVariant = 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error'
+        const statusLabels: Record<string, { es: string; en: string; variant: BadgeVariant }> = {
           pending: { es: 'Pendiente', en: 'Pending', variant: 'warning' },
           confirmed: { es: 'Confirmado', en: 'Confirmed', variant: 'primary' },
           'no-show': { es: 'No asistió', en: 'No-show', variant: 'error' },

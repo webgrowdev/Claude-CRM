@@ -4,60 +4,29 @@ import React from 'react'
 import { Check, Circle, Clock, Phone, Calendar, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ActivityStatus } from '@/types'
+import { useLanguage } from '@/i18n/LanguageContext'
 
 interface WorkflowStep {
   id: ActivityStatus
-  label: string
-  labelEs: string
   icon: React.ElementType
-  description: string
-  descriptionEs: string
 }
 
 interface WorkflowStepIndicatorProps {
   currentStatus: ActivityStatus
-  language?: 'en' | 'es'
   className?: string
 }
 
 const workflowSteps: WorkflowStep[] = [
-  {
-    id: 'new',
-    label: 'New Lead',
-    labelEs: 'Lead Nuevo',
-    icon: Circle,
-    description: 'Lead received',
-    descriptionEs: 'Lead recibido',
-  },
-  {
-    id: 'contacted',
-    label: 'Contact Made',
-    labelEs: 'Contactado',
-    icon: Phone,
-    description: 'First contact established',
-    descriptionEs: 'Primer contacto establecido',
-  },
-  {
-    id: 'scheduled',
-    label: 'Scheduled',
-    labelEs: 'Agendado',
-    icon: Calendar,
-    description: 'Appointment scheduled',
-    descriptionEs: 'Cita agendada',
-  },
-  {
-    id: 'completed',
-    label: 'Completed',
-    labelEs: 'Completado',
-    icon: CheckCircle2,
-    description: 'Service completed',
-    descriptionEs: 'Servicio completado',
-  },
+  { id: 'new', icon: Circle },
+  { id: 'contacted', icon: Phone },
+  { id: 'scheduled', icon: Calendar },
+  { id: 'completed', icon: CheckCircle2 },
 ]
 
 const statusOrder: ActivityStatus[] = ['new', 'contacted', 'scheduled', 'completed', 'dropped', 'lost']
 
-export function WorkflowStepIndicator({ currentStatus, language = 'es', className }: WorkflowStepIndicatorProps) {
+export function WorkflowStepIndicator({ currentStatus, className }: WorkflowStepIndicatorProps) {
+  const { t, language } = useLanguage()
   const currentIndex = statusOrder.indexOf(currentStatus)
   
   // If status is dropped or lost, show different UI
@@ -70,14 +39,10 @@ export function WorkflowStepIndicator({ currentStatus, language = 'es', classNam
           </div>
           <div>
             <p className="font-medium text-slate-700">
-              {currentStatus === 'dropped'
-                ? language === 'es' ? 'Actividad Abandonada' : 'Activity Dropped'
-                : language === 'es' ? 'Lead Perdido' : 'Lead Lost'}
+              {currentStatus === 'dropped' ? t.workflow.droppedTitle : t.workflow.lostTitle}
             </p>
             <p className="text-sm text-slate-500">
-              {currentStatus === 'dropped'
-                ? language === 'es' ? 'Sin avance reciente' : 'No recent progress'
-                : language === 'es' ? 'No interesado' : 'Not interested'}
+              {currentStatus === 'dropped' ? t.workflow.droppedDesc : t.workflow.lostDesc}
             </p>
           </div>
         </div>
@@ -88,7 +53,7 @@ export function WorkflowStepIndicator({ currentStatus, language = 'es', classNam
   return (
     <div className={cn('p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border border-blue-200', className)}>
       <h3 className="text-sm font-semibold text-slate-700 mb-3">
-        {language === 'es' ? 'Progreso del Lead' : 'Lead Progress'}
+        {t.workflow.title}
       </h3>
       <div className="relative">
         {/* Progress bar background */}
@@ -110,6 +75,12 @@ export function WorkflowStepIndicator({ currentStatus, language = 'es', classNam
             const isPending = statusOrder.indexOf(step.id) > currentIndex
 
             const StepIcon = step.icon
+            
+            // Get translated labels using activityStatus from i18n
+            const statusKey = step.id as keyof typeof t.activityStatus
+            const label = t.activityStatus[statusKey]
+            const descKey = `${step.id}Desc` as keyof typeof t.workflow
+            const description = t.workflow[descKey] as string || ''
 
             return (
               <div key={step.id} className="flex flex-col items-center">
@@ -141,11 +112,11 @@ export function WorkflowStepIndicator({ currentStatus, language = 'es', classNam
                       isPending && 'text-slate-400'
                     )}
                   >
-                    {language === 'es' ? step.labelEs : step.label}
+                    {label}
                   </p>
-                  {isCurrent && (
+                  {isCurrent && description && (
                     <p className="text-xs text-blue-600 mt-0.5">
-                      {language === 'es' ? step.descriptionEs : step.description}
+                      {description}
                     </p>
                   )}
                 </div>
@@ -163,7 +134,6 @@ interface WorkflowCTAProps {
   patientId: string
   patientName: string
   patientPhone: string
-  language?: 'en' | 'es'
   onContact?: () => void
   onSchedule?: () => void
   onComplete?: () => void
@@ -175,46 +145,47 @@ export function WorkflowCTA({
   patientId,
   patientName,
   patientPhone,
-  language = 'es',
   onContact,
   onSchedule,
   onComplete,
   className,
 }: WorkflowCTAProps) {
+  const { t } = useLanguage()
+  
   const getCTAContent = () => {
     switch (currentStatus) {
       case 'new':
         return {
-          title: language === 'es' ? '¿Siguiente paso?' : 'Next step?',
-          description: language === 'es' ? 'Contacta a este lead para iniciar la conversación.' : 'Contact this lead to start the conversation.',
-          buttonText: language === 'es' ? 'Contactar Lead' : 'Contact Lead',
+          title: t.workflow.nextStep,
+          description: t.workflow.contactLeadDesc,
+          buttonText: t.workflow.contactLeadCTA,
           buttonIcon: Phone,
           buttonColor: 'bg-blue-500 hover:bg-blue-600 text-white',
           onClick: onContact,
         }
       case 'contacted':
         return {
-          title: language === 'es' ? '¿Siguiente paso?' : 'Next step?',
-          description: language === 'es' ? 'Agenda una cita o seguimiento con el paciente.' : 'Schedule an appointment or follow-up with the patient.',
-          buttonText: language === 'es' ? 'Agendar Cita' : 'Schedule Appointment',
+          title: t.workflow.nextStep,
+          description: t.workflow.scheduleAppointmentDesc,
+          buttonText: t.workflow.scheduleAppointmentCTA,
           buttonIcon: Calendar,
           buttonColor: 'bg-purple-500 hover:bg-purple-600 text-white',
           onClick: onSchedule,
         }
       case 'scheduled':
         return {
-          title: language === 'es' ? 'Cita agendada' : 'Appointment scheduled',
-          description: language === 'es' ? 'Confirma cuando el paciente haya asistido a la cita.' : 'Confirm once the patient has attended the appointment.',
-          buttonText: language === 'es' ? 'Marcar como Completado' : 'Mark as Completed',
+          title: t.workflow.appointmentScheduled,
+          description: t.workflow.markCompletedDesc,
+          buttonText: t.workflow.markCompletedCTA,
           buttonIcon: CheckCircle2,
           buttonColor: 'bg-success-500 hover:bg-success-600 text-white',
           onClick: onComplete,
         }
       case 'completed':
         return {
-          title: language === 'es' ? '¡Completado!' : 'Completed!',
-          description: language === 'es' ? 'Esta actividad ha sido completada exitosamente.' : 'This activity has been completed successfully.',
-          buttonText: language === 'es' ? 'Nueva Actividad' : 'New Activity',
+          title: t.workflow.activityCompleted,
+          description: t.workflow.activityCompletedDesc,
+          buttonText: t.workflow.newActivity,
           buttonIcon: Circle,
           buttonColor: 'bg-slate-500 hover:bg-slate-600 text-white',
           onClick: onSchedule, // Can create a new activity
@@ -258,31 +229,28 @@ export function WorkflowCTA({
 
 interface WorkflowEmptyStateProps {
   currentStatus: ActivityStatus
-  language?: 'en' | 'es'
   onAction?: () => void
   className?: string
 }
 
-export function WorkflowEmptyState({ currentStatus, language = 'es', onAction, className }: WorkflowEmptyStateProps) {
+export function WorkflowEmptyState({ currentStatus, onAction, className }: WorkflowEmptyStateProps) {
+  const { t } = useLanguage()
+  
   const getEmptyStateContent = () => {
     switch (currentStatus) {
       case 'new':
         return {
           icon: Phone,
-          title: language === 'es' ? 'Sin actividades' : 'No activities',
-          description: language === 'es' 
-            ? 'Este lead aún no tiene actividades. Contacta al paciente para crear la primera actividad.'
-            : 'This lead has no activities yet. Contact the patient to create the first activity.',
-          actionText: language === 'es' ? 'Contactar ahora' : 'Contact now',
+          title: t.workflow.noActivitiesTitle,
+          description: t.workflow.noActivitiesDesc,
+          actionText: t.workflow.contactNow,
         }
       case 'contacted':
         return {
           icon: Calendar,
-          title: language === 'es' ? 'Sin seguimientos agendados' : 'No follow-ups scheduled',
-          description: language === 'es'
-            ? 'El lead fue contactado pero aún no tiene seguimientos agendados. Programa una cita o llamada.'
-            : 'The lead was contacted but has no follow-ups scheduled. Schedule an appointment or call.',
-          actionText: language === 'es' ? 'Agendar seguimiento' : 'Schedule follow-up',
+          title: t.workflow.noFollowUpsTitle,
+          description: t.workflow.noFollowUpsDesc,
+          actionText: t.workflow.scheduleFollowUp,
         }
       default:
         return null

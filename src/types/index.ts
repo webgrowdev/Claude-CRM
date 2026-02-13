@@ -17,7 +17,10 @@ export type FunnelStatus =
 export type LeadSource = 'instagram' | 'whatsapp' | 'phone' | 'website' | 'referral' | 'other'
 
 // Follow-up Types (expanded to include in-person appointments)
-export type FollowUpType = 'call' | 'message' | 'email' | 'meeting' | 'appointment'
+export type FollowUpType = 'call' | 'message' | 'email' | 'meeting' | 'appointment' | 'whatsapp'
+
+// Activity Status Types - tracks status of individual activities/treatments per patient
+export type ActivityStatus = 'new' | 'contacted' | 'scheduled' | 'completed' | 'dropped' | 'lost'
 
 // =============================================
 // USER & ROLE TYPES
@@ -48,6 +51,7 @@ export interface Patient {
   identificationNumber?: string // DNI, passport, or other ID
   identificationType?: 'dni' | 'passport' | 'other' // Type of ID document
   source: LeadSource
+  /** @deprecated Use activities[].status instead - kept for backwards compatibility */
   status: FunnelStatus // Unified status field using FunnelStatus
   treatments: string[]
   notes: Note[]
@@ -75,6 +79,8 @@ export interface Patient {
   surveyResponses?: SurveyResponse[]
   lastSurveySentAt?: Date
   npsScore?: number
+  // NEW: Activity-level status tracking
+  activities?: PatientActivity[]
 }
 
 // Backwards compatibility alias
@@ -149,6 +155,26 @@ export interface FollowUp {
   // Backwards compatibility
   /** @deprecated Use patientId instead */
   leadId?: string
+}
+
+// =============================================
+// PATIENT ACTIVITY TYPES
+// =============================================
+
+// PatientActivity - tracks individual activities/treatments per patient
+// Each activity has its own independent status, notes, and follow-ups
+export interface PatientActivity {
+  id: string
+  patientId: string
+  treatmentId?: string
+  treatmentName?: string
+  status: ActivityStatus
+  assignedTo?: string
+  notes: Note[]
+  followUps: FollowUp[]
+  createdAt: Date
+  updatedAt: Date
+  closedAt?: Date
 }
 
 // =============================================

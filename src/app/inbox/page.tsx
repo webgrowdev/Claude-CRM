@@ -279,101 +279,154 @@ export default function InboxPage() {
   ]
 
   // Patient card component
-  const PatientCard = ({ patient }: { patient: Patient & { calculatedScore: any } }) => (
-    <div
-      onClick={() => router.push(`/pacientes?id=${patient.id}`)}
-      className={cn(
-        'flex items-start gap-4 p-4 bg-white hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100',
-        patient.status === 'new' && 'border-l-4 border-l-blue-500'
-      )}
-    >
-      <Avatar name={patient.name} size="lg" />
+  const PatientCard = ({ patient }: { patient: Patient & { calculatedScore: any } }) => {
+    // Get most recent follow-up to show last activity status
+    const mostRecentFollowUp = patient.followUps.length > 0
+      ? patient.followUps.reduce((latest, current) => {
+          return new Date(current.scheduledAt) > new Date(latest.scheduledAt) ? current : latest
+        })
+      : null
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-slate-800 truncate">
-              {patient.name}
-            </h3>
-            <LeadScoreBadge score={patient.calculatedScore.total} size="sm" showLabel={false} />
-            {getChannelIcon(patient.source)}
-          </div>
-          {getStatusBadge(patient)}
-        </div>
+    // Get last activity status badge
+    const getLastActivityStatus = () => {
+      if (!mostRecentFollowUp) return null
+      
+      if (mostRecentFollowUp.completed) {
+        return (
+          <Badge variant="success" size="xs">
+            {language === 'es' ? 'Completado' : 'Completed'}
+          </Badge>
+        )
+      }
+      
+      if (mostRecentFollowUp.appointmentStatus) {
+        const statusLabels: Record<string, { es: string; en: string; variant: any }> = {
+          pending: { es: 'Pendiente', en: 'Pending', variant: 'warning' },
+          confirmed: { es: 'Confirmado', en: 'Confirmed', variant: 'primary' },
+          'no-show': { es: 'No asistió', en: 'No-show', variant: 'error' },
+          cancelled: { es: 'Cancelado', en: 'Cancelled', variant: 'default' },
+        }
+        const statusConfig = statusLabels[mostRecentFollowUp.appointmentStatus] || statusLabels.pending
+        return (
+          <Badge variant={statusConfig.variant} size="xs">
+            {language === 'es' ? statusConfig.es : statusConfig.en}
+          </Badge>
+        )
+      }
+      
+      return (
+        <Badge variant="warning" size="xs">
+          {language === 'es' ? 'Programado' : 'Scheduled'}
+        </Badge>
+      )
+    }
 
-        {patient.treatments.length > 0 && (
-          <p className="text-sm text-slate-600 truncate mb-1">
-            {patient.treatments.join(', ')}
-          </p>
+    return (
+      <div
+        onClick={() => router.push(`/pacientes?id=${patient.id}`)}
+        className={cn(
+          'flex items-start gap-4 p-4 bg-white hover:bg-gray-50 cursor-pointer transition-colors border-b border-gray-100',
+          patient.status === 'new' && 'border-l-4 border-l-blue-500'
         )}
+      >
+        <Avatar name={patient.name} size="lg" />
 
-        <div className="flex items-center gap-3 text-xs text-slate-500">
-          <span className="flex items-center gap-1">
-            <Clock className="w-3.5 h-3.5" />
-            {formatTimeAgo(new Date(patient.createdAt))}
-          </span>
-          {patient.followUps.some((f) => !f.completed) && (
-            <span className="flex items-center gap-1 text-primary-600">
-              <Calendar className="w-3.5 h-3.5" />
-              {formatRelativeDate(
-                new Date(patient.followUps.find((f) => !f.completed)!.scheduledAt)
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-slate-800 truncate">
+                {patient.name}
+              </h3>
+              <LeadScoreBadge score={patient.calculatedScore.total} size="sm" showLabel={false} />
+              {getChannelIcon(patient.source)}
+            </div>
+            {getStatusBadge(patient)}
+          </div>
+
+          {/* Treatment/Service Context */}
+          {patient.treatments.length > 0 && (
+            <div className="flex items-center gap-2 mb-1">
+              <p className="text-sm text-slate-600 truncate">
+                {patient.treatments.join(', ')}
+              </p>
+              {mostRecentFollowUp?.treatmentName && patient.treatments.length > 1 && (
+                <Badge variant="secondary" size="xs">
+                  {mostRecentFollowUp.treatmentName}
+                </Badge>
               )}
+            </div>
+          )}
+
+          {/* Activity Status and Timeline */}
+          <div className="flex items-center gap-3 text-xs text-slate-500 mb-2">
+            <span className="flex items-center gap-1">
+              <Clock className="w-3.5 h-3.5" />
+              {formatTimeAgo(new Date(patient.createdAt))}
             </span>
-          )}
-        </div>
+            {patient.followUps.some((f) => !f.completed) && (
+              <span className="flex items-center gap-1 text-primary-600">
+                <Calendar className="w-3.5 h-3.5" />
+                {formatRelativeDate(
+                  new Date(patient.followUps.find((f) => !f.completed)!.scheduledAt)
+                )}
+              </span>
+            )}
+            {getLastActivityStatus()}
+          </div>
 
-        {/* Quick Actions */}
-        <div className="flex items-center gap-2 mt-3">
-          <a
-            href={getPhoneUrl(patient.phone)}
-            onClick={(e) => e.stopPropagation()}
-            className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
-            title={language === 'es' ? 'Llamar' : 'Call'}
-          >
-            <Phone className="w-4 h-4" />
-          </a>
-          <a
-            href={getWhatsAppUrl(patient.phone)}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="p-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition-colors"
-            title="WhatsApp"
-          >
-            <MessageCircle className="w-4 h-4" />
-          </a>
-          {patient.email && (
+          {/* Quick Actions */}
+          <div className="flex items-center gap-2 mt-3">
             <a
-              href={`mailto:${patient.email}`}
+              href={getPhoneUrl(patient.phone)}
               onClick={(e) => e.stopPropagation()}
-              className="p-2 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors"
-              title="Email"
+              className="p-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg transition-colors"
+              title={language === 'es' ? 'Llamar' : 'Call'}
             >
-              <Mail className="w-4 h-4" />
+              <Phone className="w-4 h-4" />
             </a>
-          )}
-          <button
-            onClick={(e) => handleSchedule(patient, e)}
-            className="p-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg transition-colors"
-            title={language === 'es' ? 'Agendar' : 'Schedule'}
-          >
-            <Calendar className="w-4 h-4" />
-          </button>
-          {patient.status === 'new' && (
-            <button
-              onClick={(e) => handleMarkContacted(patient, e)}
-              className="flex items-center gap-1 px-3 py-1.5 bg-success-50 text-success-700 rounded-lg text-xs font-medium hover:bg-success-100 transition-colors ml-auto"
+            <a
+              href={getWhatsAppUrl(patient.phone)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="p-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-lg transition-colors"
+              title="WhatsApp"
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              {language === 'es' ? 'Contactado' : 'Contacted'}
+              <MessageCircle className="w-4 h-4" />
+            </a>
+            {patient.email && (
+              <a
+                href={`mailto:${patient.email}`}
+                onClick={(e) => e.stopPropagation()}
+                className="p-2 bg-amber-50 hover:bg-amber-100 text-amber-600 rounded-lg transition-colors"
+                title="Email"
+              >
+                <Mail className="w-4 h-4" />
+              </a>
+            )}
+            <button
+              onClick={(e) => handleSchedule(patient, e)}
+              className="p-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg transition-colors"
+              title={language === 'es' ? 'Agendar' : 'Schedule'}
+            >
+              <Calendar className="w-4 h-4" />
             </button>
-          )}
+            {patient.status === 'new' && (
+              <button
+                onClick={(e) => handleMarkContacted(patient, e)}
+                className="flex items-center gap-1 px-3 py-1.5 bg-success-50 text-success-700 rounded-lg text-xs font-medium hover:bg-success-100 transition-colors ml-auto"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                {language === 'es' ? 'Contactado' : 'Contacted'}
+              </button>
+            )}
+          </div>
         </div>
-      </div>
 
-      <ChevronRight className="w-5 h-5 text-slate-300 flex-shrink-0 mt-2" />
-    </div>
-  )
+        <ChevronRight className="w-5 h-5 text-slate-300 flex-shrink-0 mt-2" />
+      </div>
+    )
+  }
 
   // Priority section component
   const PrioritySection = ({

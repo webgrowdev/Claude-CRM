@@ -1,10 +1,10 @@
 'use client'
 
 import React, { useState, useMemo } from 'react'
-import { Search, User, Phone, Calendar, Clock, X } from 'lucide-react'
+import { Search, User, Phone, Calendar, Clock, X, MessageCircle, Mail, Video, CalendarCheck } from 'lucide-react'
 import { Modal, Input, Button, Avatar, Badge, Select } from '@/components/ui'
 import { useApp } from '@/contexts/AppContext'
-import { Patient, Treatment, AppointmentStatus } from '@/types'
+import { Patient, Treatment, AppointmentStatus, FollowUpType } from '@/types'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { es, enUS } from 'date-fns/locale'
@@ -26,9 +26,20 @@ export function ScheduleFollowUpModal({ isOpen, onClose, language = 'es' }: Sche
   // Appointment form state
   const [appointmentDate, setAppointmentDate] = useState<Date>(new Date())
   const [appointmentTime, setAppointmentTime] = useState<string>('')
+  const [followUpType, setFollowUpType] = useState<FollowUpType>('appointment')
   const [treatmentId, setTreatmentId] = useState<string>('')
   const [appointmentNotes, setAppointmentNotes] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+
+  // Follow-up type options
+  const followUpTypeOptions: { value: FollowUpType; label: string; labelEs: string; icon: any }[] = [
+    { value: 'appointment', label: 'In-person Appointment', labelEs: 'Cita Presencial', icon: CalendarCheck },
+    { value: 'meeting', label: 'Video Call (Meet)', labelEs: 'Videollamada (Meet)', icon: Video },
+    { value: 'call', label: 'Phone Call', labelEs: 'Llamada Telefónica', icon: Phone },
+    { value: 'whatsapp', label: 'WhatsApp Message', labelEs: 'Mensaje WhatsApp', icon: MessageCircle },
+    { value: 'message', label: 'Message', labelEs: 'Mensaje', icon: MessageCircle },
+    { value: 'email', label: 'Email', labelEs: 'Correo Electrónico', icon: Mail },
+  ]
 
   // Filter patients by search query (name, phone, ID)
   const filteredPatients = useMemo(() => {
@@ -52,12 +63,15 @@ export function ScheduleFollowUpModal({ isOpen, onClose, language = 'es' }: Sche
     setShowAppointmentForm(false)
     setSelectedPatient(null)
     setAppointmentTime('')
+    setFollowUpType('appointment')
     setTreatmentId('')
     setAppointmentNotes('')
   }
 
   const handleCreateAppointment = async () => {
-    if (!selectedPatient || !appointmentTime || !treatmentId) return
+    if (!selectedPatient || !appointmentTime) return
+    // Treatment is required only for appointments and meetings
+    if ((followUpType === 'appointment' || followUpType === 'meeting') && !treatmentId) return
 
     setIsCreating(true)
     try {
@@ -71,16 +85,16 @@ export function ScheduleFollowUpModal({ isOpen, onClose, language = 'es' }: Sche
       await addFollowUp(
         selectedPatient.id,
         {
-          type: 'appointment',
+          type: followUpType,
           scheduledAt,
           duration,
-          treatmentId,
+          treatmentId: treatmentId || undefined,
           treatmentName: treatment?.name,
           notes: appointmentNotes,
-          appointmentStatus: 'pending',
+          appointmentStatus: (followUpType === 'appointment' || followUpType === 'meeting') ? 'pending' : undefined,
           assignedTo: state.user.id,
         },
-        true // Sync with calendar
+        followUpType === 'meeting' // Sync with calendar only for video meetings
       )
 
       // Close modal and reset state
@@ -97,16 +111,39 @@ export function ScheduleFollowUpModal({ isOpen, onClose, language = 'es' }: Sche
     setSelectedPatient(null)
     setShowAppointmentForm(false)
     setAppointmentTime('')
+    setFollowUpType('appointment')
     setTreatmentId('')
     setAppointmentNotes('')
     onClose()
+  }
+
+  const getFormTitle = () => {
+    if (!showAppointmentForm) {
+      return language === 'es' ? 'Buscar Paciente' : 'Search Patient'
+    }
+    
+    switch (followUpType) {
+      case 'appointment':
+        return language === 'es' ? 'Nueva Cita Presencial' : 'New In-person Appointment'
+      case 'meeting':
+        return language === 'es' ? 'Nueva Videollamada' : 'New Video Call'
+      case 'call':
+        return language === 'es' ? 'Nueva Llamada' : 'New Phone Call'
+      case 'whatsapp':
+      case 'message':
+        return language === 'es' ? 'Nuevo Mensaje' : 'New Message'
+      case 'email':
+        return language === 'es' ? 'Nuevo Correo' : 'New Email'
+      default:
+        return language === 'es' ? 'Nuevo Seguimiento' : 'New Follow-up'
+    }
   }
 
   return (
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title={showAppointmentForm ? (language === 'es' ? 'Nueva Cita' : 'New Appointment') : (language === 'es' ? 'Buscar Paciente' : 'Search Patient')}
+      title={getFormTitle()}
       size="lg"
     >
       {!showAppointmentForm ? (
@@ -220,25 +257,57 @@ export function ScheduleFollowUpModal({ isOpen, onClose, language = 'es' }: Sche
             />
           </div>
 
-          {/* Treatment Select */}
+          {/* Follow-up Type Select */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-2">
-              {language === 'es' ? 'Tratamiento' : 'Treatment'}
+              {language === 'es' ? 'Tipo de Actividad' : 'Activity Type'}
             </label>
-            <Select
-              value={treatmentId}
-              onChange={setTreatmentId}
-              options={[
-                { value: '', label: language === 'es' ? 'Seleccionar tratamiento' : 'Select treatment' },
-                ...state.treatments
-                  .filter((t) => t.active !== false)
-                  .map((t) => ({
-                    value: t.id,
-                    label: `${t.name} (${t.duration} min)`,
-                  })),
-              ]}
-            />
+            <div className="grid grid-cols-2 gap-2">
+              {followUpTypeOptions.map((option) => {
+                const OptionIcon = option.icon
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setFollowUpType(option.value)}
+                    className={cn(
+                      'flex items-center gap-2 p-3 rounded-lg border-2 transition-all',
+                      followUpType === option.value
+                        ? 'border-primary-500 bg-primary-50 text-primary-700'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                    )}
+                  >
+                    <OptionIcon className="w-4 h-4 flex-shrink-0" />
+                    <span className="text-sm font-medium text-left">
+                      {language === 'es' ? option.labelEs : option.label}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
+
+          {/* Treatment Select - Only show for appointments and meetings */}
+          {(followUpType === 'appointment' || followUpType === 'meeting') && (
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                {language === 'es' ? 'Tratamiento' : 'Treatment'}
+              </label>
+              <Select
+                value={treatmentId}
+                onChange={setTreatmentId}
+                options={[
+                  { value: '', label: language === 'es' ? 'Seleccionar tratamiento' : 'Select treatment' },
+                  ...state.treatments
+                    .filter((t) => t.active !== false)
+                    .map((t) => ({
+                      value: t.id,
+                      label: `${t.name} (${t.duration} min)`,
+                    })),
+                ]}
+              />
+            </div>
+          )}
 
           {/* Notes */}
           <div>
@@ -266,12 +335,16 @@ export function ScheduleFollowUpModal({ isOpen, onClose, language = 'es' }: Sche
             <Button
               onClick={handleCreateAppointment}
               className="flex-1"
-              disabled={!appointmentTime || !treatmentId || isCreating}
+              disabled={
+                !appointmentTime || 
+                ((followUpType === 'appointment' || followUpType === 'meeting') && !treatmentId) || 
+                isCreating
+              }
             >
               {isCreating ? (
                 language === 'es' ? 'Creando...' : 'Creating...'
               ) : (
-                language === 'es' ? 'Crear Cita' : 'Create Appointment'
+                language === 'es' ? 'Crear Seguimiento' : 'Create Follow-up'
               )}
             </Button>
           </div>

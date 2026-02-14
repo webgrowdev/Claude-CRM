@@ -9,18 +9,24 @@ export function setCookie(name: string, value: string, days: number = 7): void {
   const expires = new Date()
   expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000)
   
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`
+  // Add Secure flag for production environments (HTTPS only)
+  const secure = window.location.protocol === 'https:' ? ';Secure' : ''
+  
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax${secure}`
 }
 
 export function getCookie(name: string): string | null {
   if (typeof window === 'undefined') return null
   
-  const value = document.cookie
+  const cookie = document.cookie
     .split('; ')
     .find(row => row.startsWith(`${name}=`))
-    ?.split('=')[1]
   
-  return value || null
+  if (!cookie) return null
+  
+  // Handle cookie values that contain '=' characters (e.g., base64 tokens)
+  const parts = cookie.split('=')
+  return parts.slice(1).join('=') || null
 }
 
 export function deleteCookie(name: string): void {

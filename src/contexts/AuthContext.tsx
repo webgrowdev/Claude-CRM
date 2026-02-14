@@ -225,9 +225,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (response.ok) {
         const { token, user } = await response.json()
+        const remember = localStorage.getItem('auth_remember') === 'true'
         localStorage.setItem('auth_token', token)
         localStorage.setItem('auth_user', JSON.stringify(user))
-        setCookie('token', token, 7) // Update cookie with new token
+        setCookie('token', token, remember ? 30 : 7) // Respect original remember preference
         
         setState(prev => ({
           ...prev,

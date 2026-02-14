@@ -29,7 +29,13 @@ export function readEnvFileValue(key: string): string | undefined {
       const line = txt.split('\n').find(l => l.trim().startsWith(`${key}=`))
       
       if (line) {
-        const value = line.split('=').slice(1).join('=').trim()
+        let value = line.split('=').slice(1).join('=').trim()
+        
+        // Handle quoted values (remove surrounding quotes)
+        if ((value.startsWith('"') && value.endsWith('"')) || 
+            (value.startsWith("'") && value.endsWith("'"))) {
+          value = value.slice(1, -1)
+        }
         
         // Log only once when successfully loading from a file
         if (!_loadedEnvPath) {

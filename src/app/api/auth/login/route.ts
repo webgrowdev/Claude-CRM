@@ -10,6 +10,7 @@ export const revalidate = 0
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row']
 type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
+const BUILD_SIG = 'login-2026-02-14-1032'
 
 export async function POST(request: NextRequest) {
 
@@ -184,10 +185,11 @@ export async function POST(request: NextRequest) {
       ? { message: error.message, stack: error.stack }
       : { message: String(error) }
 
-  return NextResponse.json(
-    { error: 'Error al iniciar sesión', debug },
-    { status: 500 }
-  )
+    return NextResponse.json(
+      { build: BUILD_SIG, error: 'Error al iniciar sesión', debug },
+      { status: 500 }
+    )
+
 }
 
 }

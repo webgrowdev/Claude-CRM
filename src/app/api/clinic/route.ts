@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 // GET /api/clinic - Get clinic information
 export const GET = requireAuth(async (request: NextRequest, user) => {

@@ -43,13 +43,51 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const typedProfile = profile as ProfileRow
+    let typedProfile = profile as ProfileRow
 
     // Get email from Supabase Auth admin API (profiles table doesn't store email)
     let email = payload.email || ''
     const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(payload.userId)
     if (authUser?.user?.email) {
       email = authUser.user.email
+    }
+
+    // Auto-create clinic for users without one
+    if (!typedProfile.clinic_id) {
+      const userName = typedProfile.name?.trim() || email.split('@')[0]
+      const clinicName = `Clínica de ${userName}`
+      const { data: newClinic, error: clinicErr } = await supabaseAdmin
+        .from('clinics')
+        .insert({
+          name: clinicName,
+          email: email.toLowerCase(),
+        })
+        .select('id')
+        .single()
+
+      if (clinicErr || !newClinic) {
+        console.error('Error creating clinic:', clinicErr)
+        return NextResponse.json(
+          { error: 'No se pudo crear la clínica para el usuario' },
+          { status: 500 }
+        )
+      }
+
+      // Update profile with clinic_id
+      const { error: updateErr } = await supabaseAdmin
+        .from('profiles')
+        .update({ clinic_id: newClinic.id })
+        .eq('id', typedProfile.id)
+      
+      if (updateErr) {
+        console.error('Error updating profile with clinic_id:', updateErr)
+        return NextResponse.json(
+          { error: 'No se pudo asignar la clínica al usuario' },
+          { status: 500 }
+        )
+      }
+
+      typedProfile = { ...typedProfile, clinic_id: newClinic.id }
     }
 
     // Generate new token

@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, ReactNode } from 'react'
 import { Patient, FunnelStatus, Treatment, User, Notification, Note, FollowUp, Settings, Appointment, AppointmentStatus } from '@/types'
 import { generateId } from '@/lib/utils'
+import { getCookie } from '@/lib/cookies'
 import {
   getGoogleCalendarSettings,
   createCalendarEvent,
@@ -284,10 +285,13 @@ const AppContext = createContext<AppContextType | undefined>(undefined)
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState)
 
-  // Helper to get JWT token from localStorage
+  // Helper to get JWT token from localStorage or cookie
   const getAuthToken = (): string | null => {
     if (typeof window === 'undefined') return null
-    return localStorage.getItem('auth_token')
+    // Try localStorage first, then fall back to cookie
+    const token = localStorage.getItem('auth_token')
+    if (token) return token
+    return getCookie('token')
   }
 
   // Load initial data

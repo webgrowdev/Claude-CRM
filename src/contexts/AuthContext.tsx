@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { User, UserRole } from '@/types'
+import { setCookie, getCookie, deleteCookie } from '@/lib/cookies'
 
 interface AuthState {
   user: User | null
@@ -45,7 +46,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const token = localStorage.getItem('auth_token')
+      // Check both localStorage and cookie for token
+      let token = localStorage.getItem('auth_token')
+      if (!token) {
+        token = getCookie('token')
+      }
       const remember = localStorage.getItem('auth_remember') === 'true'
 
       if (!token) {
@@ -69,10 +74,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isLoading: false,
         })
       } else {
-        // Token invalid, clear storage
+        // Token invalid, clear storage and cookies
         localStorage.removeItem('auth_token')
         localStorage.removeItem('auth_user')
         localStorage.removeItem('auth_remember')
+        deleteCookie('token')
         setState({
           user: null,
           token: null,
@@ -107,9 +113,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: data.error || 'Error al iniciar sesión' }
       }
 
-      // Store token
+      // Store token in both localStorage and cookie
       localStorage.setItem('auth_token', data.token)
       localStorage.setItem('auth_user', JSON.stringify(data.user))
+      setCookie('token', data.token, remember ? 30 : 7) // 30 days if remember, 7 days otherwise
       if (remember) {
         localStorage.setItem('auth_remember', 'true')
       }
@@ -141,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Logout error:', error)
     }
 
-    // Clear main auth keys
+    // Clear main auth keys from localStorage
     try {
       localStorage.removeItem('auth_token')
       localStorage.removeItem('auth_user')
@@ -158,6 +165,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       // ignore if storage access fails
     }
+
+    // Clear auth cookie
+    deleteCookie('token')
 
     setState({
       user: null,
@@ -185,9 +195,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: false, error: result.error || 'Error al registrar' }
       }
 
-      // Auto login after registration
+      // Auto login after registration - store in both localStorage and cookie
       localStorage.setItem('auth_token', result.token)
       localStorage.setItem('auth_user', JSON.stringify(result.user))
+      setCookie('token', result.token, 7) // 7 days by default
 
       setState({
         user: result.user,
@@ -216,6 +227,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { token, user } = await response.json()
         localStorage.setItem('auth_token', token)
         localStorage.setItem('auth_user', JSON.stringify(user))
+        setCookie('token', token, 7) // Update cookie with new token
         
         setState(prev => ({
           ...prev,

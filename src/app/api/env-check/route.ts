@@ -1,17 +1,8 @@
 export const runtime = 'nodejs'
-import fs from 'fs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-function readEnvFileKey(): string | undefined {
-  try {
-    const txt = fs.readFileSync('/home/u246625160/domains/growicrm.site/env', 'utf8')
-    const line = txt.split('\n').find(l => l.startsWith('SUPABASE_SERVICE_ROLE_KEY='))
-    return line?.split('=').slice(1).join('=').trim()
-  } catch {
-    return undefined
-  }
-}
+import { readEnvFileKey } from '@/lib/env-reader'
 
 export async function GET() {
   return Response.json({

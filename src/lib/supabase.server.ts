@@ -1,21 +1,13 @@
 import 'server-only'
-import fs from 'fs'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/database'
+import { readEnvFileKey, readEnvFileValue } from './env-reader'
 
 let _supabaseAdmin: SupabaseClient<Database> | null = null
 let _supabaseAdminKeySig: string | null = null
 
-
-function readEnvFileKey(): string | undefined {
-  try {
-    const txt = fs.readFileSync('/home/u246625160/domains/growicrm.site/env', 'utf8')
-    const line = txt.split('\n').find(l => l.startsWith('SUPABASE_SERVICE_ROLE_KEY='))
-    return line?.split('=').slice(1).join('=').trim()
-  } catch {
-    return undefined
-  }
-}
+// Re-export env reading functions for backward compatibility
+export { readEnvFileKey, readEnvFileValue }
 
 export function getSupabaseAdmin() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL

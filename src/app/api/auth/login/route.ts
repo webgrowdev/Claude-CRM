@@ -7,25 +7,11 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-
 type ProfileRow = Database['public']['Tables']['profiles']['Row']
 type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
-const BUILD_SIG = 'login-2026-02-14-1032'
 
 export async function POST(request: NextRequest) {
-
-  console.log('[ENV CHECK SERVER]', {
-  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING',
-  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'SET' : 'MISSING',
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'SET' : 'MISSING',
-  NODE_ENV: process.env.NODE_ENV,
-  cwd: process.cwd(),
-  pid: process.pid,
-})
-
-
   try {
-    
     // Validate Supabase configuration first
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
       console.error('Missing Supabase URL or Anon Key environment variables')
@@ -35,22 +21,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable')
+    // Get Supabase admin client (with fallback to file-based key)
+    // If this fails, it will throw an error with a descriptive message
+    let supabaseAdmin
+    try {
+      supabaseAdmin = getSupabaseAdmin()
+    } catch (error) {
+      console.error('Failed to initialize Supabase admin client:', error)
       return NextResponse.json(
         {
-          build: BUILD_SIG,
-          error: 'Falta SUPABASE_SERVICE_ROLE_KEY en el servidor. Sin esto, supabaseAdmin no puede bypass RLS.',
-          hasServiceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-          cwd: process.cwd(),
-          pid: process.pid,
+          error: 'Error de configuración del servidor: no se pudo inicializar el cliente administrativo de Supabase',
         },
         { status: 500 }
       )
-
     }
-    
-    const supabaseAdmin = getSupabaseAdmin()
     const body = (await request.json().catch(() => null)) as
       | { email?: string; password?: string }
       | null
@@ -181,19 +165,17 @@ export async function POST(request: NextRequest) {
         updated_at: u.updated_at,
       },
     })
-  }  catch (error) {
-  console.error('Login error (FULL):', error)
+  } catch (error) {
+    console.error('Login error:', error)
 
-  const debug =
-    error instanceof Error
-      ? { message: error.message, stack: error.stack }
-      : { message: String(error) }
+    const debug =
+      process.env.NODE_ENV !== 'production' && error instanceof Error
+        ? { message: error.message, stack: error.stack }
+        : undefined
 
     return NextResponse.json(
-      { build: BUILD_SIG, error: 'Error al iniciar sesión', debug },
+      { error: 'Error al iniciar sesión', debug },
       { status: 500 }
     )
-
-}
-
+  }
 }

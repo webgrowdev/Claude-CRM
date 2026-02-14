@@ -5,54 +5,51 @@ import { requireAuth } from '@/lib/middleware'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-// GET /api/notifications - Get notifications for the authenticated user's clinic
+// GET /api/notifications - List notifications for the authenticated user's clinic
 export const GET = requireAuth(async (request: NextRequest, user) => {
   try {
     const supabaseAdmin = getSupabaseAdmin()
-    
-    // Verify clinicId exists
+
+    // Verify clinicId exists in token
     if (!user.clinicId) {
-      return NextResponse.json(
-        { error: 'No clinic ID found' },
-        { status: 401 }
-      )
+      return NextResponse.json({ error: 'No clinic ID found' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '50')
-    const offset = (page - 1) * limit
-
-    // Query activity_logs table for notifications (recent activity in the clinic)
-    const { data: activities, error, count } = await supabaseAdmin
-      .from('activity_logs')
-      .select('*', { count: 'exact' })
+    // Check if notifications table exists by attempting to query it
+    const { data: notifications, error } = await supabaseAdmin
+      .from('notifications')
+      .select('*')
       .eq('clinic_id', user.clinicId)
       .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1)
+      .limit(100)
 
+    // If table doesn't exist, return empty array with success
     if (error) {
+      // Check if it's a "relation does not exist" error
+      if (error.message?.includes('relation') || error.code === '42P01') {
+        return NextResponse.json({
+          success: true,
+          notifications: [],
+          message: 'Notifications table not yet created',
+        })
+      }
+      
+      // For other errors, log and return error
       console.error('Error fetching notifications:', error)
       return NextResponse.json(
-        { error: 'Error al obtener notificaciones' },
+        { error: 'Error fetching notifications' },
         { status: 500 }
       )
     }
 
     return NextResponse.json({
       success: true,
-      notifications: activities || [],
-      pagination: {
-        page,
-        limit,
-        total: count || 0,
-        totalPages: Math.ceil((count || 0) / limit),
-      },
+      notifications: notifications || [],
     })
   } catch (error) {
     console.error('Notifications GET error:', error)
     return NextResponse.json(
-      { error: 'Error interno del servidor' },
+      { error: 'Internal server error' },
       { status: 500 }
     )
   }

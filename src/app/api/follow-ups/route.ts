@@ -22,7 +22,7 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
     const limit = parseInt(searchParams.get('limit') || '100')
     const offset = (page - 1) * limit
 
-    // If patient_id is provided, verify it's valid and belongs to the clinic
+    // If patient_id is provided, validate it
     if (patientId) {
       // Validar formato UUID básico
       const uuidRE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -49,31 +49,19 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
       }
     }
 
-    // Build query for follow-ups
+    // Ahora lanzar la query original de follow-ups filtrada por clinic y opcionalmente por patient_id
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '100')
+    const offset = (page - 1) * limit
+
     let query = supabaseAdmin
       .from('follow_ups')
       .select('*', { count: 'exact' })
       .eq('clinic_id', user.clinicId)
 
-    // Filter by patient_id if provided
+    // Only filter by patient_id if provided
     if (patientId) {
       query = query.eq('patient_id', patientId)
-    }
-
-    // Filter by status if provided
-    if (status === 'pending') {
-      query = query.eq('completed', false)
-    } else if (status === 'completed') {
-      query = query.eq('completed', true)
-    }
-    // if status === 'all' or not provided, don't filter by completed
-
-    // Filter by date range if provided
-    if (fromDate) {
-      query = query.gte('scheduled_at', fromDate)
-    }
-    if (toDate) {
-      query = query.lte('scheduled_at', toDate)
     }
 
     query = query

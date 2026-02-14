@@ -27,6 +27,7 @@ import {
   Inbox,
   Users,
   LayoutDashboard,
+  Plus,
 } from 'lucide-react'
 import { Header, PageContainer, AppShell } from '@/components/layout'
 import { Card, Avatar, Badge } from '@/components/ui'

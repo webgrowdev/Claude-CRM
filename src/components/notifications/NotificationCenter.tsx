@@ -12,6 +12,7 @@ import {
   CreditCard,
   AlertCircle,
   UserPlus,
+  Plus,
   Star,
   Settings,
   ChevronRight,

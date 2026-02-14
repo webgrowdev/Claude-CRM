@@ -9,6 +9,7 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  transpilePackages: ['lucide-react'],
   experimental: {
     serverActions: { allowedOrigins: ['growicrm.site'] },
   },

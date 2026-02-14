@@ -16,35 +16,34 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
     const { searchParams } = new URL(request.url)
     const patientId = searchParams.get('patient_id')
 
-    if (!patientId) {
-      return NextResponse.json({ error: 'patient_id query param is required' }, { status: 400 })
+    // If patient_id is provided, validate it
+    if (patientId) {
+      // Validar formato UUID básico
+      const uuidRE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+      if (!uuidRE.test(patientId)) {
+        return NextResponse.json({ error: 'patient_id must be a valid UUID' }, { status: 400 })
+      }
+
+      // Verificar paciente existe y pertenece a la clinic del token
+      const { data: patient, error: patientErr } = await supabaseAdmin
+        .from('patients')
+        .select('id, clinic_id')
+        .eq('id', patientId)
+        .single()
+
+      if (patientErr) {
+        console.error('Error looking up patient for follow-ups:', patientErr)
+        return NextResponse.json({ error: 'Error fetching patient' }, { status: 500 })
+      }
+      if (!patient) {
+        return NextResponse.json({ error: 'Patient not found' }, { status: 404 })
+      }
+      if (patient.clinic_id !== user.clinicId) {
+        return NextResponse.json({ error: 'Patient does not belong to this clinic' }, { status: 403 })
+      }
     }
 
-    // Validar formato UUID básico
-    const uuidRE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-    if (!uuidRE.test(patientId)) {
-      return NextResponse.json({ error: 'patient_id must be a valid UUID' }, { status: 400 })
-    }
-
-    // Verificar paciente existe y pertenece a la clinic del token
-    const { data: patient, error: patientErr } = await supabaseAdmin
-      .from('patients')
-      .select('id, clinic_id')
-      .eq('id', patientId)
-      .single()
-
-    if (patientErr) {
-      console.error('Error looking up patient for follow-ups:', patientErr)
-      return NextResponse.json({ error: 'Error fetching patient' }, { status: 500 })
-    }
-    if (!patient) {
-      return NextResponse.json({ error: 'Patient not found' }, { status: 404 })
-    }
-    if (patient.clinic_id !== user.clinicId) {
-      return NextResponse.json({ error: 'Patient does not belong to this clinic' }, { status: 403 })
-    }
-
-    // Ahora lanzar la query original de follow-ups filtrada por clinic y patient_id
+    // Ahora lanzar la query original de follow-ups filtrada por clinic y opcionalmente por patient_id
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '100')
     const offset = (page - 1) * limit
@@ -53,7 +52,13 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
       .from('follow_ups')
       .select('*', { count: 'exact' })
       .eq('clinic_id', user.clinicId)
-      .eq('patient_id', patientId)
+
+    // Only filter by patient_id if provided
+    if (patientId) {
+      query = query.eq('patient_id', patientId)
+    }
+
+    query = query
       .order('scheduled_at', { ascending: true })
       .range(offset, offset + limit - 1)
 

@@ -54,7 +54,8 @@ export async function POST(request: NextRequest) {
 
     // Auto-create clinic for users without one
     if (!typedProfile.clinic_id) {
-      const clinicName = `Clínica de ${typedProfile.name || email.split('@')[0]}`
+      const userName = typedProfile.name?.trim() || email.split('@')[0]
+      const clinicName = `Clínica de ${userName}`
       const { data: newClinic, error: clinicErr } = await supabaseAdmin
         .from('clinics')
         .insert({
@@ -64,21 +65,29 @@ export async function POST(request: NextRequest) {
         .select('id')
         .single()
 
-      if (!clinicErr && newClinic) {
-        // Update profile with clinic_id
-        const { error: updateErr } = await supabaseAdmin
-          .from('profiles')
-          .update({ clinic_id: newClinic.id })
-          .eq('id', typedProfile.id)
-        
-        if (!updateErr) {
-          typedProfile = { ...typedProfile, clinic_id: newClinic.id }
-        } else {
-          console.error('Error updating profile with clinic_id:', updateErr)
-        }
-      } else {
+      if (clinicErr || !newClinic) {
         console.error('Error creating clinic:', clinicErr)
+        return NextResponse.json(
+          { error: 'No se pudo crear la clínica para el usuario' },
+          { status: 500 }
+        )
       }
+
+      // Update profile with clinic_id
+      const { error: updateErr } = await supabaseAdmin
+        .from('profiles')
+        .update({ clinic_id: newClinic.id })
+        .eq('id', typedProfile.id)
+      
+      if (updateErr) {
+        console.error('Error updating profile with clinic_id:', updateErr)
+        return NextResponse.json(
+          { error: 'No se pudo asignar la clínica al usuario' },
+          { status: 500 }
+        )
+      }
+
+      typedProfile = { ...typedProfile, clinic_id: newClinic.id }
     }
 
     // Generate new token

@@ -39,11 +39,15 @@ export async function POST(request: NextRequest) {
       console.error('Missing SUPABASE_SERVICE_ROLE_KEY environment variable')
       return NextResponse.json(
         {
-          error:
-            'Falta SUPABASE_SERVICE_ROLE_KEY en el servidor. Sin esto, supabaseAdmin no puede bypass RLS.',
+          build: BUILD_SIG,
+          error: 'Falta SUPABASE_SERVICE_ROLE_KEY en el servidor. Sin esto, supabaseAdmin no puede bypass RLS.',
+          hasServiceRole: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+          cwd: process.cwd(),
+          pid: process.pid,
         },
         { status: 500 }
       )
+
     }
     
     const supabaseAdmin = getSupabaseAdmin()

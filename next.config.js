@@ -3,9 +3,6 @@ const nextConfig = {
   reactStrictMode: true,
   // SIN output: 'standalone' — Hostinger no lo necesita
 
-  // Fix tree-shaking issues with lucide-react icons in production
-  transpilePackages: ['lucide-react'],
-
   eslint: {
     ignoreDuringBuilds: true,
   },

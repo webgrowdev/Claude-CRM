@@ -49,11 +49,6 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
       }
     }
 
-    // Ahora lanzar la query original de follow-ups filtrada por clinic y opcionalmente por patient_id
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '100')
-    const offset = (page - 1) * limit
-
     let query = supabaseAdmin
       .from('follow_ups')
       .select('*', { count: 'exact' })
@@ -62,6 +57,22 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
     // Only filter by patient_id if provided
     if (patientId) {
       query = query.eq('patient_id', patientId)
+    }
+
+    // Filter by completion status
+    if (status === 'pending') {
+      query = query.eq('completed', false)
+    } else if (status === 'completed') {
+      query = query.eq('completed', true)
+    }
+    // else 'all' or null = no filter
+
+    // Date range filters
+    if (fromDate) {
+      query = query.gte('scheduled_at', fromDate)
+    }
+    if (toDate) {
+      query = query.lte('scheduled_at', toDate)
     }
 
     query = query

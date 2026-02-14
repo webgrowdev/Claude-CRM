@@ -748,7 +748,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   ): Promise<FollowUp | null> => {
     const token = getAuthToken()
     const patient = state.patients.find(p => p.id === patientId)
-    if (!patient) return null
+    if (!patient) {
+      console.error('Patient not found:', patientId)
+      return null
+    }
 
     const followUp: FollowUp = {
       ...followUpData,
@@ -773,22 +776,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    // Update local state immediately
-    dispatch({ type: 'ADD_FOLLOWUP', payload: { patientId, followUp } })
-
-    // Automatically change status to 'appointment' if it's a meeting or call and status is new/contacted
-    if ((followUpData.type === 'meeting' || followUpData.type === 'call') &&
-        (patient.status === 'new' || patient.status === 'contacted')) {
-      dispatch({ type: 'UPDATE_PATIENT_STATUS', payload: { id: patientId, status: 'appointment' } })
-    }
-
     if (!token) {
       console.warn('No token, local-only follow-up')
+      // Update local state immediately as fallback
+      dispatch({ type: 'ADD_FOLLOWUP', payload: { patientId, followUp } })
       return followUp
     }
 
     try {
-      // Call API to create follow-up
+      // Call API to create follow-up and persist to database
       const response = await fetch('/api/follow-ups', {
         method: 'POST',
         headers: {
@@ -801,24 +797,50 @@ export function AppProvider({ children }: { children: ReactNode }) {
           scheduled_at: followUpData.scheduledAt,
           notes: followUpData.notes,
           assigned_to: followUpData.assignedTo,
+          duration: followUpData.duration || 30,
+          treatment_id: followUpData.treatmentId,
+          treatment_name: followUpData.treatmentName,
+          google_event_id: followUp.googleEventId,
+          meet_link: followUp.meetLink,
+          appointment_status: followUpData.appointmentStatus,
+          reminder_sent: followUpData.reminderSent,
+          confirmed_by_patient: followUpData.confirmedByPatient,
         }),
       })
 
-      if (response.ok) {
-        const data = await response.json()
-        // Update with the actual ID from API
-        const apiFollowUp: FollowUp = {
-          ...followUp,
-          id: data.followUp.id,
-        }
-        dispatch({ type: 'ADD_FOLLOWUP', payload: { patientId, followUp: apiFollowUp } })
-        return apiFollowUp
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('Failed to create follow-up via API:', response.status, errorData)
+        throw new Error(errorData.error || 'Failed to create follow-up')
       }
+
+      const data = await response.json()
+      console.log('Follow-up successfully created in database:', data.followUp.id)
+      
+      // Update with the actual ID from API
+      const apiFollowUp: FollowUp = {
+        ...followUp,
+        id: data.followUp.id,
+      }
+      
+      // Update local state with persisted data
+      dispatch({ type: 'ADD_FOLLOWUP', payload: { patientId, followUp: apiFollowUp } })
+      
+      // Automatically change status to 'appointment' if it's a meeting or appointment and status is new/contacted
+      if ((followUpData.type === 'meeting' || followUpData.type === 'appointment') &&
+          (patient.status === 'new' || patient.status === 'contacted')) {
+        await updatePatientStatus(patientId, 'appointment')
+      }
+      
+      return apiFollowUp
     } catch (error) {
       console.error('Error creating follow-up via API:', error)
+      // Fallback: Still add to local state so user doesn't lose their work
+      dispatch({ type: 'ADD_FOLLOWUP', payload: { patientId, followUp } })
+      // Show error notification
+      console.warn('Follow-up saved locally but not persisted to database. Please check your connection.')
+      return followUp
     }
-
-    return followUp
   }
 
   const isCalendarConnected = (): boolean => {

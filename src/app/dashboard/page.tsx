@@ -306,14 +306,15 @@ export default function DashboardPage() {
                   </div>
                   <div className="space-y-2">
                     {insights.hotLeads.map((patient) => (
-                      <div
+                      <Link
                         key={patient.id}
-                        className="flex items-center justify-between bg-white/60 rounded-xl p-3"
+                        href={`/pacientes?id=${patient.id}`}
+                        className="flex items-center justify-between bg-white/60 hover:bg-white/90 rounded-xl p-3 transition-colors cursor-pointer group"
                       >
                         <div className="flex items-center gap-3">
                           <Avatar name={patient.name} size="sm" />
                           <div>
-                            <p className="font-medium text-slate-800 text-sm">
+                            <p className="font-medium text-slate-800 text-sm group-hover:text-orange-700 transition-colors">
                               {patient.name}
                             </p>
                             <div className="flex items-center gap-2">
@@ -333,6 +334,7 @@ export default function DashboardPage() {
                             rel="noopener noreferrer"
                             className="p-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors"
                             onClick={(e) => e.stopPropagation()}
+                            title={language === 'es' ? 'Contactar Lead' : 'Contact Lead'}
                           >
                             <MessageCircle className="w-4 h-4" />
                           </a>
@@ -340,11 +342,21 @@ export default function DashboardPage() {
                             href={getPhoneUrl(patient.phone)}
                             className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
                             onClick={(e) => e.stopPropagation()}
+                            title={language === 'es' ? 'Llamar' : 'Call'}
                           >
                             <Phone className="w-4 h-4" />
                           </a>
+                          <Link
+                            href={`/pacientes?id=${patient.id}&action=schedule`}
+                            className="p-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg transition-colors hidden sm:flex"
+                            onClick={(e) => e.stopPropagation()}
+                            title={language === 'es' ? 'Agendar Cita' : 'Schedule Appointment'}
+                          >
+                            <Calendar className="w-4 h-4" />
+                          </Link>
+                          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-orange-600 transition-colors" />
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                   <Link
@@ -380,14 +392,15 @@ export default function DashboardPage() {
                   </div>
                   <div className="space-y-2">
                     {insights.urgentLeads.map((patient) => (
-                      <div
+                      <Link
                         key={patient.id}
-                        className="flex items-center justify-between bg-white/60 rounded-xl p-3"
+                        href={`/pacientes?id=${patient.id}`}
+                        className="flex items-center justify-between bg-white/60 hover:bg-white/90 rounded-xl p-3 transition-colors cursor-pointer group"
                       >
                         <div className="flex items-center gap-3">
                           <Avatar name={patient.name} size="sm" />
                           <div>
-                            <p className="font-medium text-slate-800 text-sm">
+                            <p className="font-medium text-slate-800 text-sm group-hover:text-red-700 transition-colors">
                               {patient.name}
                             </p>
                             <p className="text-xs text-red-500">
@@ -401,17 +414,30 @@ export default function DashboardPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="p-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                            title={language === 'es' ? 'Contactar Lead' : 'Contact Lead'}
                           >
                             <MessageCircle className="w-4 h-4" />
                           </a>
                           <a
                             href={getPhoneUrl(patient.phone)}
                             className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                            title={language === 'es' ? 'Llamar' : 'Call'}
                           >
                             <Phone className="w-4 h-4" />
                           </a>
+                          <Link
+                            href={`/pacientes?id=${patient.id}&action=note`}
+                            className="p-2 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded-lg transition-colors hidden sm:flex"
+                            onClick={(e) => e.stopPropagation()}
+                            title={language === 'es' ? 'Crear Actividad' : 'Create Activity'}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Link>
+                          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-red-600 transition-colors" />
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                   <Link

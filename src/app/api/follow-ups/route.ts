@@ -3,7 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabase.server'
 import { requireAuth } from '@/lib/middleware'
 
 // GET /api/follow-ups - List follow-ups
-// Reemplaza (o modifica) el handler GET existente por algo como esto (usa requireAuth como ahora)
+// patient_id is optional: if provided, returns follow-ups for that patient; if not, returns all for the clinic
 export const GET = requireAuth(async (request: NextRequest, user) => {
   try {
     const supabaseAdmin = getSupabaseAdmin()
@@ -15,6 +15,12 @@ export const GET = requireAuth(async (request: NextRequest, user) => {
 
     const { searchParams } = new URL(request.url)
     const patientId = searchParams.get('patient_id')
+    const status = searchParams.get('status') // 'pending', 'completed', or 'all'
+    const fromDate = searchParams.get('from_date')
+    const toDate = searchParams.get('to_date')
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '100')
+    const offset = (page - 1) * limit
 
     // If patient_id is provided, validate it
     if (patientId) {

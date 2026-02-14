@@ -125,6 +125,35 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Usuario desactivado' }, { status: 403 })
     }
 
+    // 2d) Auto-create clinic for users without one
+    if (!u.clinic_id) {
+      const clinicName = `Clínica de ${u.name || authEmail.split('@')[0]}`
+      const { data: newClinic, error: clinicErr } = await supabaseAdmin
+        .from('clinics')
+        .insert({
+          name: clinicName,
+          email: authEmail,
+        })
+        .select('id')
+        .single()
+
+      if (!clinicErr && newClinic) {
+        // Update profile with clinic_id
+        const { error: updateErr } = await supabaseAdmin
+          .from('profiles')
+          .update({ clinic_id: newClinic.id })
+          .eq('id', u.id)
+        
+        if (!updateErr) {
+          u = { ...u, clinic_id: newClinic.id }
+        } else {
+          console.error('Error updating profile with clinic_id:', updateErr)
+        }
+      } else {
+        console.error('Error creating clinic:', clinicErr)
+      }
+    }
+
     // 3) Emitir JWT interno (tu AuthContext)
     const token = await generateToken({
       userId: u.id,
